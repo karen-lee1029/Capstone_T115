@@ -1,0 +1,12 @@
+band_type,band_label,lower_bound,upper_bound
+eftsl,0–0.125,0,0.125
+eftsl,0.125–0.25,0.125,0.25
+eftsl,0.25–0.5,0.25,0.5
+eftsl,0.5–0.75,0.5,0.75
+eftsl,0.75–1.0,0.75,1.0
+eftsl,1.0+,1.0,1.5
+credit_point,0–24,0,24
+credit_point,24–48,24,48
+credit_point,48–96,48,96
+credit_point,96–144,96,144
+credit_point,144+,144,288
