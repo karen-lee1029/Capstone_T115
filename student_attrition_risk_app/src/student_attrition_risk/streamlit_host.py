@@ -11,6 +11,18 @@ from typing import Any
 
 import httpx
 import websockets
+from websockets.exceptions import ConnectionClosed
+
+_HOP_BY_HOP_HEADERS = {
+    b"connection",
+    b"host",
+    b"sec-websocket-accept",
+    b"sec-websocket-extensions",
+    b"sec-websocket-key",
+    b"sec-websocket-protocol",
+    b"sec-websocket-version",
+    b"upgrade",
+}
 
 
 class StreamlitHost:
@@ -24,7 +36,8 @@ class StreamlitHost:
         ui_path = os.path.join(os.path.dirname(__file__), "ui.py")
         self.process = subprocess.Popen(
             [sys.executable, "-m", "streamlit", "run", ui_path, "--server.address", "127.0.0.1",
-             "--server.port", str(self.port), "--server.headless", "true"],
+             "--server.port", str(self.port), "--server.headless", "true", "--server.baseUrlPath", "ui",
+             "--server.enableCORS", "false", "--server.enableXsrfProtection", "false"],
             stdout=subprocess.DEVNULL,
             stderr=subprocess.STDOUT,
         )
@@ -39,6 +52,7 @@ class StreamlitHost:
 
 class StreamlitProxy:
     def __init__(self, port: int) -> None:
+        self.port = port
         self.target = f"http://127.0.0.1:{port}"
 
     async def __call__(
@@ -60,8 +74,6 @@ class StreamlitProxy:
             if not message.get("more_body"):
                 break
         path = scope.get("path") or "/"
-        if path.startswith("/ui"):
-            path = path[3:] or "/"
         query = scope.get("query_string", b"").decode()
         async with httpx.AsyncClient() as client:
             try:
@@ -88,23 +100,25 @@ class StreamlitProxy:
         receive: Callable[..., Awaitable[Any]],
         send: Callable[..., Awaitable[Any]],
     ) -> None:
-        await receive()
+        first_message = await receive()
+        if first_message["type"] == "websocket.disconnect":
+            return
         path = scope.get("path") or "/"
-        if path.startswith("/ui"):
-            path = path[3:] or "/"
-        query = scope.get("query_string", b"").decode()
-        upstream_url = f"ws://127.0.0.1:{self.target.rsplit(':', 1)[-1]}{path}"
+        query = scope.get("query_string", b"").decode("latin-1")
+        upstream_url = f"ws://127.0.0.1:{self.port}{path}"
         if query:
-            upstream_url += f"?{query}"
+            upstream_url = f"{upstream_url}?{query}"
         headers = [
             (key.decode(), value.decode())
             for key, value in scope.get("headers", [])
-            if key.lower() in {b"cookie", b"user-agent", b"origin"}
+            if key.lower() not in _HOP_BY_HOP_HEADERS
         ]
         subprotocols = [
-            value.decode()
+            protocol.strip()
             for key, value in scope.get("headers", [])
             if key.lower() == b"sec-websocket-protocol"
+            for protocol in value.decode("latin-1").split(",")
+            if protocol.strip()
         ]
         try:
             async with websockets.connect(
@@ -112,12 +126,16 @@ class StreamlitProxy:
                 additional_headers=headers,
                 subprotocols=subprotocols or None,
             ) as upstream:
-                await send({"type": "websocket.accept", "subprotocol": upstream.subprotocol})
+                accept_message = {"type": "websocket.accept"}
+                if upstream.subprotocol:
+                    accept_message["subprotocol"] = upstream.subprotocol
+                await send(accept_message)
 
                 async def forward_to_upstream() -> None:
                     while True:
                         message = await receive()
                         if message["type"] == "websocket.disconnect":
+                            await upstream.close(code=message.get("code", 1000))
                             return
                         if message.get("text") is not None:
                             await upstream.send(message["text"])
@@ -138,9 +156,13 @@ class StreamlitProxy:
                 done, pending = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
                 for task in pending:
                     task.cancel()
+                await asyncio.gather(*pending, return_exceptions=True)
                 for task in done:
                     with suppress(Exception):
                         task.result()
+        except ConnectionClosed as exc:
+            with suppress(Exception):
+                await send({"type": "websocket.close", "code": exc.code, "reason": exc.reason})
         except Exception:
             with suppress(Exception):
                 await send({"type": "websocket.close", "code": 1011})

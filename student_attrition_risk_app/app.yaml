@@ -1,4 +1,12 @@
-command: ["uv", "run", "--no-dev", "uvicorn", "student_attrition_risk.main:app", "--host", "0.0.0.0", "--port", "${DATABRICKS_APP_PORT}"]
+command: ["sh", "-c", "uv run --no-dev uvicorn student_attrition_risk.main:app --host 0.0.0.0 --port ${DATABRICKS_APP_PORT}"]
 env:
   - name: PYTHONPATH
     value: src
+  - name: USE_MOCK_DATA
+    value: "false"
+  - name: DATABRICKS_WAREHOUSE_ID
+    value: 24caf5bc29e76d4a
+  - name: DATABRICKS_PREDICTION_TABLE
+    value: workspace.student_aggregate.student_attrition_risk_prediction
+  - name: DATABRICKS_FACT_TABLE
+    value: workspace.student_aggregate.rpt_student_management__fact__all_enrolment_eftsl__deidentified
