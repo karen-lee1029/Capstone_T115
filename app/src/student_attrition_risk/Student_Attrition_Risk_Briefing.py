@@ -30,6 +30,7 @@ st.info(
     "This proof of concept uses cross-sectional synthetic data. The prediction is a model-generated "
     "risk signal for decision support and is not a longitudinal assessment or final decision."
 )
+st.sidebar.write("Student Attrition Risk App")
 
 service = build_service()
 student_hash = st.text_input("Student hash", placeholder="synthetic-student-001")
