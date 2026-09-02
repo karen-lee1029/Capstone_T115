@@ -1,0 +1,11 @@
+{
+  "servers": {
+    "studentAttritionRisk": {
+      "type": "http",
+      "url": "https://YOUR_APP_URL/mcp/",
+      "headers": {
+        "Authorization": "Bearer ${env:DATABRICKS_TOKEN}"
+      }
+    }
+  }
+}
