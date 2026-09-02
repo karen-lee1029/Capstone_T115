@@ -39,20 +39,32 @@ Mock students (`MockStudentRepository`):
 |---|---|---|
 | `synthetic-student-001` | yes | no |
 | `synthetic-student-002` | no | no |
-| `synthetic-student-003` (new fixture) | yes | yes (seeded into `InMemoryBriefingStore`) |
+| `synthetic-student-003` (new fixture) | yes | no |
 
-Expected observable behaviour (see `contracts/rest-api.md`):
+A fresh mock-mode process starts with an **empty** `InMemoryBriefingStore` — there is no
+runtime seeding. `synthetic-student-003` exists only so the automated tests can seed a briefing
+for it explicitly when exercising the return-existing and regenerate paths (below).
+
+Expected observable behaviour on a fresh process (see `contracts/rest-api.md`):
 
 | Call | Expected |
 |---|---|
 | `GET /api/students/synthetic-student-001/briefing` | `404` "No validated briefing available" |
+| `GET /api/students/synthetic-student-003/briefing` | `404` "No validated briefing available" (store starts empty) |
 | `POST /api/students/synthetic-student-002/briefing` | `409` "Student is not flagged at risk"; no seam calls for generation |
-| `POST /api/students/synthetic-student-003/briefing` | `200`, `source="stored"`; **no generation-seam call** (FR-035) |
 | `POST /api/students/synthetic-student-001/briefing` | `503` "Briefing generation is not configured" — the default generation seam is a stub (never a template briefing) |
-| `GET /api/students/synthetic-student-003/briefing` | `200`, most recent validated briefing (FR-030) |
+| `POST /api/students/synthetic-student-003/briefing` | `503` "Briefing generation is not configured" — flagged, no stored briefing, unconfigured generation seam |
+| `POST /api/students/missing/briefing` | `404` "Student hash not found" |
+
+**Return-existing and regenerate** (FR-035 / FR-036 / FR-037) cannot be reproduced against a
+fresh mock process because nothing seeds a stored briefing at runtime. They are verified by the
+automated tests in `test_briefing_orchestration.py`, `test_api.py`, and `test_mcp_tools.py`,
+which seed `InMemoryBriefingStore` explicitly and then assert: a request with a stored briefing
+returns it (`source="stored"`) with no generation-seam call; `?regenerate=true` runs the seams
+again and supersedes on success; a failed regeneration leaves the previous briefing in place.
 
 MCP (`http://127.0.0.1:8000/mcp/`): `generate_student_briefing` and `get_student_briefing`
-mirror the above; failures are tool errors, never a fabricated briefing.
+mirror the REST behaviour above; failures are tool errors, never a fabricated briefing.
 
 ## Orchestration paths proven in tests (with stub seams)
 
@@ -63,8 +75,8 @@ mirror the above; failures are tool errors, never a fabricated briefing.
 | `StubGenerationProvider(draft=…)` + `StubValidator(passed=True)` | context carries all 21 features + risk result; seams called in order; `save_validated` called once; `ValidatedBriefing` returned |
 | `StubValidator(passed=False, failed_criteria=[…], feedback="…")` | `ValidationFailed` passed to the retry seam; with `RetryNotConfigured` → `502` (detail: "... (validation)") and nothing stored |
 | `StubGenerationProvider(raises=GenerationError)` | `GenerationFailed` passed to the retry seam; with `RetryNotConfigured` → `502` (detail: "... (generation)") and nothing stored |
-| student-003 + `regenerate=true` + `StubValidator(passed=True)` | new `ValidatedBriefing` supersedes; store now returns it as latest |
-| student-003 + `regenerate=true` + terminal failure | previous validated briefing retained and still returned by `GET` (FR-037) |
+| store seeded for student-003, then `regenerate=true` + `StubValidator(passed=True)` | new `ValidatedBriefing` supersedes; store now returns it as latest |
+| store seeded for student-003, then `regenerate=true` + terminal failure | previous validated briefing retained and still returned by `GET` (FR-037) |
 | `InMemoryBriefingStore.save_validated` raising `BriefingStorageError` | `503` "Validated briefing could not be stored"; previous entry intact |
 | any run | logs contain hash / outcome / attempt_count / validator_id but no prompt, no briefing text, no secret (FR-031/FR-032) |
 

@@ -3,7 +3,11 @@
 import streamlit as st
 
 from student_attrition_risk.main import build_service
-from student_attrition_risk.student_service import StudentNotFoundError
+from student_attrition_risk.student_service import (
+    BriefingNotProducedError,
+    StudentNotAtRiskError,
+    StudentNotFoundError,
+)
 
 
 def _snapshot_label(name: str) -> str:
@@ -64,11 +68,23 @@ if profile:
             "Snapshot attributes are unavailable because the optional fact table is not configured "
             "or has no approved columns for this record."
         )
-    if st.button("Generate Draft Briefing"):
-        with st.spinner("Generating briefing..."):
-            st.session_state.briefing = service.generate_briefing(prediction.student_deidentified_hash)
+    if st.button("Request Briefing"):
+        with st.spinner("Requesting briefing..."):
+            try:
+                st.session_state.briefing = service.request_briefing(
+                    prediction.student_deidentified_hash
+                )
+            except StudentNotAtRiskError:
+                st.session_state.briefing = None
+                st.warning("This student is not flagged at risk; no briefing is generated.")
+            except BriefingNotProducedError as exc:
+                st.session_state.briefing = None
+                st.error(f"A validated briefing could not be produced ({exc.category}).")
+            except Exception:
+                st.session_state.briefing = None
+                st.error("The briefing workflow is currently unavailable.")
     briefing = st.session_state.get("briefing")
     if briefing:
-        st.subheader("Draft Briefing")
-        st.caption(f"Source: {briefing.source.replace('_', ' ').title()}")
+        st.subheader("Structured Advisor Briefing")
+        st.caption(f"Source: {briefing.source.title()} · Validation: {briefing.validator_id}")
         st.write(briefing.text)

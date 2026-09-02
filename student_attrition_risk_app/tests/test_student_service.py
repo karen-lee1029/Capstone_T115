@@ -1,11 +1,22 @@
-from student_attrition_risk.briefing_provider import TemplateBriefingProvider
-from student_attrition_risk.models import StudentBriefing, StudentRiskProfile
-from student_attrition_risk.student_repository import MockStudentRepository
+from student_attrition_risk.briefing_instructions import InterimInstructions
+from student_attrition_risk.briefing_provider import StubGenerationProvider
+from student_attrition_risk.briefing_store import InMemoryBriefingStore
+from student_attrition_risk.briefing_validation import InterimValidator
+from student_attrition_risk.models import UNAVAILABLE
+from student_attrition_risk.retry_workflow import RetryNotConfigured
+from student_attrition_risk.student_repository import MODEL_FEATURE_COLUMNS, MockStudentRepository
 from student_attrition_risk.student_service import StudentNotFoundError, StudentService
 
 
-def service(provider=None):
-    return StudentService(MockStudentRepository(), provider or TemplateBriefingProvider())
+def service(repository=None):
+    return StudentService(
+        repository=repository or MockStudentRepository(),
+        generation_provider=StubGenerationProvider(),
+        instructions=InterimInstructions(),
+        validator=InterimValidator(),
+        retry_workflow=RetryNotConfigured(),
+        store=InMemoryBriefingStore(),
+    )
 
 
 def test_retrieves_prediction_and_snapshot():
@@ -36,17 +47,22 @@ def test_high_risk_limit_is_validated():
 def test_no_fact_table_still_returns_prediction():
     repository = MockStudentRepository()
     repository.get_snapshot = lambda _: None
-    profile = StudentService(repository, TemplateBriefingProvider()).get_student_profile(
-        "synthetic-student-001"
-    )
+    profile = service(repository).get_student_profile("synthetic-student-001")
     assert profile.snapshot is None
 
 
-def test_model_failure_uses_template_fallback():
-    class FailingProvider:
-        def generate(self, profile: StudentRiskProfile) -> StudentBriefing:
-            raise RuntimeError("model unavailable")
+def test_get_model_features_returns_exactly_the_21_names_never_reduced():
+    features = MockStudentRepository().get_model_features("synthetic-student-001")
+    assert features is not None
+    assert set(features.values) == set(MODEL_FEATURE_COLUMNS)
+    assert len(features.values) == 21
 
-    briefing = service(FailingProvider()).generate_briefing("synthetic-student-001")
-    assert briefing.source == "template"
-    assert "cross-sectional" in briefing.text
+
+def test_get_model_features_preserves_the_unavailable_marker():
+    features = MockStudentRepository().get_model_features("synthetic-student-001")
+    assert features is not None
+    assert features.values["detailed_primary_field_of_education"] == UNAVAILABLE
+
+
+def test_get_model_features_is_none_for_an_unknown_hash():
+    assert MockStudentRepository().get_model_features("missing") is None
