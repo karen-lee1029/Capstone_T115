@@ -2,7 +2,8 @@
 
 from typing import Any
 
-from .models import StudentBriefing, StudentRiskProfile
+from .config import ConfigurationError
+from .models import BriefingGenerationContext, DraftBriefing, StudentBriefing, StudentRiskProfile
 
 
 def _prompt(profile: StudentRiskProfile) -> str:
@@ -57,3 +58,30 @@ class DatabricksModelBriefingProvider:
             source="databricks_model",
             text=content,
         )
+
+
+class StubGenerationProvider:
+    """Feature-001 (US-08) placeholder for the ``GenerationProvider`` seam.
+
+    The concrete generative integration (the OpenAI API) is owned by **US-13**. Until then,
+    the default behaviour is to raise ``ConfigurationError`` so an unconfigured backend fails
+    fast and explicitly — never a template briefing masquerading as success (FR-014, FR-020).
+
+    Tests pass ``draft=`` to return a fixed ``DraftBriefing`` or ``raises=`` to raise a chosen
+    error, exercising the orchestration without any external service.
+    """
+
+    def __init__(
+        self,
+        draft: DraftBriefing | None = None,
+        raises: BaseException | None = None,
+    ) -> None:
+        self._draft = draft
+        self._raises = raises
+
+    def generate(self, context: BriefingGenerationContext) -> DraftBriefing:
+        if self._raises is not None:
+            raise self._raises
+        if self._draft is not None:
+            return self._draft
+        raise ConfigurationError("Briefing generation is not configured")
