@@ -6,9 +6,13 @@ from fastapi import FastAPI
 from fastapi.responses import RedirectResponse
 
 from .api import create_api
-from .briefing_provider import DatabricksModelBriefingProvider, TemplateBriefingProvider
+from .briefing_instructions import InterimInstructions
+from .briefing_provider import StubGenerationProvider
+from .briefing_store import InMemoryBriefingStore
+from .briefing_validation import InterimValidator
 from .config import Settings
 from .mcp_server import create_mcp_server
+from .retry_workflow import RetryNotConfigured
 from .streamlit_host import StreamlitHost, StreamlitProxy
 from .student_repository import DatabricksStudentRepository, MockStudentRepository
 from .student_service import StudentService
@@ -17,12 +21,17 @@ from .student_service import StudentService
 def build_service(settings: Settings | None = None) -> StudentService:
     settings = settings or Settings.from_env()
     repository = MockStudentRepository() if settings.use_mock_data else DatabricksStudentRepository(settings)
-    provider = (
-        DatabricksModelBriefingProvider(settings.model_name)
-        if settings.model_name
-        else TemplateBriefingProvider()
+    # Feature-001 (US-08) wires placeholder seams. Concrete implementations are swapped in
+    # here by US-13 (generation), US-12 (instructions), US-14 (validation), and
+    # US-15 / Feature-002 (retry + governed Volume storage) with no orchestration change.
+    return StudentService(
+        repository=repository,
+        generation_provider=StubGenerationProvider(),
+        instructions=InterimInstructions(),
+        validator=InterimValidator(),
+        retry_workflow=RetryNotConfigured(),
+        store=InMemoryBriefingStore(),
     )
-    return StudentService(repository, provider)
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
