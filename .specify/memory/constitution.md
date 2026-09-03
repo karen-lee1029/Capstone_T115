@@ -1,33 +1,32 @@
 <!--
 Sync Impact Report
-- Version change: (unratified generated draft) → 1.0.0
-- Bump rationale: The prior constitution.md was produced without sufficient user direction
-  and is treated as an unapproved draft, not an adopted constitution. Per user instruction
-  this document is published as the initial ratified constitution and versioned 1.0.0.
-- Principles fully replaced (draft → ratified):
-  - Removed draft principles: I. Specification-Driven Development;
-    II. Synthetic Data and Privacy by Design; III. Decision Support, Not Automation;
-    IV. Test-First and Reproducibility; V. Layered Architecture and Interface Parity.
-  - Added ratified principles: I. Specification-Driven Development;
-    II. Strict Scope Containment; III. Read Broadly, Write Narrowly;
-    IV. Minimal Necessary Change; V. Reuse and Extend Existing Architecture;
-    VI. No Unnecessary Complexity; VII. Plan-Defined Implementation Structure;
-    VIII. Application Technology Compatibility;
-    IX. Separation of Responsibilities and Modularity; X. Security and Privacy;
-    XI. Input Validation and Explicit Error Handling; XII. Proportionate Testing;
-    XIII. Human Review of AI-Generated Development Work;
-    XIV. Documentation and Implementation Traceability;
-    XV. Completion Means Specification Satisfaction; XVI. Preserve Team Contributions;
-    XVII. Human-Controlled Version Control.
-- Sections:
-  - Removed draft standalone sections: "Technology and Security Constraints";
-    "Development Workflow and Quality Gates" (their durable content is now expressed as
-    principles VIII, X, XII, and XIII).
-  - Added: "Scope and Applicability"; "Development Workflow and Compliance Review".
+- Version change: 1.0.0 → 1.1.0
+- Bump rationale: MINOR. The "Scope and Applicability" section received materially
+  expanded guidance clarifying feature ownership. No Core Principle was added, removed,
+  renamed, or redefined.
+- Reason for amendment: Repository investigation identified a scope conflict between the
+  ratified v1.0.0 text, which attributed "Structured Advisor Briefing validation and
+  single-retry functionality" to Feature-002, and the approved Product Backlog and
+  Feature-001 architecture. Under that decomposition, Product Backlog story US-14 owns
+  the concrete Structured Advisor Briefing validation rules and acceptance criteria,
+  while Feature-002 (Product Backlog story US-15) owns the exceptional single-retry
+  workflow and the governed storage of validated briefings. Feature-001 has already
+  established the architectural seams that Feature-002 reuses and extends.
+- Feature-002 is now defined as US-15 in full: the exceptional single-retry workflow
+  after a first Structured Advisor Briefing attempt does not successfully produce a valid
+  briefing, together with the governed storage of validated Structured Advisor Briefings
+  through the existing BriefingStore architecture backed by Unity Catalog Volume storage.
+- US-14 retains ownership of the concrete Structured Advisor Briefing validation rules
+  and acceptance criteria.
+- Modified sections:
+  - "Scope and Applicability" — materially changed (feature-ownership clarification);
+    the only materially changed section in this amendment.
+- Added sections: none. Removed sections: none.
+- Principles: none added, removed, renamed, or redefined (I–XVII unchanged).
 - Templates and commands: .specify/templates/*.md read this file at runtime. The plan
   template's Constitution Check is generic ("Gates determined based on constitution
   file") and needs no edit. No template source files were modified by this command.
-- Deferred items / TODOs: none. Ratification date set to 2026-09-02 per user instruction.
+- Deferred items / TODOs: none. Ratification date unchanged (2026-09-02).
 -->
 
 # T115 Student Risk and Intervention Briefing Application Constitution
@@ -36,8 +35,15 @@ Sync Impact Report
 
 This constitution governs development of the software application in this repository. It
 applies to Feature-001 (backend functionality supporting the Databricks application) and
-Feature-002 (Structured Advisor Briefing validation and single-retry functionality), and
-it remains binding on all future application features.
+Feature-002, and it remains binding on all future application features. Feature-002 owns
+Product Backlog story US-15 in full: the exceptional single-retry workflow performed after
+a first Structured Advisor Briefing attempt does not successfully produce a valid briefing,
+together with the governed storage of validated Structured Advisor Briefings implemented
+through the existing BriefingStore architecture and backed by Unity Catalog Volume storage.
+The concrete Structured Advisor Briefing validation rules and acceptance criteria are owned
+by Product Backlog story US-14; Feature-002 consumes the existing validation boundary and
+its results as part of the retry workflow but does not define or duplicate the US-14
+validation logic.
 
 Detailed functional requirements, acceptance criteria, workflow behaviour, and
 implementation details for each feature are defined through that feature's own
@@ -204,4 +210,4 @@ pull-request review. Component and repository documentation provides runtime dev
 guidance that complements these principles; where such documentation and this constitution
 disagree, this constitution governs and the documentation MUST be corrected.
 
-**Version**: 1.0.0 | **Ratified**: 2026-09-02 | **Last Amended**: 2026-09-02
+**Version**: 1.1.0 | **Ratified**: 2026-09-02 | **Last Amended**: 2026-09-03
