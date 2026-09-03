@@ -10,3 +10,7 @@ env:
     value: workspace.student_aggregate.student_attrition_risk_prediction
   - name: DATABRICKS_FACT_TABLE
     value: workspace.student_aggregate.rpt_student_management__fact__all_enrolment_eftsl__deidentified
+  # Feature-002 / US-15: governed Unity Catalog Volume for validated Structured Advisor
+  # Briefings. The deployed app must have write access to this Volume.
+  - name: BRIEFING_VOLUME
+    value: /Volumes/workspace/student_aggregate/advisor_briefings

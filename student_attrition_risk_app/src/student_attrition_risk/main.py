@@ -8,11 +8,11 @@ from fastapi.responses import RedirectResponse
 from .api import create_api
 from .briefing_instructions import InterimInstructions
 from .briefing_provider import StubGenerationProvider
-from .briefing_store import InMemoryBriefingStore
+from .briefing_store import InMemoryBriefingStore, VolumeBriefingStore
 from .briefing_validation import InterimValidator
 from .config import Settings
 from .mcp_server import create_mcp_server
-from .retry_workflow import RetryNotConfigured
+from .retry_workflow import SingleRetryWorkflow
 from .streamlit_host import StreamlitHost, StreamlitProxy
 from .student_repository import DatabricksStudentRepository, MockStudentRepository
 from .student_service import StudentService
@@ -21,16 +21,21 @@ from .student_service import StudentService
 def build_service(settings: Settings | None = None) -> StudentService:
     settings = settings or Settings.from_env()
     repository = MockStudentRepository() if settings.use_mock_data else DatabricksStudentRepository(settings)
-    # Feature-001 (US-08) wires placeholder seams. Concrete implementations are swapped in
-    # here by US-13 (generation), US-12 (instructions), US-14 (validation), and
-    # US-15 / Feature-002 (retry + governed Volume storage) with no orchestration change.
+    # Placeholder seams still owned by later stories: generation (US-13), instructions (US-12),
+    # validation (US-14). Feature-002 / US-15 supplies the concrete retry workflow and, when
+    # BRIEFING_VOLUME is set, the governed Unity Catalog Volume store; orchestration is unchanged.
+    generation_provider = StubGenerationProvider()
+    validator = InterimValidator()
+    store = VolumeBriefingStore(settings) if settings.briefing_volume else InMemoryBriefingStore()
     return StudentService(
         repository=repository,
-        generation_provider=StubGenerationProvider(),
+        generation_provider=generation_provider,
         instructions=InterimInstructions(),
-        validator=InterimValidator(),
-        retry_workflow=RetryNotConfigured(),
-        store=InMemoryBriefingStore(),
+        validator=validator,
+        retry_workflow=SingleRetryWorkflow(
+            generation_provider=generation_provider, validator=validator
+        ),
+        store=store,
     )
 
 
