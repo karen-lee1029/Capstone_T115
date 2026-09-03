@@ -1,7 +1,6 @@
 """Shared application business logic."""
 
 import logging
-from datetime import UTC, datetime
 
 from .config import ConfigurationError
 from .models import (
@@ -16,6 +15,7 @@ from .models import (
     ValidatedBriefing,
     ValidationFailed,
     ValidationOutcome,
+    make_validated_briefing,
 )
 from .ports import (
     BriefingInstructions,
@@ -204,19 +204,12 @@ class StudentService:
         outcome: ValidationOutcome,
         attempt_count: int,
     ) -> ValidatedBriefing:
-        return ValidatedBriefing(
-            student_deidentified_hash=student_hash,
+        return make_validated_briefing(
+            student_hash=student_hash,
+            prediction=prediction,
             text=text,
-            source="generated",
-            validated=True,
             validator_id=outcome.validator_id,
-            generated_at=datetime.now(UTC),
             attempt_count=attempt_count,
-            mlflow_run_id=prediction.mlflow_run_id,
-            risk_percentage=prediction.attrition_risk_percentage,
-            at_risk_flag=prediction.attrition_risk_flag,
-            prediction_threshold=prediction.prediction_threshold,
-            scored_at=prediction.scored_at,
         )
 
     def _persist(self, student_hash: str, briefing: ValidatedBriefing) -> None:

@@ -5,6 +5,7 @@ import re
 from dataclasses import dataclass
 
 _IDENTIFIER = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
+_VOLUME_SEGMENT = re.compile(r"^[A-Za-z0-9_-]+$")
 DEFAULT_PREDICTION_TABLE = "workspace.student_aggregate.student_attrition_risk_prediction"
 DEFAULT_FACT_TABLE = (
     "workspace.student_aggregate.rpt_student_management__fact__all_enrolment_eftsl__deidentified"
@@ -25,6 +26,22 @@ def validate_table_identifier(identifier: str) -> str:
     return identifier
 
 
+def validate_volume_path(path: str) -> str:
+    """Accept only a Unity Catalog Volume path: ``/Volumes/<catalog>/<schema>/<volume>[/...]``."""
+    segments = [segment for segment in path.split("/") if segment]
+    if (
+        not path.startswith("/Volumes/")
+        or not segments
+        or segments[0] != "Volumes"
+        or len(segments) < 4
+        or any(not _VOLUME_SEGMENT.fullmatch(segment) for segment in segments[1:])
+    ):
+        raise ConfigurationError(
+            "BRIEFING_VOLUME must be /Volumes/<catalog>/<schema>/<volume> with safe name parts."
+        )
+    return path
+
+
 @dataclass(frozen=True)
 class Settings:
     app_env: str
@@ -39,6 +56,7 @@ class Settings:
     model_name: str | None
     app_port: int
     streamlit_port: int
+    briefing_volume: str | None = None
 
     @classmethod
     def from_env(cls) -> "Settings":
@@ -52,6 +70,9 @@ class Settings:
         for optional_table in (fact_table, course_table, teaching_period_table):
             if optional_table:
                 validate_table_identifier(optional_table)
+        briefing_volume = os.getenv("BRIEFING_VOLUME") or None
+        if briefing_volume:
+            validate_volume_path(briefing_volume)
         return cls(
             app_env=os.getenv("APP_ENV", "local"),
             use_mock_data=os.getenv("USE_MOCK_DATA", "false").lower() == "true",
@@ -65,4 +86,5 @@ class Settings:
             model_name=os.getenv("DATABRICKS_MODEL_NAME") or None,
             app_port=int(os.getenv("DATABRICKS_APP_PORT", "8000")),
             streamlit_port=int(os.getenv("STREAMLIT_PORT", "8501")),
+            briefing_volume=briefing_volume,
         )
