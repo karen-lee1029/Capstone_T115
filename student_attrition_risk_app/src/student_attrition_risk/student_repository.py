@@ -7,13 +7,13 @@ from .databricks_client import create_sql_connection
 from .models import StudentPrediction, StudentSnapshot
 
 SNAPSHOT_COLUMNS = (
-    "age_at_census",
+    "age_band",
+    "international_domestic_student",
     "attendance_mode",
-    "eftsl",
-    "commencing_continuing",
-    "commencing_continuing_period",
     "course_admission_load_category",
+    "eftsl",
     "enrolment_year",
+    "commencing_continuing",
     "cumulative_credit_points_enrolled",
     "cumulative_credit_points_passed",
     "cumulative_credit_points_failed",

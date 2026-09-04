@@ -31,7 +31,13 @@ st.info(
     "risk signal for decision support and is not a longitudinal assessment or final decision."
 )
 
-service = build_service()
+@st.cache_resource
+def get_service():
+    return build_service()
+
+
+service = get_service()
+
 student_hash = st.text_input("Student hash", placeholder="synthetic-student-001")
 retrieve = st.button("Retrieve", type="primary")
 

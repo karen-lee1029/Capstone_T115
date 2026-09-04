@@ -6,6 +6,8 @@ env:
     value: "false"
   - name: DATABRICKS_WAREHOUSE_ID
     value: 24caf5bc29e76d4a
+  - name: DATABRICKS_MODEL_NAME
+    valueFrom: model-endpoint
   - name: DATABRICKS_PREDICTION_TABLE
     value: workspace.student_aggregate.student_attrition_risk_prediction
   - name: DATABRICKS_FACT_TABLE
