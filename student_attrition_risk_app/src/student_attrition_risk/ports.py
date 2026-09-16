@@ -48,7 +48,13 @@ class BriefingProvider(Protocol):
 
 class GenerationProvider(Protocol):
     def generate(self, context: BriefingGenerationContext) -> DraftBriefing:
-        """Return a draft briefing, or raise on a failure before a draft exists."""
+        """Return a draft briefing, or raise on a failure before a draft exists.
+
+        A response carrying no usable content — empty or whitespace only — is a failure to
+        produce a draft, not a draft. Implementations MUST raise rather than return one;
+        constructing a ``DraftBriefing`` from blank text raises, so an implementation that
+        builds its return value the ordinary way satisfies this without extra code.
+        """
         ...
 
 
