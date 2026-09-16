@@ -154,17 +154,17 @@ operational record is confirmed metadata-only.
 
 ## Phase 7: User Story 4 — Make verification traceable and record what remains unverified (Priority: P4)
 
-**Goal**: Every scenario traces to what it satisfies, the blank-content defect is recorded in both
-required places, the SC-006 timing criterion is closed, and the record cannot silently drift.
+**Goal**: Every scenario traces to what it satisfies, blank generation content is verified as
+rejected, the SC-006 timing criterion is closed, and the record cannot silently drift.
 
 **Independent Test**: The traceability record names what each scenario satisfies, lists every
 unverified criterion with a reason, and its self-check passes.
 
-- [ ] T027 [US4] Create `student_attrition_risk_app/tests/test_briefing_workflow_traceability.py` with the blank-content expected-fail verification (FR-035, FR-036): assert the **specified** behaviour — briefing content with no substance on the retry attempt is a generation failure and is not stored — for both empty and whitespace-only content. Mark the expectation **strict** so an unexpected pass fails the suite, and put the defect description in the annotation, which is the authoritative record (research R5; approved clarification). Do not change production behaviour. (depends on T006)
+- [ ] T027 [US4] Create `student_attrition_risk_app/tests/test_briefing_workflow_traceability.py` with the blank-content verification (FR-035): assert that a generation response carrying no substance — empty and whitespace-only — is surfaced as a generation failure with nothing stored, on both the first and the retry attempt. This is an **ordinary** verification and must pass: the defect it originally recorded was resolved before implementation, so no expectation marker is used. Do not change production behaviour. (depends on T006)
 - [ ] T028 [US4] Add the FR-037 timing verification to `student_attrition_risk_app/tests/test_briefing_workflow_traceability.py`: measure the three non-generation request paths — unknown student, not-flagged student, and a get-or-create request returning an existing briefing — against the mock repository and in-memory store, and confirm each completes within the one-second budget Feature-001 SC-006 states. Use those measurement conditions exactly; introduce no tighter threshold and no benchmarking dependency (research R7). (depends on T027)
-- [ ] T029 [US4] Complete `specs/003-briefing-workflow-testing/traceability.md`: finish the **Scenario map** so every Feature-003 scenario appears exactly once with its requirement, success criterion and backlog story; add the blank-content defect to **Recorded defects** naming its carrying verification from T027; and populate **Unverified criteria** including Feature-001 SC-007 with its specific reason — the US-12/US-14 work is expected to be delivered outside the seam boundary, so the substitution that criterion describes is not anticipated (FR-038, FR-039, FR-041). (depends on T007, T016, T021, T026, T027, T028)
+- [ ] T029 [US4] Complete `specs/003-briefing-workflow-testing/traceability.md`: finish the **Scenario map** so every Feature-003 scenario appears exactly once with its requirement, success criterion and backlog story; record the blank-content defect in **Recorded defects** as resolved, naming its resolution and the T027 verification that now covers the behaviour ordinarily; and populate **Unverified criteria** including Feature-001 SC-007 with its specific reason — the US-12/US-14 work is expected to be delivered outside the seam boundary, so the substitution that criterion describes is not anticipated (FR-038, FR-039, FR-041). (depends on T007, T016, T021, T026, T027, T028)
 - [ ] T030 [US4] Add the FR-040 self-check to `student_attrition_risk_app/tests/test_briefing_workflow_traceability.py`: read `specs/003-briefing-workflow-testing/traceability.md`, extract every cited verification name from **all** sections including tracked re-verification, resolve each against the verification files' syntax trees, and fail naming any that no longer resolves. Resolve the record path from the repository root; use no runner internals and no new dependency (research R6). (depends on T029)
-- [ ] T031 [US4] From `student_attrition_risk_app/`, run `uv run ruff check .` and `uv run pytest tests/test_briefing_workflow_traceability.py`, confirming the blank-content verification reports as **expected-fail** and not as a failure, and that the self-check passes.
+- [ ] T031 [US4] From `student_attrition_risk_app/`, run `uv run ruff check .` and `uv run pytest tests/test_briefing_workflow_traceability.py`, confirming every verification passes — none is expected to fail — and that the self-check passes.
 
 **Checkpoint**: All four user stories and the cross-cutting phase complete and independently verifiable.
 
@@ -172,7 +172,7 @@ unverified criterion with a reason, and its self-check passes.
 
 ## Phase 8: Polish & Cross-Cutting Concerns
 
-- [ ] T032 From `student_attrition_risk_app/`, run the full merge gate: `uv run ruff check .` and `uv run pytest`. Confirm every pre-existing verification still passes (SC-014), exactly one verification reports expected-fail, and the suite completes successfully.
+- [ ] T032 From `student_attrition_risk_app/`, run the full merge gate: `uv run ruff check .` and `uv run pytest`. Confirm every pre-existing verification still passes (SC-014), no verification reports as failed or expected-fail, and the suite completes successfully.
 - [ ] T033 Confirm SC-003 by inspecting the working tree: only files under `student_attrition_risk_app/tests/` and `specs/003-briefing-workflow-testing/` differ, and none of the twelve pre-existing verification files or any production source file is modified.
 - [ ] T034 Walk the seventeen checks in `specs/003-briefing-workflow-testing/quickstart.md` § Validating the feature and confirm each holds, including the offline re-run with the network disconnected (SC-005).
 
@@ -243,9 +243,9 @@ stagger those checkpoints or resolve the appends together.
   grows with the work instead of being reconstructed at the end.
 - Feature-002's tasks proved the value of verifying that a new verification fails before its
   subject exists. That does not transfer here: Feature-003 verifies **already-delivered**
-  behaviour, so its verifications are expected to pass on first run. The one exception is T027,
-  which is expected to report as expected-fail because it asserts specified behaviour the
-  implementation does not yet exhibit.
+  behaviour, so every verification is expected to pass on first run, T027 included. T027 was
+  originally an exception — a strict expected-fail against a defect — but that defect was
+  resolved before implementation, so it is now an ordinary verification like the rest.
 - If any task appears to require changing a production file or a pre-existing verification file,
   **stop and raise it** rather than proceeding — that would contradict the approved plan's conflict
   check, which found no such requirement.

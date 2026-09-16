@@ -56,7 +56,7 @@ Feature-003 adds 5 verification files, 1 support module and 1 record document.
 
 | Principle | Assessment |
 |---|---|
-| I. Specification-Driven Development | PASS — every planned file traces to numbered requirements in the approved spec. Where delivered behaviour contradicts an approved specification (blank content), the specification is preserved and the difference recorded, never the reverse. |
+| I. Specification-Driven Development | PASS — every planned file traces to numbered requirements in the approved spec. Where delivered behaviour contradicts an approved specification, the specification is preserved and the difference recorded, never the reverse. The blank-content mismatch followed exactly that course and was resolved separately before implementation. |
 | II. Strict Scope Containment | PASS — the files-touched table below is exhaustive and read-only entries are explicit. No Feature-001/Feature-002 artifact and no production file is modified. |
 | III. Read Broadly, Write Narrowly | PASS — planning inspected the whole application and both prior features; writing is confined to new files. |
 | IV. Minimal Necessary Change | PASS — no consolidation of the duplicated doubles across existing suites, despite the duplication being known. That cleanup is explicitly excluded by approved decision H3. |
@@ -248,13 +248,12 @@ Three concerns, matching User Story 4's acceptance scenarios:
   defined verification names. A cited name that no longer exists fails this check. Parsing the
   source rather than interrogating the runner keeps the check independent of how the suite is
   invoked.
-- **The blank-content defect (FR-035, FR-036).** One expected-fail verification asserting the
-  **specified** behaviour: briefing content with no substance, on the retry attempt, is a
-  generation failure and is not stored. The expectation is strict, so if the defect is ever fixed
-  the verification reports an unexpected pass and fails, forcing the record to be updated rather
-  than silently drifting. The annotation carries the defect description and is the authoritative
-  record; `traceability.md` aggregates it. Whitespace-only content is covered alongside empty
-  content, as planning confirmed both currently produce a stored, validated briefing.
+- **Blank generation content (FR-035).** An ordinary verification that a generation response
+  carrying no substance — empty or whitespace only — is surfaced as a generation failure with
+  nothing stored, on both the first and the retry attempt. This began as an expected-fail
+  recording a defect: planning confirmed empirically that such content was returned as validated
+  and stored. The defect was fixed before implementation, so the scenario now verifies behaviour
+  the implementation exhibits. `traceability.md` retains the defect with its resolution (FR-036).
 - **The SC-006 timing verification (FR-037).** Measures the three non-generation request paths —
   not-found, not-flagged, and get-or-create returning an existing briefing — against the mock
   repository and in-memory store, exactly the conditions the criterion names, and confirms each
@@ -266,7 +265,8 @@ Three concerns, matching User Story 4's acceptance scenarios:
 Hand-maintained, per the approved clarification, and self-checked by the verification above. It
 carries four sections: scenarios mapped to requirements, success criteria and backlog stories;
 tracked re-verification, naming the existing Feature-001 verifications that satisfy cross-boundary
-coverage; recorded defects, aggregating what the expected-fail annotations hold authoritatively;
+coverage; recorded defects, outstanding ones aggregated from their expected-fail annotations and
+resolved ones retained with their resolution;
 and criteria recorded as unverified with reasons, which is where Feature-001 SC-007's deferral is
 recorded (FR-038).
 
@@ -285,12 +285,12 @@ assert.
 | Retry order and feedback | `test_briefing_workflow_retry.py` | FR-023–FR-027 | Seam-call recorder, prompt-aware double |
 | Storage decisions and parity | `test_briefing_workflow_storage.py` | FR-028–FR-031 | Write-counting wrapper; six outcomes against both stores |
 | Tool-boundary gaps, log hygiene | `test_briefing_workflow_boundaries.py` | FR-032–FR-034 | Tool interface for three uncovered outcomes; captured records for failure paths |
-| Record self-check, defect, timing | `test_briefing_workflow_traceability.py` | FR-035–FR-040 | Syntax-tree resolution, strict expected-fail, elapsed-time budget |
+| Record self-check, blank content, timing | `test_briefing_workflow_traceability.py` | FR-035–FR-040 | Syntax-tree resolution, blank-content rejection, elapsed-time budget |
 | Unverified-criteria record | `traceability.md` | FR-038, FR-039, FR-041 | Hand-maintained document |
 
 **Merge gate**: `uv run ruff check .` and `uv run pytest` from `student_attrition_risk_app/`, with
-all pre-existing verifications still passing (SC-014) and the blank-content expectation reported
-as expected-fail rather than failure.
+all pre-existing verifications still passing (SC-014). No verification is expected to fail: the
+defect that once warranted an expectation has been resolved.
 
 ## Approved decisions carried into this plan
 
@@ -300,14 +300,14 @@ From the confirmed scope decisions and both clarification passes:
 2. Purely additive; no production file and no Feature-001/Feature-002 verification file changes.
 3. Behaviour already verified accurately by those suites is complete and is not re-covered.
 4. Controlled generation and validation outcomes; no invented acceptance criteria.
-5. Blank content is recorded as an expected-fail against the specified behaviour and raised as a
-   defect; the implementation is not corrected here.
+5. Blank content is verified as an ordinary scenario. It was recorded as a defect during
+   planning and resolved separately before implementation; Feature-003 corrected nothing.
 6. Feature-001 SC-006 is closed; SC-007 is excluded with its deferral recorded.
 7. The advisor-facing interface and concurrency are excluded.
 8. Cross-boundary coverage is satisfied by tracking existing verification, adding new only where
    an observable result differs — which planning resolved to the three tool-boundary gaps.
-9. The expected-fail annotation is the authoritative defect record; the traceability record
-   aggregates.
+9. An outstanding defect's expected-fail annotation is its authoritative record; the traceability
+   record aggregates, and retains resolved defects with their resolution.
 10. The traceability record is hand-maintained with a verification that every cited name resolves.
 11. Governed-storage parity re-runs the six storage-decision outcomes only.
 
@@ -319,8 +319,8 @@ against the delivered code and none does:**
 
 - Call-order observation needs only wrappers injected at the existing constructor boundaries.
 - Governed-storage parity needs only the store's existing settings and files-client injection.
-- The blank-content requirement is satisfied by recording the specified behaviour, not enforcing
-  it, so it needs no production change by design.
+- The blank-content requirement is satisfied by verifying the specified behaviour, which the
+  implementation now exhibits, so it needs no production change.
 - The timing, log-hygiene and tool-boundary requirements exercise existing public surfaces.
 - The record self-check reads files and needs no runtime hook.
 - No shared configuration file is required, so no existing verification is affected.

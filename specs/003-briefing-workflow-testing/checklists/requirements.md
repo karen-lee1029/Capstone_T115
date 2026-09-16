@@ -56,7 +56,7 @@ resolved by the product owner and are recorded in the specification's Clarificat
 Two further questions were asked and answered during `/speckit-clarify`. Neither introduced a new
 `[NEEDS CLARIFICATION]` marker, and no checkbox changed state (16/16 before, 16/16 after).
 
-1. **Defect destination.** Recorded defects are carried by the expected-fail verification's own
+1. **Defect destination.** Outstanding defects are carried by the expected-fail verification's own
    annotation as the authoritative record, and aggregated into the traceability record for review.
    Produced FR-036 and extended SC-012.
 2. **Traceability accuracy.** The traceability record is hand-maintained but accompanied by a
@@ -81,6 +81,30 @@ after), and no requirement or success criterion was added.
 No further material ambiguity was found. Remaining open items are execution mechanisms rather
 than behavioural decisions and belong in `/speckit-plan`: the runtime budget for Feature-003's own
 verifications, and how the Feature-001 SC-006 timing check tolerates a loaded machine.
+
+### Blank-content defect resolved (2026-09-16)
+
+The blank-content mismatch this feature recorded as an outstanding defect was fixed before
+Feature-003 reached implementation, in a separate change against Feature-002's already-approved
+specification. The generation boundary now rejects briefing content with no substance, so such a
+response surfaces as a generation failure with nothing stored.
+
+Artifacts updated, with no checkbox changing state (16/16 before, 16/16 after):
+
+- `spec.md` — new Clarifications session recording the resolution and superseding the earlier
+  decision; FR-035 restated as an ordinary verification; FR-036 extended to cover resolved
+  defects; SC-012, the User Story 4 scenario, the edge case and the assumption adjusted.
+- `plan.md` — § Design item, Constitution Check note, merge gate, approved decisions and conflict
+  check.
+- `research.md` — R5 retitled, its decision restated, superseded detail retained with the reason
+  the original expectation was strict, which still governs any future defect.
+- `data-model.md`, `quickstart.md`, `contracts/traceability-record.md` — defect lifecycle now
+  distinguishes outstanding from resolved.
+- `tasks.md` — T027 is an ordinary verification, T029 records the defect as resolved, T031 and
+  T032 no longer expect a failing verification.
+
+The defect is retained in the traceability record with its resolution rather than erased: a
+defect found by planning and fixed before implementation is evidence the process worked.
 
 ### Verification notes
 

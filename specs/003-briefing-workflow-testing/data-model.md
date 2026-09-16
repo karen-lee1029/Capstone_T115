@@ -85,7 +85,7 @@ unverified. Its structure is defined in
 |---|---|
 | Scenario map | Each scenario to its requirement, success criterion and backlog story |
 | Tracked re-verification | Existing Feature-001 verifications satisfying cross-boundary coverage |
-| Recorded defects | Aggregated from the expected-fail annotations, which remain authoritative |
+| Recorded defects | Outstanding ones aggregated from their expected-fail annotations; resolved ones retained with their resolution |
 | Unverified criteria | Approved criteria in scope not verified, each with its reason |
 
 **Constraint (FR-040)**: every verification name the record cites must resolve.
@@ -98,14 +98,18 @@ A mismatch between approved specified behaviour and delivered behaviour.
 |---|---|
 | Specified behaviour | What the approved specification requires, and where it says so |
 | Delivered behaviour | What the implementation currently does |
-| Carrier | The expected-fail verification holding it — the authoritative record |
+| Carrier | The expected-fail verification holding it while outstanding — the authoritative record |
+| Resolution | How and where it was fixed, once resolved |
 | Owner | The story that will resolve it; never Feature-003 |
 
 **Lifecycle**: while the mismatch exists, the carrier reports as expected-fail. When it is
 resolved elsewhere, the carrier reports an unexpected pass and fails, which forces the record to
-be updated rather than drifting. **One defect is known at planning time**: briefing content with
-no substance is currently returned as validated and stored, against Feature-002's specified
-treatment of it as a generation failure. Both empty and whitespace-only content exhibit it.
+be updated rather than drifting — the expectation is then removed and the scenario kept as an
+ordinary verification. **One defect was found during planning and has been resolved**: briefing
+content with no substance — empty or whitespace only — was returned as validated and stored,
+against Feature-002's specified treatment of it as a generation failure. The generation boundary
+now rejects it, so FR-035 verifies that behaviour ordinarily and the record retains the defect
+with its resolution.
 
 ---
 

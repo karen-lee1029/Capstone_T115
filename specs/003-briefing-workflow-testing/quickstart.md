@@ -39,13 +39,14 @@ uv run ruff check .
 uv run pytest
 ```
 
-**Expected after implementation**: all pre-existing verifications still pass, the Feature-003
-verifications pass, and exactly one verification reports as **expected-fail** — the blank-content
-defect. An expected-fail is not a failure; the suite still completes successfully.
+**Expected after implementation**: all pre-existing verifications still pass and the Feature-003
+verifications pass. **No verification is expected to fail.** The blank-content defect that once
+warranted a strict expected-fail was resolved before implementation, so that scenario is now an
+ordinary passing verification.
 
-If that verification reports an **unexpected pass**, the suite fails. That is intended: it means
-the blank-content defect has been fixed elsewhere, and the traceability record must be updated and
-the expectation removed. See [contracts/traceability-record.md](./contracts/traceability-record.md).
+Should Feature-003 later record a new defect, its expected-fail would appear here; an unexpected
+pass on such a verification fails the suite deliberately, signalling that the defect was fixed and
+the record needs updating. See [contracts/traceability-record.md](./contracts/traceability-record.md).
 
 ## Validating the feature
 
@@ -66,7 +67,7 @@ Each row is checkable without reading implementation detail.
 | 11 | Tool-boundary gaps | Boundary verifications | Terminal failure, storage failure and configuration failure covered there; REST tracked, not repeated |
 | 12 | Log hygiene | Boundary verifications | Failure-path records carry metadata only — no briefing text, prompt text, criteria or secret |
 | 13 | Timing criterion | Traceability verifications | The three non-generation paths complete within one second |
-| 14 | Defect recorded | Traceability record and annotation | Blank-content defect present in both, with a named carrier |
+| 14 | Blank content rejected | Traceability verifications | Empty and whitespace-only content surface as a generation failure; nothing stored |
 | 15 | Record resolves | `uv run pytest tests/test_briefing_workflow_traceability.py` | Every cited verification name resolves |
 | 16 | Deferral recorded | Traceability record | Feature-001 SC-007 listed with its specific reason |
 | 17 | No invented criteria | Search fixtures for criteria values | All visibly synthetic |
@@ -89,6 +90,6 @@ These are out of scope and no check should be expected to cover them:
 | Symptom | Likely cause |
 |---|---|
 | The record self-check fails naming a Feature-001 verification | That verification was renamed or removed. Update Feature-003's traceability record. **Do not edit the Feature-001 file** — it is read-only under approved decision H3 |
-| The blank-content verification reports an unexpected pass | The defect was fixed elsewhere. Update the record and remove the expectation |
+| A verification marked expected-fail reports an unexpected pass | Its defect was fixed elsewhere. Update the traceability record, remove the expectation, keep the scenario as an ordinary verification |
 | A scripted double reports being called more times than scripted | A scenario drove more attempts than intended — usually the genuine "no third attempt" signal working correctly |
 | The timing verification is marginal | Investigate rather than loosening the budget; headroom over in-memory operations is several orders of magnitude, so a near-miss indicates a real change |

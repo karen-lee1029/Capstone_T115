@@ -42,22 +42,26 @@ Feature-001's verification visible rather than hidden.
 
 ### 3. Recorded defects
 
-Aggregated from the expected-fail annotations, which remain the authoritative record.
+Outstanding defects are aggregated from their expected-fail annotations, which remain the
+authoritative record. Resolved defects are retained with their resolution.
 
 | Column | Contents |
 |---|---|
 | Defect | The mismatch, in one line |
 | Specified behaviour | What the approved specification requires, and where |
 | Delivered behaviour | What the implementation currently does |
-| Carrier | The expected-fail verification holding it |
+| Carrier | The expected-fail verification holding it, while outstanding |
+| Resolution | How and where it was fixed, once resolved |
 | Owner | The story that will resolve it — never Feature-003 |
 
-**Constraint (FR-036)**: every entry names a carrier. A defect recorded here with no carrying
-verification does not satisfy the requirement.
+**Constraint (FR-036)**: every outstanding entry names a carrier. An outstanding defect recorded
+here with no carrying verification does not satisfy the requirement. A resolved defect names its
+resolution instead, and needs no carrier because the behaviour it described is verified ordinarily.
 
-**Known at planning time**: briefing content with no substance — empty or whitespace-only — is
-returned as validated and stored, against Feature-002's specified treatment of it as a generation
-failure.
+**Found during planning, since resolved**: briefing content with no substance — empty or
+whitespace-only — was returned as validated and stored, against Feature-002's specified treatment
+of it as a generation failure. The generation boundary now rejects such content, so it surfaces as
+a generation failure with nothing stored. FR-035's verification covers the behaviour ordinarily.
 
 ### 4. Unverified criteria
 

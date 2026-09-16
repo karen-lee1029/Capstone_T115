@@ -93,10 +93,12 @@ investigation and are authoritative for this specification.
   value a controlled outcome requires must be visibly synthetic so it can never be mistaken for
   approved US-14 content.
 - Feature-002 specifies that briefing content with no substance produced on the retry attempt is
-  treated as a generation failure. The delivered implementation does not enforce this: such a
-  briefing is currently returned as validated and stored. Feature-003 records the **specified**
-  behaviour as a single expected-fail verification and raises the mismatch as a defect. It does
-  not change the implementation.
+  treated as a generation failure. At the time of this session the delivered implementation did
+  not enforce this: such a briefing was returned as validated and stored. Feature-003 was to
+  record the **specified** behaviour as a single expected-fail verification and raise the
+  mismatch as a defect, without changing the implementation. **Superseded** by the
+  "blank-content defect resolved" session below: the defect has since been fixed, so the
+  verification is now an ordinary one.
 - Feature-001 SC-006 (non-generation requests completing within the stated time budget) was never
   verified by any Feature-001 task or test. Feature-003 closes it.
 - Feature-001 SC-007 (adopting the final instructions and acceptance criteria by substituting the
@@ -141,6 +143,26 @@ areas this specification covers. Two open questions were resolved with the produ
   verification that confirms every verification name the record cites still resolves. This makes
   the existing traceability requirement testable rather than adding new capability, and closes
   the drift that left Feature-001's traceability table pointing at renamed verifications.
+
+### Session 2026-09-16 (blank-content defect resolved)
+
+The blank-content mismatch this specification recorded as an outstanding defect was fixed before
+Feature-003 reached implementation. The generation boundary now rejects briefing content with no
+substance — empty or whitespace only — so such a response is surfaced as a generation failure and
+nothing is stored, which is the behaviour Feature-002 specified. The fix constrains the draft
+type and states the requirement in the generation contract; it changed no orchestration.
+
+Consequences for this specification, superseding the earlier decision above:
+
+- The blank-content scenario is now an **ordinary verification** of behaviour the implementation
+  exhibits, not an expected-fail recording behaviour it lacked. FR-035 is restated accordingly.
+- The defect is recorded as **resolved** rather than outstanding. It stays in the traceability
+  record with its resolution, because a defect found by planning and fixed before implementation
+  is evidence the process worked, not something to erase.
+- The defect-recording mechanism (FR-036) is unchanged and still governs any defect Feature-003
+  discovers from here.
+- Feature-003 remains testing-only. The fix was delivered separately, against Feature-002's
+  already-approved specification, and is not part of this feature's scope or task list.
 
 ### Session 2026-09-16 (second clarification pass)
 
@@ -281,9 +303,9 @@ to name what it satisfies, with every unverified criterion in scope carrying a r
    satisfies.
 2. **Given** an approved criterion in scope that Feature-003 does not verify, **When** the record
    is reviewed, **Then** the criterion is listed with the reason it was not verified.
-3. **Given** briefing content with no substance, **When** the specified behaviour is verified,
-   **Then** the verification records the specified behaviour, is marked as expected to fail
-   against the current implementation, and is registered as a defect rather than corrected.
+3. **Given** a generation response carrying no substance, **When** a briefing is requested,
+   **Then** it is surfaced as a generation failure, nothing is stored, and the traceability
+   record shows the defect that first identified this behaviour as resolved.
 4. **Given** requests that do not invoke generation, **When** the stated time budget is verified,
    **Then** they are confirmed to complete within it under the approved measurement conditions.
 
@@ -300,8 +322,9 @@ to name what it satisfies, with every unverified criterion in scope carrying a r
   result is distinct, rather than repeated identically at every boundary.
 - **A controlled outcome would require an acceptance-criteria value**: a visibly synthetic value is
   used. No plausible-looking criterion text is introduced.
-- **The recorded expected-fail verification begins passing**: the underlying defect has been
-  resolved elsewhere; the record is updated and the expectation removed.
+- **A recorded expected-fail verification begins passing**: the underlying defect has been
+  resolved elsewhere; the record is updated, the expectation removed, and the scenario kept as an
+  ordinary verification. This occurred during planning for the blank-content defect.
 - **Governed storage is unreachable while reading**: verified as an explicit failure, distinct from
   the result meaning no briefing is available.
 - **A workflow outcome exists that no approved requirement describes**: recorded as an unspecified
@@ -402,14 +425,17 @@ to name what it satisfies, with every unverified criterion in scope carrying a r
 
 #### Recorded gaps and traceability
 
-- **FR-035**: Feature-003 MUST record the specified treatment of briefing content with no substance
-  as a single expected-fail verification, MUST register the mismatch with the delivered
-  implementation as a defect, and MUST NOT correct the implementation.
-- **FR-036**: Each recorded defect MUST be carried in the annotation of the expected-fail
-  verification that demonstrates it, which is the authoritative record, and MUST also be
-  aggregated into the traceability record so that all findings are reviewable in one place. A
-  defect recorded only in prose, with no verification carrying it, does not satisfy this
-  requirement.
+- **FR-035**: Feature-003 MUST verify that a generation response carrying no substance — empty or
+  whitespace only — is surfaced as a generation failure and that nothing is stored, on both the
+  first and the retry attempt. This is the treatment Feature-002 specified and the implementation
+  now exhibits; it is verified as ordinary behaviour, not recorded as a mismatch.
+- **FR-036**: Each defect Feature-003 discovers MUST be carried in the annotation of the
+  expected-fail verification that demonstrates it, which is the authoritative record, and MUST
+  also be aggregated into the traceability record so that all findings are reviewable in one
+  place. A defect recorded only in prose, with no verification carrying it, does not satisfy this
+  requirement. A defect resolved before Feature-003 reaches implementation MUST be retained in
+  the traceability record with its resolution, and needs no expected-fail carrier because the
+  behaviour it described is verified ordinarily.
 - **FR-037**: Feature-003 MUST verify that requests which do not invoke generation complete within
   the time budget Feature-001 SC-006 states, under the measurement conditions that criterion names.
 - **FR-038**: Feature-003 MUST record the deferral of Feature-001 SC-007 together with its reason,
@@ -466,8 +492,8 @@ to name what it satisfies, with every unverified criterion in scope carrying a r
   workflow's operational records.
 - **SC-012**: 100% of Feature-003's verified scenarios are traceable to a requirement, success
   criterion or backlog story; 100% of approved criteria in scope that remain unverified are
-  recorded with a reason; 100% of recorded defects are carried by an expected-fail verification
-  and aggregated in the traceability record.
+  recorded with a reason; 100% of recorded defects appear in the traceability record, each either
+  carried by an expected-fail verification while outstanding or shown with its resolution.
 - **SC-013**: Requests that do not invoke generation are confirmed to complete within the time
   budget Feature-001 SC-006 states.
 - **SC-014**: The full verification suite, including every pre-existing Feature-001 and Feature-002
@@ -496,8 +522,9 @@ to name what it satisfies, with every unverified criterion in scope carrying a r
 - Feature-001 SC-006's time budget is verified against the measurement conditions that criterion
   names — the mock data source and the default in-memory store — and not against any deployed
   environment.
-- The expected-fail verification required by FR-034 remains in place until the underlying defect is
-  resolved by a later story, at which point it is expected to be removed rather than retained.
+- Should Feature-003 discover a further defect, its expected-fail verification remains in place
+  until that defect is resolved, at which point the expectation is removed and the scenario kept
+  as an ordinary verification — the course taken for the blank-content defect.
 - Feature-003's verification is offline by construction, so it neither requires nor exercises
   credentials, workspace access, or any governed resource.
 - No new tooling or dependency is required; the project's existing verification tooling is

@@ -83,10 +83,16 @@ H3 it is complete.
 
 ---
 
-## R5 — How the blank-content expectation is recorded
+## R5 — How blank generation content is covered
 
-**Decision**: One expected-fail verification asserting the **specified** behaviour, marked strict,
-with the defect described in its annotation. Covers both empty and whitespace-only content.
+**Decision**: One ordinary verification asserting the **specified** behaviour. Covers both empty
+and whitespace-only content, on the first and the retry attempt.
+
+**Superseded detail**: this began as a strict expected-fail carrying a defect description, because
+the implementation did not exhibit the specified behaviour. The defect was fixed before
+Feature-003 reached implementation, so the expectation is gone and the scenario is ordinary. The
+reasoning below is retained because it explains why the expectation was strict, which still
+governs any future defect Feature-003 discovers.
 
 **Rationale**: Asserting current behaviour would enshrine a defect as correct. Asserting the
 specified behaviour without an expectation marker would fail the suite for a known, accepted gap.
@@ -94,10 +100,10 @@ A strict expectation does neither: it records what the approved specification re
 suite while the gap exists, and **fails loudly if the gap is ever closed**, forcing the record to
 be updated instead of drifting. That matches the specification's edge case for this situation.
 
-Planning confirmed empirically that both empty and whitespace-only content currently produce a
-briefing returned as validated and written to storage, so covering whitespace alongside empty is
-not speculative — Feature-002's edge case mentions only empty content, and whitespace is a second
-instance of the same mismatch.
+Planning confirmed empirically that both empty and whitespace-only content produced a briefing
+returned as validated and written to storage, so covering whitespace alongside empty was not
+speculative — Feature-002's edge case mentions only empty content, and whitespace was a second
+instance of the same mismatch. The fix covers both.
 
 **Alternatives considered**: A non-strict expectation — rejected because an unexpected pass would
 be silent, which is the exact failure mode this feature exists to prevent. A prose-only defect
