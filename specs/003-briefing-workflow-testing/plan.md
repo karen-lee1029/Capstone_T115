@@ -16,9 +16,16 @@ validation outcomes are supplied under test control** because US-13 and US-14 do
 
 Planning inspection confirms the specification is satisfiable within those constraints. **No
 conflict was found that would require modifying production source or any Feature-001/Feature-002
-verification file.** The single largest planning finding is that the REST boundary is already
-comprehensively verified by Feature-001 while the tool interface is not, which converts a large
-part of the cross-boundary requirement from new work into tracked re-verification.
+verification file.** The single largest planning finding is that the REST boundary's briefing
+**write** outcomes are already verified by Feature-001 while the tool interface's are not, which
+converts a large part of the cross-boundary requirement from new work into tracked
+re-verification.
+
+**Corrected after independent review (2026-09-17).** As first written, that finding claimed the
+REST boundary was comprehensively verified. It holds for the write outcomes only: Feature-001 does
+not exercise a storage outage during *retrieval*, and a mutation reporting one as a 404 absence
+survived the entire suite. The remediation adds read-outage verification at the service, REST and
+tool boundaries. Paragraphs below are annotated where they overstated the existing coverage.
 
 ## Technical Context
 
@@ -220,11 +227,18 @@ change is required. Outcomes that neither read nor write storage are deliberatel
 
 ### 5. Boundaries and observability — `tests/test_briefing_workflow_boundaries.py`
 
-**Planning found the REST boundary already comprehensively verified** by Feature-001: success,
+**Planning found the REST boundary's write outcomes already verified** by Feature-001: success,
 configuration failure, not-flagged, unknown student, get-or-create with regeneration, terminal
 failure with its category, storage failure, and stored-briefing retrieval including the
 none-available result. Under FR-032 that coverage is **tracked in the traceability record as
 re-verification and not repeated**.
+
+**A read outage is not among them.** Independent review found that no existing verification
+exercises a storage failure during retrieval at any boundary — Feature-001's storage-error
+scenario covers a write, and Feature-002's read-failure scenarios test the store adapter in
+isolation rather than the boundary mapping. Under FR-033 that outcome is covered by Feature-003 at
+the service, REST and tool boundaries, because an outage reported as absence would tell an advisor
+a briefing does not exist when the store is merely unreachable.
 
 **The tool interface has three genuine gaps.** Its existing verifications cover registration,
 get-or-create with regeneration, two error messages (not-at-risk, not-found) and stored

@@ -142,7 +142,7 @@ Placed before User Story 4 because the traceability record aggregates their resu
 verification written for it; the three uncovered tool-interface outcomes pass; every failure-path
 operational record is confirmed metadata-only.
 
-- [X] T022 Inventory the REST and tool-interface coverage against the outcome matrix and record the result in `specs/003-briefing-workflow-testing/traceability.md` under **Tracked re-verification**, per FR-032. Planning established that `tests/test_api.py` already covers all REST outcomes — success, configuration failure, not-flagged, unknown student, get-or-create with regeneration, terminal failure with category, storage failure, and stored retrieval including none-available — so **no REST verification is written**; cite each existing verification by file and name (research R8).
+- [X] T022 Inventory the REST and tool-interface coverage against the outcome matrix and record the result in `specs/003-briefing-workflow-testing/traceability.md` under **Tracked re-verification**, per FR-032. Planning established that `tests/test_api.py` already covers the REST **write** outcomes — success, configuration failure, not-flagged, unknown student, get-or-create with regeneration, terminal failure with category, storage failure, and stored retrieval including none-available — so **no REST verification is written for those**; cite each existing verification by file and name (research R8). **Corrected after independent review**: a storage outage during retrieval is *not* covered by `test_api.py`, and is verified by Feature-003 under FR-033 — see the remediation note below.
 - [X] T023 Create `student_attrition_risk_app/tests/test_briefing_workflow_boundaries.py` verifying FR-033 for the tool interface: **terminal failure** produces the expected tool error carrying the failure category. Use the same async marker `tests/test_mcp_tools.py` uses and add no configuration file (research R9). This outcome has no existing coverage at that boundary. (depends on T006, T022)
 - [X] T024 Add the remaining two FR-033 gaps to `student_attrition_risk_app/tests/test_briefing_workflow_boundaries.py`: **storage failure** and **configuration failure** at the tool interface. Neither has existing coverage there. Do not re-verify registration, get-or-create, not-at-risk, not-found or stored retrieval — `tests/test_mcp_tools.py` already covers those. (depends on T023)
 - [X] T025 Add FR-034 to `student_attrition_risk_app/tests/test_briefing_workflow_boundaries.py`: capture the workflow's operational records for every **failure** path — terminal generation, terminal validation, storage error, not-at-risk, not-found and none-available — and confirm each carries metadata only, with no briefing text, prompt text, acceptance-criteria content or secret. The two existing hygiene verifications assert only the success path, so every failure path is unasserted. (depends on T023)
@@ -250,3 +250,28 @@ stagger those checkpoints or resolve the appends together.
   **stop and raise it** rather than proceeding — that would contradict the approved plan's conflict
   check, which found no such requirement.
 - No Git or GitHub operations at any point.
+
+
+---
+
+## Remediation after independent adversarial review (2026-09-17)
+
+An independent review conducted in a separate session, with only artifacts supplied, returned
+**request changes** with six P2 findings. It used fault injection rather than inspection: three
+injected faults each left all 143 tests passing.
+
+The tasks below remain **complete**, and their checkboxes are unchanged. Each is annotated with
+what the remediation added, because a tick alone would not show that the original work needed a
+second pass. The full report is at
+`docs/AI Agent Software Development Implementation Documentation/T115_Feature_003_Independent_Review.md`.
+
+| Task | Why it needed a second pass | What completed it |
+|---|---|---|
+| **T012** (FR-024 feedback propagation) | Substring assertions could not reject a fabricated criterion, and the conditional double keyed on the wrapper header rather than the reported values — so it passed even when the payload was removed | Set-equality assertions over relayed payload values; the double now keys on the reported values; parametrised criteria-only, feedback-only and both, plus a converse scenario |
+| **T020** (FR-031 governed-storage parity) | The six entries split the success category in two and omitted the failed-write category entirely; no entry set `fail_upload` while the workflow used the governed store | A governed failed-write scenario: seed a prior briefing, drive a valid result, fail the upload, assert the storage failure, confirm the prior briefing survived |
+| **T022** (FR-032 boundary inventory) | The inventory concluded that `test_api.py` covers every REST outcome. It covers every **write** outcome; a read outage was unverified, and a mutation reporting one as a 404 absence survived the whole suite | Seven read-outage scenarios across the service, REST and tool boundaries, each asserted distinct from genuine absence; the traceability record's REST claim narrowed to writes |
+| **T025** (FR-034 log hygiene) | The privacy helper joined `record.getMessage()` only, so a record whose rendered traceback carried the briefing sentinel was approved | Log output rendered through a formatter including exception information and structured fields, plus a verification of the check itself |
+| **T029** (FR-039 traceability record) | The scenario map held 25 of 34 verifications, and tracked re-verification used sibling shorthand that the self-check could not guard | All forty verifications mapped; sibling shorthand replaced with explicit citations; a second self-check added guarding *exists implies mapped* |
+
+Suite after remediation: **153 passed**, ruff clean. Every injected fault now fails. No production
+source file and none of the thirteen pre-existing test files was modified by either pass.
