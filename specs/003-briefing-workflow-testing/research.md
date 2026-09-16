@@ -149,12 +149,17 @@ Repeated sampling with a percentile — rejected as disproportionate given the h
 
 ## R8 — Which cross-boundary scenarios are genuinely new
 
-**Decision**: Track the REST boundary's existing coverage as re-verification. Add new verification
-only for the three uncovered tool-interface outcomes: terminal failure, storage failure, and
-configuration failure.
+**Decision**: Track the REST boundary's existing **write** coverage as re-verification. Add new
+verification for the three uncovered tool-interface outcomes — terminal failure, storage failure,
+configuration failure — and, following independent review, for a storage outage during
+**retrieval**, which no existing verification exercises at any boundary.
+
+**Corrected after independent review (2026-09-17).** As first written this decision asserted that
+Feature-001 covered every REST outcome. It covers every write outcome. A read outage was
+unverified, and a mutation reporting one as a 404 absence survived the entire suite.
 
 **Rationale**: Planning inventoried both boundaries against the outcome matrix. The REST boundary
-is comprehensively covered by Feature-001 — success, configuration failure, not-flagged, unknown
+is covered by Feature-001 for its **write** outcomes — success, configuration failure, not-flagged, unknown
 student, get-or-create with regeneration, terminal failure with its category, storage failure and
 stored-briefing retrieval including the none-available result. Re-verifying any of it would breach
 both H3 and Principle XII. The tool interface covers registration, get-or-create with
