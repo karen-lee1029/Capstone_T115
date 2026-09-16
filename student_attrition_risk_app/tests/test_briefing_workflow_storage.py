@@ -29,12 +29,14 @@ from workflow_doubles import (
     NOT_FLAGGED,
     UNKNOWN,
     CountingStore,
+    FakeFilesClient,
     ScriptedGenerationProvider,
     ScriptedValidator,
     build_service,
     draft,
     failed,
     passed,
+    validated_briefing,
     volume_store,
 )
 
@@ -306,6 +308,34 @@ def _storage_decision_outcomes():
         ("prior-survives-failed-regeneration", prior_survives_a_failed_regeneration, (0, True)),
         ("unvalidated-is-never-stored", unvalidated_is_never_stored, (0, True)),
     ]
+
+
+def test_governed_storage_write_failure_surfaces_and_preserves_the_prior_briefing():
+    """A failed write **against governed storage** is surfaced, and the prior briefing survives.
+
+    User Story 3 acceptance scenarios 5 and 7. The other parity scenarios never exercise a write
+    failure on this path: the in-memory failing store raises before reaching a real store, and
+    Feature-002's upload-failure verification exercises the Volume adapter in isolation rather
+    than the workflow. This drives a valid briefing through the workflow, fails the upload at the
+    files client, and checks both the surfaced error and the surviving prior briefing.
+    """
+    fake = FakeFilesClient()
+    governed, _ = volume_store(fake)
+    governed.save_validated(validated_briefing(HAS_EXISTING, "keep me"))
+    fake.fail_upload = RuntimeError("volume write rejected")
+
+    service = build_service(
+        generation=ScriptedGenerationProvider(draft("fresh", HAS_EXISTING)),
+        validation=ScriptedValidator(passed()),
+        store=governed,
+    )
+
+    with pytest.raises(BriefingStorageError):
+        service.request_briefing(HAS_EXISTING, regenerate=True)
+
+    fake.fail_upload = None  # reads must still work, to prove the prior briefing survived
+    assert governed.get_latest_validated(HAS_EXISTING).text == "keep me"
+    assert service.get_stored_briefing(HAS_EXISTING).text == "keep me"
 
 
 @pytest.mark.parametrize(

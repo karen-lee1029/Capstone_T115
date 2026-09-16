@@ -206,6 +206,33 @@ def test_every_cited_verification_resolves():
     )
 
 
+def test_every_new_verification_is_mapped():
+    """The other direction: no Feature-003 scenario may exist unmapped (FR-039, SC-012).
+
+    ``test_every_cited_verification_resolves`` guards cited-name -> exists. On its own that leaves
+    a scenario able to be added, or an existing one renamed, without the record noticing. This
+    guards exists -> mapped, so the record's completeness claim is checked rather than asserted.
+    """
+    cited = _cited_verification_names()
+    unmapped = []
+    for path in sorted(TESTS_DIR.glob("test_briefing_workflow_*.py")):
+        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        for node in ast.walk(tree):
+            if isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef) and node.name.startswith(
+                "test_"
+            ):
+                qualified = f"{path.name}::{node.name}"
+                if qualified not in cited and node.name not in cited:
+                    unmapped.append(qualified)
+
+    assert not unmapped, (
+        "Feature-003 verifications missing from the traceability scenario map:\n  "
+        + "\n  ".join(sorted(unmapped))
+        + "\nAdd them to section 1 of "
+        "specs/003-briefing-workflow-testing/traceability.md."
+    )
+
+
 def test_unverified_criteria_are_recorded_with_a_reason():
     """FR-041: 'out of scope' alone is insufficient; each entry carries a specific reason."""
     text = TRACEABILITY.read_text(encoding="utf-8")

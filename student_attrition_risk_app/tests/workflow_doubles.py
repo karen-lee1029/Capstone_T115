@@ -83,17 +83,25 @@ def failed(
 
 
 class PromptAwareGenerationProvider:
-    """``GenerationProvider`` whose draft depends on the prompt it received.
+    """``GenerationProvider`` whose draft depends on the values present in the prompt it received.
 
-    Returns revised text only when the retry revision block is present, so a second-attempt pass
-    proves the feedback actually reached the generation boundary (FR-024, research R3). Every
-    received context is recorded so identity-field preservation can be asserted (FR-025).
+    ``revise_when`` is the list of reported values — failed criteria and Validation Feedback —
+    that must **all** appear in the composed prompt before this provider emits revised text. It
+    keys on the reported values themselves, not on the wrapper wording, so an attempt-2 pass
+    proves those specific values reached the generation boundary. Keying on a fixed header would
+    instead pass even if the payload were dropped entirely.
+
+    Every received context is recorded so identity-field preservation and exact payload
+    relay can be asserted (FR-024, FR-025).
     """
 
-    def __init__(self, *, blank_text: str | None = None) -> None:
+    def __init__(
+        self, *, revise_when: list[str] | None = None, blank_text: str | None = None
+    ) -> None:
         self.contexts: list[BriefingGenerationContext] = []
         self.calls = 0
         self._blank_text = blank_text
+        self._revise_when = list(revise_when or [])
 
     def generate(self, context: BriefingGenerationContext) -> DraftBriefing:
         self.calls += 1
@@ -101,10 +109,23 @@ class PromptAwareGenerationProvider:
         if self._blank_text is not None:
             # Exercises the generation boundary's rejection of content with no substance.
             return draft(self._blank_text, context.student_deidentified_hash)
-        marker = (
-            REVISED_MARKER if RETRY_BLOCK_MARKER in context.composed_prompt else INITIAL_MARKER
+        revised = bool(self._revise_when) and all(
+            value in context.composed_prompt for value in self._revise_when
         )
+        marker = REVISED_MARKER if revised else INITIAL_MARKER
         return draft(f"{marker} attempt={self.calls}", context.student_deidentified_hash)
+
+    def retry_payload(self) -> str:
+        """The text the retry appended to the original prompt, with the original removed.
+
+        Isolating the delta lets a scenario assert on the relayed payload without asserting the
+        wrapper wording, which belongs to US-12 and is not an acceptance criterion here.
+        """
+        assert len(self.contexts) >= 2, "no retry attempt was made"
+        original = self.contexts[0].composed_prompt
+        retried = self.contexts[1].composed_prompt
+        assert retried.startswith(original), "the retry request did not preserve the original prompt"
+        return retried[len(original) :]
 
 
 class MarkerValidator:
@@ -229,6 +250,33 @@ class CountingStore:
         briefing = validated_briefing(student_hash, text)
         self.inner.save_validated(briefing)
         return briefing
+
+
+def rendered_log_output(caplog: Any) -> str:
+    """Every captured record as an operator would see it, **including exception information**.
+
+    ``record.getMessage()`` alone omits the traceback a formatter renders from ``exc_info``, so a
+    privacy check built on it can approve a record whose visible output contains briefing text.
+    This renders each record through a formatter and appends any structured extras, so the check
+    sees what is actually emitted (FR-034, SC-011).
+    """
+    import logging
+
+    formatter = logging.Formatter("%(levelname)s %(name)s %(message)s")
+    parts: list[str] = []
+    for record in caplog.records:
+        parts.append(formatter.format(record))
+        # Structured fields are not rendered by the formatter but are emitted by structured
+        # handlers, so they are inspected too.
+        for key, value in vars(record).items():
+            if key not in _STANDARD_LOG_RECORD_FIELDS:
+                parts.append(f"{key}={value!r}")
+    return "\n".join(parts)
+
+
+_STANDARD_LOG_RECORD_FIELDS = frozenset(
+    vars(__import__("logging").LogRecord("n", 0, "p", 0, "m", None, None)).keys()
+) | {"message", "asctime"}
 
 
 def validated_briefing(student_hash: str, text: str) -> ValidatedBriefing:

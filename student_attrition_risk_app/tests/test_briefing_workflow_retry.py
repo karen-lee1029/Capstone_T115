@@ -1,22 +1,24 @@
 """Feature-003 (US-18) User Story 2 — the exceptional retry path.
 
-Feature-002 already verifies the retry **outcome** matrix comprehensively; under FR-005 that is
-complete and recorded as tracked re-verification, not repeated here. This file covers the
-properties outcome testing cannot show:
+Feature-002 already verifies the retry **outcome** matrix, the generation-failure prompt being
+unchanged, the store-once property, and the two-attempt call counts. Under FR-005 those are
+complete and cited individually in ``traceability.md`` § 2, not repeated here.
 
-- FR-023: the order in which the workflow engages its boundaries, not only how many times.
-- FR-024: reported criteria and feedback reach the second attempt.
-- FR-025: the retry request is unchanged when nothing was reported, and identity fields survive.
-- FR-026: generation is attempted at most twice, across the whole matrix.
-- FR-027: the retry path stores nothing itself; a retry result is written exactly once.
+What remains, and is covered below:
+
+- FR-023: the order in which the workflow engages its boundaries. No existing verification
+  asserts a sequence.
+- FR-024: the reported criteria and feedback reach the second attempt **exactly**, with nothing
+  added. Substring presence alone cannot reject a fabricated addition, so the relayed payload is
+  compared as a set.
+- FR-025: identity fields survive the retry request, and a validation failure reporting nothing
+  changes nothing.
 
 Offline: controlled generation and validation outcomes, no network or workspace.
 """
 
 import pytest
 
-from student_attrition_risk.models import GenerationFailed
-from student_attrition_risk.retry_workflow import SingleRetryWorkflow
 from student_attrition_risk.student_service import BriefingNotProducedError
 from workflow_doubles import (
     FLAGGED,
@@ -36,14 +38,30 @@ from workflow_doubles import (
     passed,
 )
 
+# Every synthetic payload value this module can relay. The exact-relay assertions compare what
+# appears in the retry request against what was reported, drawn from this set, so a fabricated
+# addition is rejected rather than merely unnoticed.
+ALL_SYNTHETIC_VALUES = (
+    PLACEHOLDER_CRITERION_A,
+    PLACEHOLDER_CRITERION_B,
+    PLACEHOLDER_FEEDBACK,
+    "PLACEHOLDER_CRITERION_INVENTED",
+    "PLACEHOLDER_FEEDBACK_INVENTED",
+)
+
+
+def _relayed_values(payload: str) -> set[str]:
+    """Which synthetic values appear in the text the retry appended."""
+    return {value for value in ALL_SYNTHETIC_VALUES if value in payload}
+
+
 # --- FR-023: boundary engagement order --------------------------------------
 
 
 def test_first_attempt_success_engages_boundaries_in_specified_order():
     """The happy path follows the order in Feature-001 contracts/internal-seams.md.
 
-    Asserts the sequence, which no existing verification does — the Feature-001 happy-path
-    scenario asserts counts and outcomes only.
+    Asserts the sequence. Existing verifications assert counts and outcomes only.
     """
     recorder = SeamCallRecorder()
     service = build_service(
@@ -89,35 +107,80 @@ def test_retry_path_engages_boundaries_in_specified_order():
     assert recorder.calls.index("retry") < recorder.calls.index("store.save_validated")
 
 
-# --- FR-024: feedback propagation -------------------------------------------
+def test_validation_is_never_engaged_when_generation_produced_no_draft():
+    """With no draft there is nothing to validate, on either attempt (FR-023).
+
+    The call counts on this path are already asserted by Feature-002; the sequence is not.
+    """
+    recorder = SeamCallRecorder()
+    service = build_service(
+        generation=ScriptedGenerationProvider(RuntimeError("down"), RuntimeError("down")),
+        validation=ScriptedValidator(),
+        recorder=recorder,
+    )
+
+    with pytest.raises(BriefingNotProducedError) as exc:
+        service.request_briefing(FLAGGED)
+
+    assert exc.value.category == "generation"
+    assert recorder.calls == [
+        "store.has_validated",
+        "generate",
+        "retry",
+        "generate",
+    ], "validation must never appear on a path where no draft was produced"
 
 
-def test_reported_criteria_and_feedback_reach_the_second_attempt():
-    """Exactly what validation reported is carried into the attempt-2 request, verbatim."""
+# --- FR-024: the payload is relayed exactly, with nothing added --------------
+
+
+@pytest.mark.parametrize(
+    ("label", "criteria", "feedback", "expected"),
+    [
+        (
+            "criteria-and-feedback",
+            [PLACEHOLDER_CRITERION_A, PLACEHOLDER_CRITERION_B],
+            PLACEHOLDER_FEEDBACK,
+            {PLACEHOLDER_CRITERION_A, PLACEHOLDER_CRITERION_B, PLACEHOLDER_FEEDBACK},
+        ),
+        ("criteria-only", [PLACEHOLDER_CRITERION_A], None, {PLACEHOLDER_CRITERION_A}),
+        ("feedback-only", [], PLACEHOLDER_FEEDBACK, {PLACEHOLDER_FEEDBACK}),
+    ],
+    ids=["criteria-and-feedback", "criteria-only", "feedback-only"],
+)
+def test_retry_relays_exactly_what_validation_reported(label, criteria, feedback, expected):
+    """Exactly the reported values reach attempt 2 — no omission, no fabrication (FR-024).
+
+    Set equality is what makes this reject an invented criterion. A substring check confirms only
+    that the reported values are present, and would accept additional fabricated ones alongside.
+    """
     gen = PromptAwareGenerationProvider()
-    val = MarkerValidator(
-        criteria=[PLACEHOLDER_CRITERION_A, PLACEHOLDER_CRITERION_B], feedback=PLACEHOLDER_FEEDBACK
+    val = ScriptedValidator(
+        failed(criteria=criteria, feedback=feedback), failed(criteria=criteria, feedback=feedback)
     )
     service = build_service(generation=gen, validation=val)
 
-    service.request_briefing(FLAGGED)
+    with pytest.raises(BriefingNotProducedError):
+        service.request_briefing(FLAGGED)
 
-    assert gen.calls == 2
-    second_prompt = gen.contexts[1].composed_prompt
-    assert PLACEHOLDER_CRITERION_A in second_prompt
-    assert PLACEHOLDER_CRITERION_B in second_prompt
-    assert PLACEHOLDER_FEEDBACK in second_prompt
+    assert gen.calls == 2, label
+    relayed = _relayed_values(gen.retry_payload())
+    assert relayed == expected, (
+        f"{label}: retry relayed {sorted(relayed)}, validation reported {sorted(expected)}"
+    )
 
 
-def test_second_attempt_succeeds_only_when_feedback_propagated():
-    """Stronger than a substring check: the pass is *caused* by propagation.
+def test_second_attempt_succeeds_only_when_the_reported_values_propagated():
+    """The pass is caused by the reported values arriving, not by the attempt number (FR-024).
 
-    The provider emits the revised marker only when the retry block reached it, and the validator
-    passes only a draft carrying that marker. A second attempt that succeeds therefore proves the
-    feedback travelled, not merely that text was appended somewhere.
+    The provider emits revised text only when **every reported value** is present in the prompt it
+    received, and the validator passes only revised text. Keying on the wrapper header instead
+    would let this pass even if the payload were dropped.
     """
-    gen = PromptAwareGenerationProvider()
-    val = MarkerValidator()
+    gen = PromptAwareGenerationProvider(
+        revise_when=[PLACEHOLDER_CRITERION_A, PLACEHOLDER_FEEDBACK]
+    )
+    val = MarkerValidator(criteria=[PLACEHOLDER_CRITERION_A], feedback=PLACEHOLDER_FEEDBACK)
     service = build_service(generation=gen, validation=val)
 
     briefing = service.request_briefing(FLAGGED)
@@ -127,7 +190,23 @@ def test_second_attempt_succeeds_only_when_feedback_propagated():
     assert briefing.validator_id == "f003-marker-validator"
 
 
-# --- FR-025: nothing fabricated ----------------------------------------------
+def test_retry_does_not_succeed_when_the_reported_values_are_absent():
+    """The converse: if the reported values do not arrive, the second attempt does not pass.
+
+    Without this, the preceding scenario could pass for reasons unrelated to propagation.
+    """
+    gen = PromptAwareGenerationProvider(revise_when=["PLACEHOLDER_VALUE_NEVER_REPORTED"])
+    val = MarkerValidator(criteria=[PLACEHOLDER_CRITERION_A], feedback=PLACEHOLDER_FEEDBACK)
+    service = build_service(generation=gen, validation=val)
+
+    with pytest.raises(BriefingNotProducedError) as exc:
+        service.request_briefing(FLAGGED)
+
+    assert exc.value.category == "validation"
+    assert gen.calls == 2
+
+
+# --- FR-025: nothing fabricated when nothing was reported --------------------
 
 
 def test_retry_request_unchanged_when_nothing_was_reported():
@@ -141,25 +220,15 @@ def test_retry_request_unchanged_when_nothing_was_reported():
 
     assert gen.calls == 2
     assert gen.contexts[1].composed_prompt == gen.contexts[0].composed_prompt
-
-
-def test_retry_request_unchanged_for_a_generation_failure():
-    """A generation-failure retry has no validation feedback to carry, so the prompt is reused."""
-    gen = PromptAwareGenerationProvider()
-    workflow = SingleRetryWorkflow(generation_provider=gen, validator=ScriptedValidator(passed()))
-    service = build_service(generation=gen, validation=ScriptedValidator(passed()))
-    context = service._build_context(FLAGGED, service.repository.get_prediction(FLAGGED))
-
-    workflow.run(context, GenerationFailed())
-
-    assert gen.calls == 1
-    assert gen.contexts[0].composed_prompt == context.composed_prompt
+    assert _relayed_values(gen.retry_payload()) == set()
 
 
 def test_identity_fields_are_preserved_across_the_retry_request():
     """Hash, prediction, features and instructions provenance survive the retry (FR-025)."""
-    gen = PromptAwareGenerationProvider()
-    val = MarkerValidator()
+    gen = PromptAwareGenerationProvider(
+        revise_when=[PLACEHOLDER_CRITERION_A, PLACEHOLDER_FEEDBACK]
+    )
+    val = MarkerValidator(criteria=[PLACEHOLDER_CRITERION_A], feedback=PLACEHOLDER_FEEDBACK)
     service = build_service(generation=gen, validation=val)
 
     service.request_briefing(FLAGGED)
@@ -169,69 +238,3 @@ def test_identity_fields_are_preserved_across_the_retry_request():
     assert second.prediction == first.prediction
     assert second.features == first.features
     assert second.instructions_id == first.instructions_id
-
-
-# --- FR-026: bounded attempts -------------------------------------------------
-
-
-@pytest.mark.parametrize(
-    ("label", "first", "second"),
-    [
-        ("validation-then-validation", failed(), failed()),
-        ("validation-then-pass", failed(), passed()),
-    ],
-    ids=["two-validation-failures", "validation-then-pass"],
-)
-def test_generation_is_attempted_at_most_twice_across_the_matrix(label, first, second):
-    """No path reaches a third generation attempt (FR-026, SC-009).
-
-    The scripted provider raises if called more than scripted, so a third attempt would surface
-    as an error rather than pass silently.
-    """
-    recorder = SeamCallRecorder()
-    service = build_service(
-        generation=ScriptedGenerationProvider(draft("first"), draft("second")),
-        validation=ScriptedValidator(first, second),
-        recorder=recorder,
-    )
-
-    try:
-        service.request_briefing(FLAGGED)
-    except BriefingNotProducedError:
-        pass
-
-    assert recorder.generation_calls == 2, label
-
-
-def test_generation_failure_path_also_stops_at_two_attempts():
-    recorder = SeamCallRecorder()
-    service = build_service(
-        generation=ScriptedGenerationProvider(RuntimeError("down"), RuntimeError("down")),
-        validation=ScriptedValidator(),
-        recorder=recorder,
-    )
-
-    with pytest.raises(BriefingNotProducedError) as exc:
-        service.request_briefing(FLAGGED)
-
-    assert exc.value.category == "generation"
-    assert recorder.generation_calls == 2
-    assert "validate" not in recorder.calls, "validation is never reached without a draft"
-
-
-# --- FR-027: the retry path persists nothing ---------------------------------
-
-
-def test_retry_result_is_stored_exactly_once_and_not_by_the_workflow():
-    """The workflow returns an outcome; StudentService writes it, exactly once (FR-027)."""
-    gen = PromptAwareGenerationProvider()
-    val = MarkerValidator()
-    store = CountingStore()
-    service = build_service(generation=gen, validation=val, store=store)
-
-    briefing = service.request_briefing(FLAGGED)
-
-    assert briefing.attempt_count == 2
-    assert store.saves == 1
-    assert not hasattr(service.retry_workflow, "store")
-    assert not hasattr(service.retry_workflow, "_store")
