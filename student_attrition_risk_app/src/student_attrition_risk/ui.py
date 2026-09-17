@@ -32,6 +32,15 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
+top_left, top_right = st.columns([4, 1])
+
+with top_right:
+    st.link_button(
+        "View Dashboard",
+        "https://dbc-d9f16845-692d.cloud.databricks.com/dashboardsv3/01f1b232102f1045b5d3828ffc7abc0a/published?o=7474649460131169",
+        type="primary",
+        use_container_width=True,
+    )
 
 @st.cache_resource
 def get_service():
