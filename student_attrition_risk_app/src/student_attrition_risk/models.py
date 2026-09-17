@@ -47,6 +47,7 @@ class HealthStatus(BaseModel):
 # Marker placed in ApprovedModelFeatureValues when a source column is absent from
 # the Delta schema. Distinct from a SQL NULL value, which is preserved as None.
 UNAVAILABLE = "__unavailable__"
+SUPPRESSED = "__suppressed__"
 
 
 class ApprovedModelFeatureValues(BaseModel):
