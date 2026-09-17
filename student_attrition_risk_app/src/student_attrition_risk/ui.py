@@ -38,6 +38,11 @@ st.info(
 service = build_service()
 student_hash = st.text_input("Student hash", placeholder="synthetic-student-001")
 retrieve = st.button("Retrieve", type="primary")
+dashboard = st.link_button(
+    "View Dashboard",
+    "https://dbc-d9f16845-692d.cloud.databricks.com/dashboardsv3/01f1b232102f1045b5d3828ffc7abc0a/published?o=7474649460131169",
+    type="primary",
+)
 
 if retrieve:
     if not student_hash.strip():
