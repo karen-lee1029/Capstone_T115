@@ -81,6 +81,10 @@ class FakeFilesClient:
     exception instance to emulate a transient Files-API failure.
     """
 
+    def create_directory(self, path: str) -> None:
+        """Simulate creating a Databricks Volume directory."""
+        return None
+
     def __init__(self) -> None:
         self.files: dict[str, str] = {}
         self.fail_upload: BaseException | None = None

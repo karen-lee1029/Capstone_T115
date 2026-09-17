@@ -17,6 +17,33 @@ def _prompt(profile: StudentRiskProfile) -> str:
     )
 
 
+def _extract_response_text(content: Any) -> str:
+    """Extract final text from string or structured GPT OSS output."""
+
+    if isinstance(content, str):
+        return content.strip()
+
+    if isinstance(content, list):
+        text_parts: list[str] = []
+
+        for part in content:
+            if isinstance(part, dict):
+                if part.get("type") != "text":
+                    continue
+                text = part.get("text")
+            else:
+                if getattr(part, "type", None) != "text":
+                    continue
+                text = getattr(part, "text", None)
+
+            if isinstance(text, str):
+                text_parts.append(text)
+
+        return "\n".join(text_parts).strip()
+
+    return ""
+
+
 class TemplateBriefingProvider:
     def generate(self, profile: StudentRiskProfile) -> StudentBriefing:
         prediction = profile.prediction
@@ -35,29 +62,13 @@ class TemplateBriefingProvider:
         )
 
 
-class DatabricksModelBriefingProvider:
-    def __init__(self, model_name: str) -> None:
-        self.model_name = model_name
+# class DatabricksModelBriefingProvider:
+#     def __init__(self, model_name: str) -> None:
+#         self.model_name = model_name
 
-    def generate(self, profile: StudentRiskProfile) -> StudentBriefing:
-        from databricks.sdk import WorkspaceClient
+#     def generate(self, profile: StudentRiskProfile) -> StudentBriefing:
+#         from databricks.sdk import WorkspaceClient
 
-        client = WorkspaceClient()
-        response: Any = client.serving_endpoints.query(
-            name=self.model_name,
-            messages=[{"role": "user", "content": _prompt(profile)}],
-            temperature=0.2,
-            max_tokens=250,
-        )
-        choices = getattr(response, "choices", None) or response.get("choices", [])
-        content = choices[0].message.content if choices else ""
-        if not content:
-            raise RuntimeError("Managed model returned no briefing text.")
-        return StudentBriefing(
-            student_deidentified_hash=profile.prediction.student_deidentified_hash,
-            source="databricks_model",
-            text=content,
-        )
 
 
 class StubGenerationProvider:
@@ -85,3 +96,67 @@ class StubGenerationProvider:
         if self._draft is not None:
             return self._draft
         raise ConfigurationError("Briefing generation is not configured")
+
+
+class DatabricksGenerationProvider:
+    """Current provider used by the end-to-end briefing workflow."""
+
+    def __init__(self, model_name: str) -> None:
+        if not model_name:
+            raise ConfigurationError(
+                "DATABRICKS_MODEL_NAME is required."
+            )
+
+        self.model_name = model_name
+
+    def generate(
+        self,
+        context: BriefingGenerationContext,
+    ) -> DraftBriefing:
+        from databricks.sdk import WorkspaceClient
+        from databricks.sdk.service.serving import (
+            ChatMessage,
+            ChatMessageRole,
+        )
+
+        response: Any = WorkspaceClient().serving_endpoints.query(
+            name=self.model_name,
+
+            messages=[
+                ChatMessage(
+                    role=ChatMessageRole.USER,
+                    content=context.composed_prompt,
+                )
+            ],
+            temperature=0.2,
+            max_tokens=1600,
+        )
+
+        choices = getattr(response, "choices", None) or []
+
+        if not choices:
+            raise RuntimeError(
+                "Managed model returned no choices."
+            )
+
+        message = getattr(choices[0], "message", None)
+
+        if message is None:
+            raise RuntimeError(
+                "Managed model returned no response message."
+            )
+        
+        content = getattr(message, "content", None)
+        text = _extract_response_text(content)
+
+        if not text:
+            raise RuntimeError(
+                "Managed model returned no briefing text."
+            )
+
+        return DraftBriefing(
+            student_deidentified_hash=(
+                context.student_deidentified_hash
+            ),
+            text=text,
+        )

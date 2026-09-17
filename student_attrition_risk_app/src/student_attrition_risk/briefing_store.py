@@ -99,14 +99,23 @@ class VolumeBriefingStore:
             ) from exc
 
     def save_validated(self, briefing: ValidatedBriefing) -> None:
+        directory = self._dir(briefing.student_deidentified_hash)
         path = self._file_path(briefing)
         body = briefing.model_dump_json().encode("utf-8")
+
         try:
-            self._files.upload(path, io.BytesIO(body), overwrite=False)
+            self._files.create_directory(directory)
+            self._files.upload(
+                path,
+                io.BytesIO(body),
+                overwrite=False,
+            )
         except Exception as exc:
             raise BriefingStorageError(
-                f"could not store validated briefing for {briefing.student_deidentified_hash}"
+                f"could not store validated briefing for "
+                f"{briefing.student_deidentified_hash}"
             ) from exc
+
 
     def _dir(self, student_hash: str) -> str:
         return f"{self._root}/{student_hash}"

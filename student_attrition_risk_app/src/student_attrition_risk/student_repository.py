@@ -4,20 +4,22 @@ from typing import Any
 
 from .config import Settings
 from .databricks_client import create_sql_connection
-from .models import UNAVAILABLE, ApprovedModelFeatureValues, StudentPrediction, StudentSnapshot
+from .models import SUPPRESSED, UNAVAILABLE, ApprovedModelFeatureValues, StudentPrediction, StudentSnapshot
 
 SNAPSHOT_COLUMNS = (
-    "age_at_census",
-    "attendance_mode",
     "eftsl",
-    "commencing_continuing",
-    "commencing_continuing_period",
-    "course_admission_load_category",
     "enrolment_year",
-    "cumulative_credit_points_enrolled",
+    "attendance_mode",
+    "commencing_continuing",
+    "age_band",
     "cumulative_credit_points_passed",
+    "cumulative_credit_points_enrolled",
     "cumulative_credit_points_failed",
     "cumulative_credit_points_withdrawn",
+    "international_domestic_student",
+    "course_admission_load_category",
+    "socioeconomic_status",
+    "regional_remote_status",
 )
 
 # The 21 approved machine-learning model features (research.md R1). This is the ONLY place
@@ -42,15 +44,42 @@ _FACT_FEATURE_COLUMNS = (
     "cumulative_credit_points_failed",
     "cumulative_credit_points_withdrawn",
 )
+
+# The model retains all approved course features.
 _COURSE_FEATURE_COLUMNS = (
     "course_group",
     "broad_primary_field_of_education",
     "narrow_primary_field_of_education",
     "detailed_primary_field_of_education",
 )
+
+# The UI only displays two concise course fields.
+_COURSE_SNAPSHOT_COLUMNS = (
+    "course_group",
+    "broad_primary_field_of_education",
+)
+
 _TEACHING_PERIOD_FEATURE_COLUMNS = ("teaching_period",)
+
 MODEL_FEATURE_COLUMNS = (
     _FACT_FEATURE_COLUMNS + _COURSE_FEATURE_COLUMNS + _TEACHING_PERIOD_FEATURE_COLUMNS
+)
+
+# Categories requiring small-group privacy protection.
+_FACT_PROTECTED_COLUMNS = (
+    "age_band",
+    "socioeconomic_status",
+    "regional_remote_status",
+    "student_gender",
+    "international_domestic_student",
+    "student_is_first_nations_student",
+)
+
+_COURSE_PROTECTED_COLUMNS = (
+    "course_group",
+    "broad_primary_field_of_education",
+    "narrow_primary_field_of_education",
+    "detailed_primary_field_of_education",
 )
 
 
@@ -82,6 +111,68 @@ class DatabricksStudentRepository:
         present = {row["column_name"] for row in rows}
         return [column for column in candidates if column in present]
 
+    def _mask_small_groups(self, values: dict[str, Any]) -> dict[str, Any]:
+        """Suppress displayed categorical values representing fewer than six students."""
+
+        sanitised = dict(values)
+
+        if not self.settings.fact_table:
+            return sanitised
+
+        statements: list[str] = []
+        parameters: list[Any] = []
+
+        for column in _FACT_PROTECTED_COLUMNS:
+            value = sanitised.get(column)
+
+            if value in (None, UNAVAILABLE, SUPPRESSED):
+                continue
+
+            statements.append(
+                f"""
+                SELECT
+                    '{column}' AS field_name,
+                    COUNT(DISTINCT student_deidentified_hash) AS student_count
+                FROM {self.settings.fact_table}
+                WHERE {column} = ?
+                """
+            )
+            parameters.append(value)
+
+        if self.settings.course_table:
+            for column in _COURSE_PROTECTED_COLUMNS:
+                value = sanitised.get(column)
+
+                if value in (None, UNAVAILABLE, SUPPRESSED):
+                    continue
+
+                statements.append(
+                    f"""
+                    SELECT
+                        '{column}' AS field_name,
+                        COUNT(DISTINCT f.student_deidentified_hash) AS student_count
+                    FROM {self.settings.fact_table} f
+                    INNER JOIN {self.settings.course_table} c
+                        ON f.course_key_hash = c.course_key_hash
+                    WHERE c.{column} = ?
+                    """
+                )
+                parameters.append(value)
+
+        if not statements:
+            return sanitised
+
+        rows = self._query(
+            "\nUNION ALL\n".join(statements),
+            tuple(parameters),
+        )
+
+        for row in rows:
+            if int(row["student_count"]) < 6:
+                sanitised[row["field_name"]] = SUPPRESSED
+
+        return sanitised
+
     def get_prediction(self, student_hash: str) -> StudentPrediction | None:
         statement = f"""
             SELECT student_deidentified_hash, attrition_risk_percentage,
@@ -93,25 +184,122 @@ class DatabricksStudentRepository:
         rows = self._query(statement, (student_hash,))
         return StudentPrediction.model_validate(rows[0]) if rows else None
 
+    # def get_snapshot(self, student_hash: str) -> StudentSnapshot | None:
+    #     if not self.settings.fact_table:
+    #         return None
+    #     catalog, schema, table = self.settings.fact_table.split(".")
+    #     columns = self._query(
+    #         f"""SELECT column_name FROM {catalog}.information_schema.columns
+    #             WHERE table_schema = ? AND table_name = ?""",
+    #         (schema, table),
+    #     )
+    #     available = [row["column_name"] for row in columns if row["column_name"] in SNAPSHOT_COLUMNS]
+    #     if not available:
+    #         return None
+    #     selected = ", ".join(available)
+    #     rows = self._query(
+    #         f"SELECT {selected} FROM {self.settings.fact_table} "
+    #         "WHERE student_deidentified_hash = ? LIMIT 1",
+    #         (student_hash,),
+    #     )
+    #     return StudentSnapshot(attributes=rows[0]) if rows else None
+
     def get_snapshot(self, student_hash: str) -> StudentSnapshot | None:
         if not self.settings.fact_table:
             return None
-        catalog, schema, table = self.settings.fact_table.split(".")
-        columns = self._query(
-            f"""SELECT column_name FROM {catalog}.information_schema.columns
-                WHERE table_schema = ? AND table_name = ?""",
-            (schema, table),
+
+        fact_candidates = SNAPSHOT_COLUMNS + (
+            "student_deidentified_hash",
+            "course_key_hash",
+            "census_date",
+            "is_major_course_for_census_date",
         )
-        available = [row["column_name"] for row in columns if row["column_name"] in SNAPSHOT_COLUMNS]
-        if not available:
+
+        fact_columns = set(
+            self._available_columns(
+                self.settings.fact_table,
+                fact_candidates,
+            )
+        )
+
+        select_parts = [
+            f"f.{column} AS {column}"
+            for column in SNAPSHOT_COLUMNS
+            if column in fact_columns
+        ]
+
+        join_parts: list[str] = []
+
+        if (
+            self.settings.course_table
+            and "course_key_hash" in fact_columns
+        ):
+            available_course_columns = set(
+                self._available_columns(
+                    self.settings.course_table,
+                    _COURSE_SNAPSHOT_COLUMNS
+                    + ("course_key_hash",),
+                )
+            )
+
+            snapshot_course_columns = [
+                column
+                for column in _COURSE_SNAPSHOT_COLUMNS
+                if column in available_course_columns
+            ]
+
+            if (
+                "course_key_hash" in available_course_columns
+                and snapshot_course_columns
+            ):
+                select_parts.extend(
+                    f"c.{column} AS {column}"
+                    for column in snapshot_course_columns
+                )
+
+                join_parts.append(
+                    f"""
+                    LEFT JOIN {self.settings.course_table} c
+                        ON f.course_key_hash = c.course_key_hash
+                    """
+                )
+
+        if not select_parts:
             return None
-        selected = ", ".join(available)
-        rows = self._query(
-            f"SELECT {selected} FROM {self.settings.fact_table} "
-            "WHERE student_deidentified_hash = ? LIMIT 1",
-            (student_hash,),
+
+        order_parts: list[str] = []
+
+        if "is_major_course_for_census_date" in fact_columns:
+            order_parts.append(
+                "f.is_major_course_for_census_date DESC"
+            )
+
+        if "census_date" in fact_columns:
+            order_parts.append("f.census_date DESC")
+
+        order_clause = (
+            f"ORDER BY {', '.join(order_parts)}"
+            if order_parts
+            else ""
         )
-        return StudentSnapshot(attributes=rows[0]) if rows else None
+
+        statement = f"""
+            SELECT {", ".join(select_parts)}
+            FROM {self.settings.fact_table} f
+            {" ".join(join_parts)}
+            WHERE f.student_deidentified_hash = ?
+            {order_clause}
+            LIMIT 1
+        """
+
+        rows = self._query(statement, (student_hash,))
+
+        if not rows:
+            return None
+
+        values = self._mask_small_groups(rows[0])
+
+        return StudentSnapshot(attributes=values)
 
     def get_model_features(self, student_hash: str) -> ApprovedModelFeatureValues | None:
         """Assemble the 21 approved feature values for one student from the fact table plus
@@ -166,6 +354,7 @@ class DatabricksStudentRepository:
             return None
         row = rows[0]
         values = {column: row.get(column, UNAVAILABLE) for column in MODEL_FEATURE_COLUMNS}
+        # values = self._mask_small_groups(values)
         return ApprovedModelFeatureValues(values=values)
 
     def get_high_risk_students(self, limit: int) -> list[StudentPrediction]:
