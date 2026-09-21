@@ -1,9 +1,9 @@
 """API and domain models."""
 
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 class StudentPrediction(BaseModel):
@@ -47,6 +47,7 @@ class HealthStatus(BaseModel):
 # Marker placed in ApprovedModelFeatureValues when a source column is absent from
 # the Delta schema. Distinct from a SQL NULL value, which is preserved as None.
 UNAVAILABLE = "__unavailable__"
+SUPPRESSED = "__suppressed__"
 
 
 class ApprovedModelFeatureValues(BaseModel):
@@ -60,10 +61,24 @@ class ApprovedModelFeatureValues(BaseModel):
 
 
 class DraftBriefing(BaseModel):
-    """A briefing returned by the generation seam, not yet validated (FR-026)."""
+    """A briefing returned by the generation seam, not yet validated (FR-026).
+
+    ``text`` must carry substance. A generation seam that produces no usable content has
+    failed to produce a draft, so rejecting it here makes the seam contract enforceable
+    rather than advisory: the rejection is raised inside ``generate``, which the existing
+    orchestration already treats as a generation failure (Feature-002 spec Edge Cases,
+    "The retry's generation attempt returns empty content").
+    """
 
     student_deidentified_hash: str
     text: str
+
+    @field_validator("text")
+    @classmethod
+    def _reject_blank_text(cls, value: str) -> str:
+        if not value.strip():
+            raise ValueError("A draft briefing must contain briefing text.")
+        return value
 
 
 class BriefingGenerationContext(BaseModel):
@@ -134,3 +149,35 @@ class TerminalFailure(BaseModel):
 
 # The value the retry seam returns.
 BriefingOutcome = Produced | TerminalFailure
+
+
+def make_validated_briefing(
+    *,
+    student_hash: str,
+    prediction: StudentPrediction,
+    text: str,
+    validator_id: str,
+    attempt_count: int,
+    generated_at: datetime | None = None,
+) -> ValidatedBriefing:
+    """Build a ``ValidatedBriefing`` from a prediction snapshot.
+
+    The single constructor shared by ``StudentService`` (first attempt) and the
+    Feature-002 ``SingleRetryWorkflow`` (second attempt) so the two paths cannot
+    diverge. ``source`` is always ``"generated"``; the retrieval path restamps it
+    to ``"stored"``.
+    """
+    return ValidatedBriefing(
+        student_deidentified_hash=student_hash,
+        text=text,
+        source="generated",
+        validated=True,
+        validator_id=validator_id,
+        generated_at=generated_at or datetime.now(UTC),
+        attempt_count=attempt_count,
+        mlflow_run_id=prediction.mlflow_run_id,
+        risk_percentage=prediction.attrition_risk_percentage,
+        at_risk_flag=prediction.attrition_risk_flag,
+        prediction_threshold=prediction.prediction_threshold,
+        scored_at=prediction.scored_at,
+    )

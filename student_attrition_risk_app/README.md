@@ -25,15 +25,42 @@ only**; the concrete behaviour is delivered by later backlog stories:
 | `GenerationProvider` | `StubGenerationProvider` (fails fast: "Briefing generation is not configured") | US-13 |
 | `BriefingInstructions` | `InterimInstructions` (reuses the existing safe prompt wording) | US-12 |
 | `BriefingValidator` | `InterimValidator` (pass-through, `validator_id="interim-pass-through"`) | US-14 |
-| `RetryWorkflow` | `RetryNotConfigured` (terminal failure, no retry) | Feature-002 / US-15 |
-| `BriefingStore` | `InMemoryBriefingStore` | US-15 (governed Unity Catalog Volume) |
+| `RetryWorkflow` | `RetryNotConfigured` (terminal failure, no retry) | Feature-002 / US-15 — `SingleRetryWorkflow` (shipped) |
+| `BriefingStore` | `InMemoryBriefingStore` | US-15 — `VolumeBriefingStore` (shipped); in-memory kept for local/tests |
 
 The advisor-facing dashboard, at-risk display, and selection interaction are US-09 / US-10 /
 US-11. A request routes to generation only for a student the model flags at risk and only when
 no validated briefing exists (or `?regenerate=true` is passed); otherwise the existing
 validated briefing is returned without invoking generation. A failed first attempt is handed to
-the retry seam once; with the placeholder it ends in an explicit `502` and nothing is stored —
-a deterministic/template briefing is never substituted for a real one.
+the retry seam once; a `502` and nothing stored is the terminal outcome when the retry also
+fails — a deterministic/template briefing is never substituted for a real one.
+
+### Feature-002 (US-15) briefing retry and validated-briefing storage
+
+`SingleRetryWorkflow` is the concrete `RetryWorkflow`. When the first attempt does not yield a
+validated briefing — the draft failed validation, or generation failed with a retryable error
+(anything other than a configuration error) — it performs **exactly one** more generation
+attempt and re-validates it. It runs the generation boundary once and the validation boundary
+at most once, so a third attempt is structurally impossible. On success it returns a
+`ValidatedBriefing` with `attempt_count = 2` through the existing successful-outcome path;
+`StudentService` persists it (the workflow never persists). On a second failure it returns a
+terminal `generation` or `validation` outcome, which maps to the existing `502`; a
+configuration error surfacing during the retry is re-raised unchanged (`503`). No new
+advisor-visible retry indicator is added — `attempt_count` is the record. The revision request
+sent to generation is the original context with a minimal block relaying only the failed
+acceptance criteria and Validation Feedback that validation actually returned; it is replaced
+when the final US-12 instructions land.
+
+`VolumeBriefingStore` is the concrete `BriefingStore`, backed by a governed Databricks Unity
+Catalog Volume. It writes one JSON document per validated briefing to
+`${BRIEFING_VOLUME}/<student_hash>/<timestamp>-attempt<n>-<token>.json`. Storage is
+**append-only** — nothing is ever overwritten or deleted, and there is no pruning of superseded
+briefings; "most recent" is the greatest file name (the fixed-width timestamp prefix orders
+chronologically). A missing student directory is an explicit "none available"; any other
+Files-API failure surfaces as `BriefingStorageError` (`503`). Set `BRIEFING_VOLUME` to a
+`/Volumes/<catalog>/<schema>/<volume>` path to enable it; leave it blank to keep
+`InMemoryBriefingStore` (local mode and the test suite). The concrete deployment Volume path is
+supplied at deploy time — none is hard-coded.
 
 ## Local setup on macOS/zsh
 
@@ -81,7 +108,7 @@ For a current CLI profile, inspect available authentication commands with `datab
 
 ## Configuration
 
-`DATABRICKS_PREDICTION_TABLE` defaults to the repository-confirmed `workspace.student_aggregate.student_attrition_risk_prediction`. `DATABRICKS_FACT_TABLE` defaults to the repository-confirmed fact table, but can be blank to disable snapshot retrieval. `DATABRICKS_COURSE_TABLE` and `DATABRICKS_TEACHING_PERIOD_TABLE` default to the repository-confirmed dimension tables used to assemble the 21 approved feature values for briefing generation; either can be blank to disable that join (the affected features are then marked unavailable). `DATABRICKS_MODEL_NAME` is unused by the Feature-001 briefing workflow (the generative integration is US-13).
+`DATABRICKS_PREDICTION_TABLE` defaults to the repository-confirmed `workspace.student_aggregate.student_attrition_risk_prediction`. `DATABRICKS_FACT_TABLE` defaults to the repository-confirmed fact table, but can be blank to disable snapshot retrieval. `DATABRICKS_COURSE_TABLE` and `DATABRICKS_TEACHING_PERIOD_TABLE` default to the repository-confirmed dimension tables used to assemble the 21 approved feature values for briefing generation; either can be blank to disable that join (the affected features are then marked unavailable). `DATABRICKS_MODEL_NAME` is unused by the Feature-001 briefing workflow (the generative integration is US-13). `BRIEFING_VOLUME` (Feature-002 / US-15) selects the validated-briefing store: a `/Volumes/<catalog>/<schema>/<volume>` path enables `VolumeBriefingStore`; blank or unset keeps `InMemoryBriefingStore`. It is validated as a Unity Catalog Volume path and is never hard-coded — the deployment value is set at deploy time.
 
 ## REST API
 

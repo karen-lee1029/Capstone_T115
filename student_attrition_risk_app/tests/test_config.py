@@ -6,6 +6,7 @@ from student_attrition_risk.config import (
     ConfigurationError,
     Settings,
     validate_table_identifier,
+    validate_volume_path,
 )
 
 
@@ -42,5 +43,40 @@ def test_blank_course_or_teaching_period_table_disables_the_join(monkeypatch):
 
 def test_malformed_course_table_is_rejected(monkeypatch):
     monkeypatch.setenv("DATABRICKS_COURSE_TABLE", "schema.table; DROP TABLE x")
+    with pytest.raises(ConfigurationError):
+        Settings.from_env()
+
+
+def test_validate_volume_path_accepts_a_unity_catalog_volume():
+    assert (
+        validate_volume_path("/Volumes/main/advising/briefings")
+        == "/Volumes/main/advising/briefings"
+    )
+    # a deeper prefix under the volume is allowed
+    assert validate_volume_path("/Volumes/main/advising/briefings/v2").endswith("/v2")
+
+
+def test_validate_volume_path_rejects_bad_values():
+    for bad in (
+        "main.advising.briefings",  # missing /Volumes/ prefix
+        "/Volumes/main/advising",  # fewer than catalog/schema/volume
+        "/Volumes/main/advising/brief ings",  # unsafe character
+        "/Volumes/main/advising/../secrets",  # traversal segment
+    ):
+        with pytest.raises(ConfigurationError):
+            validate_volume_path(bad)
+
+
+def test_briefing_volume_env_is_read_validated_and_optional(monkeypatch):
+    monkeypatch.setenv("BRIEFING_VOLUME", "/Volumes/main/advising/briefings")
+    assert Settings.from_env().briefing_volume == "/Volumes/main/advising/briefings"
+
+    monkeypatch.setenv("BRIEFING_VOLUME", "")
+    assert Settings.from_env().briefing_volume is None
+
+    monkeypatch.delenv("BRIEFING_VOLUME", raising=False)
+    assert Settings.from_env().briefing_volume is None
+
+    monkeypatch.setenv("BRIEFING_VOLUME", "not-a-volume-path")
     with pytest.raises(ConfigurationError):
         Settings.from_env()
