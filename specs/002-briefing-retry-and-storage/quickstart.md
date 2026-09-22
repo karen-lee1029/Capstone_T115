@@ -20,7 +20,8 @@ uv run pytest
 
 All existing Feature-001 test files must stay green, plus the new
 `test_retry_workflow.py`, `test_briefing_retry_integration.py`, `test_volume_briefing_store.py`,
-and the extended `test_config.py`.
+`test_briefing_storage_confirmation.py` (2026-09-22 amendment), and the extended
+`test_config.py`.
 
 ## Offline validation — the single-retry workflow
 
@@ -64,6 +65,25 @@ uv run pytest tests/test_retry_workflow.py tests/test_briefing_retry_integration
 
 ```
 uv run pytest tests/test_volume_briefing_store.py tests/test_config.py -q
+```
+
+## Offline validation — the persistence confirmation *(added 2026-09-22)*
+
+`tests/test_briefing_storage_confirmation.py`, with the same scripted doubles and the in-memory
+store. Covers spec User Story 4 and FR-035–FR-041:
+
+| Scenario | Expected |
+|---|---|
+| Attempt 1 passes validation and the save succeeds | the returned briefing has `storage_confirmed is True` |
+| Attempt 2 passes validation and the save succeeds | `storage_confirmed is True`, identical to the Attempt 1 case — no retry indication |
+| `save_validated` raises | `BriefingStorageError` / 503; no briefing carrying `storage_confirmed=True` is returned |
+| Inspect the body handed to `save_validated` | `storage_confirmed` is `False` — confirmation is stamped after the save, never optimistically |
+| `GET /api/students/{hash}/briefing`, and a non-regenerate request for a student who already has one | `source == "stored"` **and** `storage_confirmed is True` |
+| `storage_confirmation_message(replaced=False)` / `(replaced=True)` | first-save wording / replacement wording; both mention validation and being saved; neither names a storage technology, an attempt or a retry |
+| `ui.py` source | renders no `attempt_count`, while the model and the API response still carry it (FR-032, SC-016) |
+
+```
+uv run pytest tests/test_briefing_storage_confirmation.py -q
 ```
 
 ## Store selection
@@ -111,4 +131,9 @@ uv run uvicorn student_attrition_risk.main:app --host 0.0.0.0 --port 8000
   retry request equals the original context.
 - `RetryNotConfigured` remains available as the "retry disabled" wiring and is still used by the
   Feature-001 orchestration tests.
-- With `BRIEFING_VOLUME` unset the app behaves exactly as Feature-001 (in-memory store).
+- With `BRIEFING_VOLUME` unset the app behaves exactly as Feature-001 (in-memory store). The
+  persistence confirmation is reported in this mode too — it reports that the configured store
+  confirmed the save, whichever store that is, which is why its wording is store-neutral
+  (FR-041).
+- Briefing documents written to a Volume before 2026-09-22 carry no `storage_confirmed` key.
+  They still parse: the field is defaulted, and the retrieval path stamps it `True` regardless.

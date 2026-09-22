@@ -8,6 +8,11 @@ from typing import Any
 
 import streamlit as st
 
+from student_attrition_risk.briefing_messages import (
+    existing_briefing_message,
+    retrieved_briefing_message,
+    storage_confirmation_message,
+)
 from student_attrition_risk.main import build_service
 from student_attrition_risk.student_service import (
     BriefingNotProducedError,
@@ -268,9 +273,73 @@ st.markdown(
             font-weight: 650;
         }
 
-        div.stButton > button[kind="primary"] {
+        /* Every action on this page is in the primary blue family: solid for primary
+           actions, outlined for secondary ones so the hierarchy survives. Notices are never
+           blue, so a notice can never be mistaken for something clickable. */
+        div.stButton > button[kind="primary"],
+        div.stDownloadButton > button,
+        div[data-testid="stLinkButton"] > a {
             background: #00558c;
-            border-color: #00558c;
+            border: 1px solid #00558c;
+            color: #ffffff;
+        }
+
+        div.stButton > button[kind="primary"]:hover,
+        div.stDownloadButton > button:hover,
+        div[data-testid="stLinkButton"] > a:hover {
+            background: #004473;
+            border-color: #004473;
+            color: #ffffff;
+        }
+
+        div.stButton > button[kind="secondary"] {
+            background: #ffffff;
+            border: 1px solid #00558c;
+            color: #00558c;
+        }
+
+        div.stButton > button[kind="secondary"]:hover {
+            background: #eff8ff;
+            border-color: #004473;
+            color: #004473;
+        }
+
+        /* Page-owned notices. Streamlit's own st.success / st.info follow Streamlit's theme
+           rather than this stylesheet, so they are not used. Colour never carries the meaning
+           on its own: every notice leads with a bold label, so it still reads correctly in
+           monochrome and under any form of colour vision deficiency. Green and red are avoided
+           for the pair a reader must tell apart, since those two converge under the common
+           red-green deficiencies. Teal keeps a strong blue component and stays distinct from
+           the red used for errors. */
+        .notice-label {
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            margin-right: 0.45rem;
+        }
+
+        .save-confirmation {
+            background: #f0fdf9;
+            border: 1px solid #5fe9d0;
+            border-left: 4px solid #107569;
+            border-radius: 8px;
+            color: #107569;
+            padding: 0.75rem 0.9rem;
+            margin-bottom: 1rem;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        .page-notice {
+            background: #f8fafc;
+            border: 1px solid #d0d5dd;
+            border-left: 4px solid #667085;
+            border-radius: 8px;
+            color: #344054;
+            padding: 0.75rem 0.9rem;
+            margin-bottom: 1rem;
+            font-size: 0.9rem;
+            font-weight: 600;
         }
 
         @media (max-width: 900px) {
@@ -355,6 +424,7 @@ def clear_selected_student() -> None:
         "selected_hash",
         "reviewed",
         "ui_message",
+        "ui_success",
     ):
         st.session_state.pop(key, None)
 
@@ -365,6 +435,21 @@ def load_student(student_hash: str) -> None:
     st.session_state.selected_hash = student_hash
     st.session_state.briefing = None
     st.session_state.reviewed = False
+    st.session_state.pop("ui_success", None)
+
+
+def render_notice(label: str, body: str, *, style: str = "page-notice") -> None:
+    """Render a page-owned notice.
+
+    The bold label, not the colour, is what tells one notice from another, so the meaning
+    survives monochrome printing and any colour vision deficiency.
+    """
+    st.markdown(
+        f'<div class="{style}">'
+        f'<span class="notice-label">{html.escape(label)}</span>'
+        f"{html.escape(body)}</div>",
+        unsafe_allow_html=True,
+    )
 
 
 def request_briefing(*, regenerate: bool = False) -> None:
@@ -373,10 +458,26 @@ def request_briefing(*, regenerate: bool = False) -> None:
     if profile is None:
         return
 
-    briefing = service.request_briefing(
-        profile.prediction.student_deidentified_hash,
-        regenerate=regenerate,
-    )
+    student_hash = profile.prediction.student_deidentified_hash
+
+    # Whether a successful regeneration will supersede an existing briefing (FR-039). Only the
+    # regenerate path is ambiguous from the result alone, so this is the only path that pays for
+    # the extra store read: without ``regenerate`` the service returns any briefing the student
+    # already has rather than generating, so a briefing it generates is necessarily a first save.
+    replaced = regenerate and service.has_stored_briefing(student_hash)
+
+    briefing = service.request_briefing(student_hash, regenerate=regenerate)
+
+    # Reached only when the request succeeded — a storage failure raises, so the advisor is
+    # never told a briefing was saved when it was not (FR-038). A briefing the service returned
+    # from the store was not saved by this request, so it goes to the neutral notice rather than
+    # the confirmation: the confirmation channel means "this request saved something".
+    if briefing.source == "stored":
+        st.session_state.pop("ui_success", None)
+        st.session_state.ui_message = ("No change", existing_briefing_message())
+    else:
+        st.session_state.pop("ui_message", None)
+        st.session_state.ui_success = storage_confirmation_message(replaced=replaced)
     st.session_state.briefing = briefing
     st.session_state.reviewed = False
 
@@ -391,12 +492,16 @@ def retrieve_stored_briefing() -> None:
         profile.prediction.student_deidentified_hash
     )
 
+    st.session_state.pop("ui_success", None)
+
     if briefing is None:
         st.session_state.ui_message = (
-            "No previously validated briefing is available."
+            "None saved",
+            "No previously validated briefing is available.",
         )
         return
 
+    st.session_state.ui_message = ("Retrieved", retrieved_briefing_message())
     st.session_state.briefing = briefing
     st.session_state.reviewed = False
 
@@ -669,14 +774,19 @@ with left_column:
                             "The briefing workflow is currently unavailable."
                         )
     else:
-        st.info(
+        render_notice(
+            "Not at risk",
             "This student is not currently classified as at risk. "
-            "Briefing generation is unavailable."
+            "Briefing generation is unavailable.",
         )
+
+    confirmation = st.session_state.pop("ui_success", None)
+    if confirmation:
+        render_notice("Saved", confirmation, style="save-confirmation")
 
     message = st.session_state.pop("ui_message", None)
     if message:
-        st.info(message)
+        render_notice(*message)
 
 
 with right_column:
@@ -708,7 +818,7 @@ with right_column:
                 &nbsp;·&nbsp;
                 Validation: {html.escape(briefing.validator_id)}
                 &nbsp;·&nbsp;
-                Attempt: {briefing.attempt_count}
+                Saved: {"Yes" if briefing.storage_confirmed else "No"}
             </div>
             """,
             unsafe_allow_html=True,

@@ -4,6 +4,9 @@
 
 **Created**: 2026-09-03
 
+**Amended**: 2026-09-22 — persistence confirmation (FR-035–FR-041, User Story 4) and the FR-032
+correction. See Clarifications, Session 2026-09-22. No retry or storage behaviour changed.
+
 **Status**: Draft
 
 **Input**: User description: "Create the Feature-002 specification for Product Backlog US-15: Briefing Retry and Validated Briefing Storage. Use the amended project constitution v1.1.0, the Feature-002 repository investigation and confirmed design decisions, the merged Feature-001 artifacts, Product Backlog US-15 and the Physical Solution Design, and the existing source code as implementation context only. Define WHAT Feature-002 must accomplish — observable behaviour, acceptance criteria, boundaries, dependencies, and failure behaviour — without prescribing implementation structure or inventing the unresolved US-13 generation details, US-14 validation criteria, or exact retry-prompt wording."
@@ -23,6 +26,10 @@ defined as integration boundaries and shipped only as placeholders:
   implementation backed by the project's Databricks Unity Catalog Volume storage, replacing the
   in-memory placeholder in deployed environments while honouring the existing store boundary
   unchanged.
+- **The persistence confirmation** *(added 2026-09-22)*. Because a briefing is saved precisely
+  when it has passed validation, a successful result reports explicitly that it was saved, and
+  the advisor-facing surface shows it. This reports an outcome the workflow already produces; it
+  changes no generation, validation, retry or storage behaviour.
 
 Feature-002 **consumes and does not redefine** the boundaries established by Feature-001. The
 concrete generative integration is US-13; the concrete Structured Advisor Briefing
@@ -92,6 +99,32 @@ investigation and are authoritative for this specification.
   validated briefing, but superseded briefings need not be retained or individually
   retrievable, and a concrete retention or pruning policy for superseded briefings is out of
   Feature-002 scope.
+
+### Session 2026-09-22 (post-implementation amendment — persistence confirmation)
+
+Feature-002 shipped the generate → validate → single-retry → revalidate → automatic-save
+workflow, but nothing told the advisor that the briefing in front of them had been saved. The
+product owner settled the following, which this amendment encodes. The retry and storage
+behaviour itself is unchanged; only the reporting of the outcome is added.
+
+- A successful briefing response MUST carry an explicit confirmation that the briefing was
+  saved to the validated-briefing store, and the advisor-facing surface MUST show it. The
+  advisor should not have to infer persistence from the absence of an error.
+- The confirmation is **evidence-based, never optimistic**: it may be reported only after the
+  store has confirmed the save. A request that ends in a storage failure already surfaces an
+  explicit error and MUST NOT report a confirmation.
+- The confirmation distinguishes a **first save** from a **replacement**. When a regeneration
+  supersedes a previously saved briefing, the advisor is told the earlier briefing is no longer
+  the one "Retrieve Saved" returns, because that is a user-visible consequence of an action the
+  advisor took.
+- The **internal retry remains invisible to the advisor**, reaffirming FR-032. Attempt 1 and
+  Attempt 2 briefings clear the same validation gate, so the attempt count carries no
+  information about the briefing the advisor is reading and no advisor decision depends on it.
+  It remains available as workflow metadata in the API response, the stored briefing record and
+  the metadata-only logs, which is where its audience (engineering and audit) reads it.
+- The advisor-facing briefing metadata line currently renders the attempt count, which
+  contradicts FR-032 as shipped. That line is corrected by this amendment; the removal is a
+  defect fix against the original requirement, not a new product decision.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -230,6 +263,51 @@ involved and no change to the service or orchestration.
 
 ---
 
+### User Story 4 - Know that a validated briefing has been saved (Priority: P2)
+
+An academic advisor requests a briefing. The workflow generates it, validates it, retries once if
+needed, revalidates, and — because it passed validation — saves it to the validated-briefing
+store. The advisor is told so explicitly: the response carries a persistence confirmation and the
+advisor-facing surface shows that the briefing passed validation and has been saved, so the
+advisor knows it will still be there later without having to request it again. When the request
+was a regeneration that superseded an earlier saved briefing, the advisor is told that too,
+because the earlier briefing is no longer the one the retrieval path returns. The internal retry
+is not reported: an Attempt 2 briefing is confirmed exactly as an Attempt 1 briefing is.
+
+**Why this priority**: Without it the advisor cannot distinguish "saved and durable" from
+"displayed once and lost", and silently discards a guarantee the feature already provides. It is
+P2 rather than P1 because it reports an outcome the workflow already produces — the briefing is
+saved either way — but it is what makes that outcome usable.
+
+**Independent Test**: With scripted generation and validation doubles and the existing store
+contract, a successful request returns a briefing carrying a persistence confirmation; a request
+whose store raises a storage failure surfaces the existing explicit error and carries no
+confirmation; a briefing read back from the store also reports as stored. No governed Volume,
+no generative provider and no final validator is required.
+
+**Acceptance Scenarios**:
+
+1. **Given** an at-risk student with no stored validated briefing, **When** the first attempt
+   produces a briefing that passes validation and the store confirms the save, **Then** the
+   successful result carries an explicit persistence confirmation and the advisor-facing surface
+   reports that the briefing passed validation and has been saved.
+2. **Given** the same request, **When** the briefing is produced by Attempt 2 instead of
+   Attempt 1, **Then** the persistence confirmation is identical and carries no indication that
+   a retry occurred.
+3. **Given** a briefing request, **When** the persistence boundary reports that the briefing
+   could not be stored, **Then** the existing explicit storage-error result is surfaced, no
+   persistence confirmation is reported, and the advisor is not told the briefing was saved.
+4. **Given** a student who already has a stored validated briefing, **When** the advisor
+   requests a regeneration that succeeds, **Then** the advisor is told the newly saved briefing
+   has replaced the previously saved one.
+5. **Given** a student with a stored validated briefing, **When** the retrieval path returns it,
+   **Then** it reports as present in the store rather than as newly saved.
+6. **Given** any successful briefing result, **When** the advisor-facing surface renders its
+   briefing metadata, **Then** that metadata carries no attempt count or other indication of the
+   internal retry (FR-032).
+
+---
+
 ### Edge Cases
 
 - **First attempt failed validation with no criteria and no feedback** (interim validator): the
@@ -256,6 +334,14 @@ involved and no change to the service or orchestration.
   two defined first-attempt outcomes.
 - **Concurrent briefing requests for the same student**: not specially handled; the
   most-recent-wins store contract from Feature-001 is retained (see Assumptions).
+- **The briefing is produced but the save then fails**: the existing storage-error result is
+  surfaced and **no** persistence confirmation is reported. The advisor is never told a briefing
+  was saved when it was not.
+- **A regeneration succeeds for a student with no earlier saved briefing**: the confirmation
+  reports a first save, not a replacement; there is nothing to supersede.
+- **A non-regeneration request returns an already-stored briefing without generating**: no new
+  save occurred, so the surface reports the briefing as present in the store rather than as
+  newly saved.
 
 ## Requirements *(mandatory)*
 
@@ -388,9 +474,14 @@ involved and no change to the service or orchestration.
 - **FR-031**: Feature-002 MUST leave the currently unwired legacy provider classes — the
   template briefing provider and the Databricks managed-model briefing provider — unchanged, and
   MUST NOT undertake unrelated refactoring or cleanup.
-- **FR-032**: Feature-002 MUST NOT introduce a new advisor-visible indication that a returned
-  briefing came from a second attempt. The existing attempt-count workflow metadata is the only
-  record of the retry.
+- **FR-032**: Feature-002 MUST NOT introduce an advisor-visible indication that a returned
+  briefing came from a second attempt, and MUST NOT retain one. The attempt count is workflow
+  metadata: it remains available in the application response, in the stored briefing record and
+  in the metadata-only logs, and MUST NOT be rendered on the advisor-facing surface. *(Amended
+  2026-09-22: the advisor-facing briefing metadata line shipped rendering the attempt count,
+  contradicting this requirement; the second clause makes the removal of that rendering
+  explicit. The persistence confirmation required by FR-035–FR-040 is a separate,
+  storage-related indicator and is not restricted by this requirement.)*
 
 #### Observability and privacy
 
@@ -405,6 +496,31 @@ involved and no change to the service or orchestration.
   and testable — the retry workflow using controlled/stub generation and validation outcomes,
   the governed store using the existing store-contract scenarios — without the final US-13
   generation implementation or the final US-14 validation implementation being present.
+
+#### Persistence confirmation *(added 2026-09-22)*
+
+- **FR-035**: A successful briefing result MUST carry an explicit, machine-readable persistence
+  confirmation recording that the validated briefing is held in the validated-briefing store.
+  The confirmation MUST be part of the existing successful-result shape; no new response type
+  and no new endpoint may be introduced for it.
+- **FR-036**: The persistence confirmation MUST be evidence-based. It MUST be reported only
+  after the persistence boundary has confirmed the save, and MUST NOT be reported optimistically
+  before or independently of that confirmation. A run that surfaces the storage-error result
+  (FR-020, FR-024) MUST carry no persistence confirmation.
+- **FR-037**: A validated briefing returned by the retrieval path MUST also report as present in
+  the store, since the store is where it was read from.
+- **FR-038**: The advisor-facing surface MUST report, after a successful briefing request, that
+  the briefing passed validation and has been saved to the validated-briefing store. It MUST NOT
+  report a save when the request surfaced a storage error or any other failure.
+- **FR-039**: When a successful regeneration supersedes a validated briefing the student already
+  had, the advisor-facing surface MUST report that the newly saved briefing has replaced the
+  previously saved one. When the student had none, it MUST report a first save instead.
+- **FR-040**: The persistence confirmation MUST be identical for a briefing produced by
+  Attempt 1 and one produced by Attempt 2, and MUST carry no indication that a retry occurred
+  (FR-032).
+- **FR-041**: The advisor-facing confirmation MUST NOT name a specific storage technology unless
+  the application is actually configured to use it, since the in-memory store remains the
+  local and test implementation. Store-neutral wording satisfies this requirement.
 
 ### Key Entities *(include if feature involves data)*
 
@@ -431,6 +547,11 @@ involved and no change to the service or orchestration.
   superseded briefings need not be retained. Concrete location, file format, and naming are
   planning decisions bounded by the existing governance; a retention or pruning policy for
   superseded briefings is out of scope.
+- **Persistence Confirmation** *(added 2026-09-22)*: the record, carried on a successful
+  briefing result, that the validated briefing is held in the validated-briefing store. Set only
+  after the persistence boundary confirms the save, and also reported for a briefing read back
+  from the store. It is a property of storage, not of the generation attempt: it is identical
+  for an Attempt 1 and an Attempt 2 briefing. Its concrete representation is a planning decision.
 - **Terminal Briefing Failure**: the existing application-visible "briefing could not be
   produced" result, carrying a last-failure category of "generation" or "validation" and mapped
   by the existing status convention. Feature-002 introduces no new failure result.
@@ -473,6 +594,18 @@ involved and no change to the service or orchestration.
   generation and validation outcomes, with no US-13 or US-14 final implementation present.
 - **SC-012**: 0 full prompts, full briefing texts, or secrets appear in application logs or in
   the governed store's retained metadata for retried requests.
+- **SC-013**: 100% of successful briefing results carry a persistence confirmation, and 100% of
+  runs that surface the storage-error result carry none; 0 confirmations are reported for a
+  briefing that was not confirmed stored.
+- **SC-014**: The persistence confirmation is identical across Attempt 1 and Attempt 2
+  successes in 100% of cases; 0 confirmations vary by attempt count.
+- **SC-015**: After a successful briefing request the advisor-facing surface reports the save in
+  100% of cases, and reports the replacement of a superseded briefing in 100% of successful
+  regenerations for a student who already had one.
+- **SC-016**: 0 advisor-facing surfaces render the attempt count or any other indication that a
+  briefing came from a second attempt, while the attempt count remains present in 100% of
+  application responses, stored briefing records and workflow log lines that carried it before
+  (FR-032).
 
 ## Assumptions
 
@@ -502,6 +635,12 @@ involved and no change to the service or orchestration.
   are determined during `/speckit-plan` by extending the existing architecture with the minimum
   necessary change. A technical choice that would materially change user-visible behaviour or
   feature scope is flagged for human approval rather than decided silently.
+- The persistence confirmation reports an outcome the workflow already produces. It changes no
+  generation, validation, retry or storage behaviour, and adds no decision point — a briefing is
+  saved on exactly the same runs as before the amendment.
+- The advisor-facing surface is the existing Streamlit briefing panel. Rendering the
+  confirmation there is reporting of Feature-002's own behaviour, not the advisor dashboard
+  owned by US-09/US-10/US-11.
 - The machine-learning model, the synthetic-data generation notebooks, and other team-owned
   components are not modified.
 
@@ -538,8 +677,11 @@ involved and no change to the service or orchestration.
 - A retention, archival, or pruning policy for superseded validated briefings, and any
   history-retrieval capability — the governed store guarantees only that the most-recent
   validated briefing per student is retrievable.
-- Any new advisor-facing UI or dashboard, and any visible "second attempt" label — **US-09,
-  US-10, US-11**.
+- Any new advisor-facing UI or dashboard beyond the persistence confirmation required by
+  FR-038/FR-039 and the FR-032 correction, and any visible "second attempt" label — **US-09,
+  US-10, US-11**. *(Amended 2026-09-22: the confirmation is reporting of an outcome Feature-002
+  already owns, rendered on the existing briefing panel. It adds no new view, navigation or
+  advisor workflow.)*
 - Changes to the first-attempt orchestration, the at-risk precondition, or the existing-briefing
   get-or-create behaviour — **Feature-001**.
 - Migration or back-fill of previously stored briefings into the governed Volume, and any

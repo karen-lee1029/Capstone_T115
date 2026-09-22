@@ -37,7 +37,11 @@ class StreamlitHost:
         self.process = subprocess.Popen(
             [sys.executable, "-m", "streamlit", "run", ui_path, "--server.address", "127.0.0.1",
              "--server.port", str(self.port), "--server.headless", "true", "--server.baseUrlPath", "ui",
-             "--server.enableCORS", "false", "--server.enableXsrfProtection", "false"],
+             "--server.enableCORS", "false", "--server.enableXsrfProtection", "false",
+             # ui.py hardcodes a light palette for every element it draws itself. Without this,
+             # Streamlit resolves its own theme from the viewer's browser or OS, so built-in
+             # widgets render dark against that light page for anyone on a dark-mode machine.
+             "--theme.base", "light"],
             stdout=subprocess.DEVNULL,
             stderr=subprocess.STDOUT,
         )

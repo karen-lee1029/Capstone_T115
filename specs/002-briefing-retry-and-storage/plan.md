@@ -2,6 +2,9 @@
 
 **Branch**: `002-briefing-retry-and-storage` | **Date**: 2026-09-03 | **Spec**: [spec.md](./spec.md)
 
+**Amended**: 2026-09-22 — persistence confirmation (spec FR-035–FR-041, User Story 4) and the
+FR-032 correction. Design § 8 and the Test plan carry the amendment; §§ 1–7 are unchanged.
+
 **Input**: Feature specification from `specs/002-briefing-retry-and-storage/spec.md` (approved and
 clarified 2026-09-03). Constitution `v1.1.0`. Feature-001 (`001-advisor-briefing-backend`, merged
 at `111aac8`) supplies every seam this feature fills.
@@ -25,11 +28,20 @@ Feature-001 defined as boundaries and shipped as placeholders:
    `InMemoryBriefingStore` when `BRIEFING_VOLUME` is configured; the in-memory store stays for
    local/mock/test mode.
 
+3. **The persistence confirmation** *(amendment, 2026-09-22)* — one additive
+   `ValidatedBriefing.storage_confirmed` flag, stamped by `StudentService` only after
+   `store.save_validated(...)` returns, plus the advisor-facing confirmation rendered on the
+   existing Streamlit briefing panel. It reports an outcome the workflow already produces and
+   changes no generation, validation, retry or storage behaviour. The same amendment removes the
+   attempt-count rendering from the briefing metadata line, which shipped contrary to FR-032.
+
 **Approach: reuse and extend, do not redesign.** No change to the orchestration call order, the
 retry hand-off point, the persistence orchestration, the REST/MCP surface, the shared workflow
 types, or the error→status mapping. Two new classes, one additive model factory, one new
 setting, and composition-root wiring. No new dependency (`databricks-sdk` is already present),
-no new framework, no parallel service.
+no new framework, no parallel service. The 2026-09-22 amendment adds one additive model field
+and two presentation changes on the existing briefing panel — still no new endpoint, response
+type or service.
 
 ## Technical Context
 
@@ -97,6 +109,24 @@ unchanged: PASS.*
 
 **Gate result: PASS. Complexity Tracking empty.**
 
+### Amendment re-check (2026-09-22, persistence confirmation)
+
+Re-evaluated for the amendment only; every row above is unchanged.
+
+| Principle | Assessment |
+|---|---|
+| I. Specification-Driven Development | PASS — Design § 8 traces to spec User Story 4, FR-035–FR-041 and SC-013–SC-016, recorded in Clarifications 2026-09-22 before implementation. |
+| II. Strict Scope Containment | PASS — confined to reporting Feature-002's own persistence outcome. No generation, validation, retry or storage behaviour changes. `ui.py` is touched only on the briefing panel that displays this feature's result, not the US-09/10/11 advisor dashboard. |
+| IV. Minimal Necessary Change | PASS — one additive model field with a default, one one-line service delegation, three stamping sites inside existing methods, one six-line copy module, two edits on the existing briefing panel. No new endpoint, response type, dependency or service. |
+| V. Reuse and Extend Existing Architecture | PASS — `storage_confirmed` follows the established `source` stamping-and-restamping pattern; the banner reuses the existing session-state notice mechanism; `ValidatedBriefing` is already the REST/MCP response shape, so both surfaces carry the field with no contract change. |
+| VI. No Unnecessary Complexity | PASS — a boolean, not a status enum or an event. `briefing_messages.py` exists because `ui.py` runs Streamlit at import and so cannot be imported by a test; it holds copy only. |
+| X. Security and Privacy | PASS — the field is a boolean; the added log field is a boolean. No prompt, briefing text or secret (FR-033). |
+| XII. Proportionate Testing | PASS — one new test file for the new behaviour. Per the standing project rule, no earlier feature's test file is edited and nothing already proven by Feature-001/002/003 is re-tested. |
+| XIII. Human Review of AI-Generated Development Work | PASS — the confirmation surface and the FR-032 correction were decided by Renny Matis on 2026-09-22. |
+| XVI. Preserve Team Contributions | PASS — `ui.py` is a Feature-001 file, edited only where this feature's own outcome is displayed; no other contributor's file, test or notebook is touched. |
+
+**Amendment gate result: PASS.**
+
 ## Project Structure
 
 ### Documentation (this feature)
@@ -109,7 +139,8 @@ specs/002-briefing-retry-and-storage/
 ├── quickstart.md               # Phase 1 — run & validate the retry + governed store offline
 ├── contracts/
 │   ├── retry-workflow.md        # Internal contract: SingleRetryWorkflow.run behaviour + outcome table
-│   └── volume-briefing-store.md # Internal contract: BriefingStore over a Unity Catalog Volume
+│   ├── volume-briefing-store.md # Internal contract: BriefingStore over a Unity Catalog Volume
+│   └── persistence-confirmation.md # Internal contract: the persistence confirmation (added 2026-09-22)
 ├── spec.md
 ├── checklists/requirements.md
 └── tasks.md                    # Created later by /speckit-tasks
@@ -125,11 +156,12 @@ student_attrition_risk_app/
 ├── .env.example                     # MODIFY — add BRIEFING_VOLUME= (blank → in-memory store)
 ├── app.yaml                         # MODIFY — add BRIEFING_VOLUME env key with a BLANK value; the real /Volumes/... path is set at deploy time once the governed Volume is confirmed (approved decision 1)
 ├── src/student_attrition_risk/
+│   ├── briefing_messages.py         # NEW (2026-09-22) — advisor-facing persistence-confirmation copy; no Streamlit import, so it is unit-testable
 │   ├── retry_workflow.py            # MODIFY — add SingleRetryWorkflow (+ a private retry-context builder); keep RetryNotConfigured as the passthrough/test double
 │   ├── briefing_store.py            # MODIFY — add VolumeBriefingStore (Unity Catalog Volume Files API); keep InMemoryBriefingStore
 │   ├── config.py                    # MODIFY — add `briefing_volume` setting + `validate_volume_path`
-│   ├── models.py                    # MODIFY (additive only) — add `make_validated_briefing(...)` factory used by both the service and the retry workflow
-│   ├── student_service.py           # MODIFY (behaviour-preserving) — `_build_validated` delegates to `make_validated_briefing`; no orchestration change
+│   ├── models.py                    # MODIFY (additive only) — add `make_validated_briefing(...)` factory used by both the service and the retry workflow. 2026-09-22: add `ValidatedBriefing.storage_confirmed: bool = False`.
+│   ├── student_service.py           # MODIFY (behaviour-preserving) — `_build_validated` delegates to `make_validated_briefing`; no orchestration change. 2026-09-22: `_persist` returns the confirmed briefing, the retrieval paths stamp `storage_confirmed`, and `has_stored_briefing` is added. Still no orchestration change.
 │   ├── main.py                      # MODIFY — `build_service` wires SingleRetryWorkflow always, and selects VolumeBriefingStore vs InMemoryBriefingStore by `settings.briefing_volume`
 │   ├── ports.py                     # READ-ONLY — `RetryWorkflow` and `BriefingStore` protocols already match
 │   ├── api.py                       # READ-ONLY — BriefingNotProducedError→502, BriefingStorageError→503, ConfigurationError→503 already mapped
@@ -140,11 +172,12 @@ student_attrition_risk_app/
 │   ├── student_repository.py        # READ-ONLY
 │   ├── databricks_client.py         # READ-ONLY — SQL only; the Volume store uses WorkspaceClient directly
 │   ├── streamlit_host.py            # READ-ONLY
-│   └── ui.py                        # READ-ONLY — no advisor-visible retry indicator (FR-032)
+│   └── ui.py                        # MODIFY (2026-09-22) — render the persistence confirmation (FR-038/FR-039); REMOVE the attempt-count rendering from the briefing metadata line (FR-032 correction). Still no advisor-visible retry indicator.
 └── tests/
     ├── test_retry_workflow.py       # NEW — SingleRetryWorkflow unit behaviour (see Test plan)
     ├── test_volume_briefing_store.py# NEW — VolumeBriefingStore against an in-memory fake Files client + store-contract parity
     ├── test_briefing_retry_integration.py # NEW — end-to-end via StudentService with scripted doubles: attempt_count=2, no third attempt, terminal categories, previous briefing preserved, nothing stored on failure
+    ├── test_briefing_storage_confirmation.py # NEW (2026-09-22) — storage_confirmed on every success path, absent on storage failure, identical across attempts, plus the advisor-facing confirmation copy
     ├── test_config.py               # MODIFY — BRIEFING_VOLUME / validate_volume_path cases
     ├── test_briefing_orchestration.py # READ-ONLY — must still pass unchanged (uses its own retry double)
     ├── test_briefing_store.py       # READ-ONLY — InMemoryBriefingStore contract still passes
@@ -299,6 +332,72 @@ wiring it now needs no follow-up when US-13 lands.
 Synchronous throughout, matching Feature-001 and the `WorkspaceClient` Files API. FastAPI routes
 stay `def`.
 
+### 8. Persistence confirmation (amendment, 2026-09-22)
+
+Implements spec User Story 4 and FR-035–FR-041. It reports an outcome the workflow already
+produces; **no** generation, validation, retry or storage behaviour changes, and a briefing is
+saved on exactly the same runs as before.
+
+**The signal — `ValidatedBriefing.storage_confirmed: bool = False` (`models.py`, additive).**
+Meaning: *the validated-briefing store has confirmed it holds this briefing*. It is a property
+of storage, not of the generation attempt, so it is identical for an Attempt 1 and an Attempt 2
+briefing (FR-040). Defaulted to `False`, so every existing construction site, the Feature-001
+and Feature-003 suites, and any previously stored JSON document remain valid without change.
+
+This mirrors the existing `source` field exactly: both are stamped by `StudentService` on the
+way out rather than written by the producer, and both are restamped on the retrieval path. The
+briefing handed to `save_validated` still carries `storage_confirmed=False` — at that instant it
+is not yet confirmed — so the stored JSON body records `False`. That is the correct
+pre-confirmation snapshot, and the retrieval path restamps it to `True`, precisely as it already
+restamps `source="generated"` to `source="stored"`.
+
+**Where it is stamped (`student_service.py`)** — three sites, all inside methods that already
+exist:
+
+| Path | Change |
+|---|---|
+| `_persist(student_hash, briefing)` | returns `briefing.model_copy(update={"storage_confirmed": True})` after `store.save_validated` returns. A raised `BriefingStorageError` short-circuits, so no confirmation can escape an unconfirmed save (FR-036). |
+| first-attempt success, and `_hand_off_to_retry` `Produced` | return the value `_persist` returned instead of the pre-save briefing. |
+| `get_stored_briefing` and the `returned_existing` branch of `request_briefing` | extend the existing `model_copy(update={"source": "stored"})` to also set `storage_confirmed=True` (FR-037). |
+
+`_log_outcome` gains an optional `stored` field on the existing metadata-only log line. It is a
+boolean — no prompt, briefing text or secret (FR-033).
+
+**API / MCP**: no change. `ValidatedBriefing` is already the `response_model` and the MCP
+`model_dump`, so the new field ships on both surfaces automatically (FR-035 — no new response
+type, no new endpoint).
+
+**Advisor-facing surface (`ui.py`)** — two changes on the existing briefing panel:
+
+1. **Confirmation copy.** `ui.request_briefing` records the confirmation in a `ui_success`
+   session-state key — a sibling of the existing `ui_message` key, so confirmations and neutral
+   notices stay distinguishable — and the panel renders it with `st.success` beside the existing
+   `st.info`. Nothing is recorded when the request raised, so a storage failure shows only the
+   existing error (FR-038).
+2. **FR-032 correction.** The `Attempt: {briefing.attempt_count}` fragment is removed from the
+   briefing metadata line. `attempt_count` remains in the API response, the stored document and
+   the logs; it simply stops being advisor-facing (SC-016).
+
+**The wording lives in a new `briefing_messages.py`, not in `ui.py`.** `ui.py` executes
+`st.set_page_config` and builds the whole page at import, so anything defined there cannot be
+imported by a test without a Streamlit runtime. A six-line, dependency-free
+`storage_confirmation_message(*, replaced: bool) -> str` module keeps FR-038/FR-039/FR-041
+unit-testable and keeps advisor-facing copy out of the domain and service modules
+(constitution IX). Wording is store-neutral — "the validated briefing store", never "Unity
+Catalog Volume" — because the in-memory store remains the local and test implementation
+(FR-041). `replaced` is determined in `ui.request_briefing` (FR-039) as follows, without any
+extra store read on the common path:
+
+| Request | How "replaced" is known | Confirmation |
+|---|---|---|
+| `regenerate=False`, result `source == "stored"` | the service returned an existing briefing; nothing was generated or saved | reports the briefing as already saved, not as newly saved |
+| `regenerate=False`, result `source == "generated"` | the service only generates here when the student had none, so a save is necessarily a first save | first save |
+| `regenerate=True` | ambiguous from the result alone — resolved by one `service.has_stored_briefing(hash)` call **before** regenerating | replacement if `True`, first save if `False` |
+
+`StudentService.has_stored_briefing(student_hash) -> bool` is a new one-line public delegation to
+`store.has_validated`, added so the UI asks the service rather than reaching through it into the
+store (constitution IX). The extra read happens only on the explicit Regenerate action.
+
 ## Test plan (proportionate — constitution XII)
 
 Offline, no workspace. Doubles: `ScriptedGenerationProvider` (list of draft-or-exception,
@@ -339,6 +438,23 @@ one consumed per call, asserts it is not over-called), `ScriptedValidator` (list
   `None`).
 - store-contract parity: the `test_briefing_store.py` scenarios pass against `VolumeBriefingStore`.
 - `save_validated` writes only `ValidatedBriefing` JSON — no prompt text key, no secret.
+
+`tests/test_briefing_storage_confirmation.py` (NEW — 2026-09-22 amendment). A **new file
+only**: no Feature-001, Feature-002 or Feature-003 test file is edited, and nothing those suites
+already prove is re-tested.
+- first-attempt success ⇒ the returned briefing has `storage_confirmed is True` (FR-035).
+- retry (Attempt 2) success ⇒ `storage_confirmed is True`, identical to the Attempt 1 case
+  (FR-040).
+- `save_validated` raising `BriefingStorageError` ⇒ `BriefingStorageError` propagates and no
+  briefing carrying `storage_confirmed=True` is returned (FR-036).
+- `get_stored_briefing` and the `returned_existing` path ⇒ `storage_confirmed is True` alongside
+  `source == "stored"` (FR-037).
+- the briefing body handed to `save_validated` carries `storage_confirmed=False` — the
+  pre-confirmation snapshot — proving the flag is stamped on confirmation, not optimistically.
+- `storage_confirmation_message`: first-save wording, replacement wording, store-neutral in both
+  (contains no "Volume" / "Unity Catalog" / "in-memory"), and mentions validation (FR-038/FR-039/FR-041).
+- FR-032 guard: the `ui.py` source contains no `attempt_count` rendering, while
+  `ValidatedBriefing` still carries the field and the API response still exposes it (SC-016).
 
 `tests/test_config.py` (extend): valid `/Volumes/a/b/c` accepted; missing prefix, too few
 segments, unsafe characters ⇒ `ConfigurationError`; blank ⇒ `briefing_volume is None`.
@@ -381,6 +497,9 @@ All five deferred decisions are approved as follows and are now binding on imple
   factory, the stored-file model, and the new configuration.
 - `contracts/retry-workflow.md`, `contracts/volume-briefing-store.md` — the internal contracts
   (no REST/MCP contract change).
+- `contracts/persistence-confirmation.md` *(added 2026-09-22)* — the persistence-confirmation
+  contract: who may set `storage_confirmed`, the outcome table, serialisation, and the
+  advisor-facing copy requirements. Still no REST/MCP contract change.
 - `quickstart.md` — offline validation of the retry and the governed store.
 
 ## Complexity Tracking
