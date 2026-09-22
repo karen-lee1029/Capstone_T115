@@ -60,18 +60,21 @@ def _log_outcome(
     outcome: str,
     attempt_count: int | None = None,
     validator_id: str | None = None,
+    stored: bool | None = None,
     exception: BaseException | None = None,
 ) -> None:
     """Emit a metadata-only workflow log line.
 
     Never receives or emits prompt text, briefing text, or secrets (FR-031, FR-032).
+    ``stored`` is a boolean persistence confirmation, metadata like the rest (FR-033).
     """
     logger.info(
-        "briefing_workflow outcome=%s hash=%s attempt_count=%s validator_id=%s error=%s",
+        "briefing_workflow outcome=%s hash=%s attempt_count=%s validator_id=%s stored=%s error=%s",
         outcome,
         student_deidentified_hash,
         attempt_count,
         validator_id,
+        stored,
         type(exception).__name__ if exception is not None else None,
     )
 
@@ -124,8 +127,12 @@ class StudentService:
                 outcome="returned_existing",
                 attempt_count=existing.attempt_count,
                 validator_id=existing.validator_id,
+                stored=True,
             )
-            return existing.model_copy(update={"source": "stored"})
+            # Read out of the store, so it is confirmed stored (FR-037).
+            return existing.model_copy(
+                update={"source": "stored", "storage_confirmed": True}
+            )
 
         context = self._build_context(student_hash, prediction)
 
@@ -143,12 +150,13 @@ class StudentService:
         outcome = self.validator.validate(draft, context)
         if outcome.passed:
             briefing = self._build_validated(student_hash, prediction, draft.text, outcome, 1)
-            self._persist(student_hash, briefing)
+            briefing = self._persist(student_hash, briefing)
             _log_outcome(
                 student_deidentified_hash=student_hash,
                 outcome="generated",
                 attempt_count=1,
                 validator_id=outcome.validator_id,
+                stored=True,
             )
             return briefing
 
@@ -170,8 +178,18 @@ class StudentService:
             outcome="returned_existing",
             attempt_count=existing.attempt_count,
             validator_id=existing.validator_id,
+            stored=True,
         )
-        return existing.model_copy(update={"source": "stored"})
+        # Read out of the store, so it is confirmed stored (FR-037).
+        return existing.model_copy(update={"source": "stored", "storage_confirmed": True})
+
+    def has_stored_briefing(self, student_hash: str) -> bool:
+        """Whether the student already has a stored validated briefing.
+
+        Lets the advisor-facing surface tell a first save from one that supersedes an earlier
+        briefing (FR-039) by asking the service rather than reaching through it into the store.
+        """
+        return self.store.has_validated(student_hash)
 
     def health_check(self) -> HealthStatus:
         healthy = self.repository.health_check()
@@ -212,14 +230,24 @@ class StudentService:
             attempt_count=attempt_count,
         )
 
-    def _persist(self, student_hash: str, briefing: ValidatedBriefing) -> None:
+    def _persist(self, student_hash: str, briefing: ValidatedBriefing) -> ValidatedBriefing:
+        """Save the validated briefing and return it carrying the persistence confirmation.
+
+        The confirmation is stamped on the line *after* ``save_validated`` returns, so it can
+        never be reported for a save that did not succeed: a ``BriefingStorageError``
+        short-circuits before the copy is built (FR-035, FR-036).
+        """
         try:
             self.store.save_validated(briefing)
         except BriefingStorageError as exc:
             _log_outcome(
-                student_deidentified_hash=student_hash, outcome="storage_error", exception=exc
+                student_deidentified_hash=student_hash,
+                outcome="storage_error",
+                stored=False,
+                exception=exc,
             )
             raise
+        return briefing.model_copy(update={"storage_confirmed": True})
 
     def _hand_off_to_retry(
         self,
@@ -232,14 +260,17 @@ class StudentService:
         if isinstance(result, Produced):
             # Only reachable once Feature-002 supplies a real retry workflow. Its briefing has
             # not been stored by this request, so persist it here (FR-018).
-            self._persist(student_hash, result.briefing)
+            briefing = self._persist(student_hash, result.briefing)
             _log_outcome(
                 student_deidentified_hash=student_hash,
                 outcome="generated",
-                attempt_count=result.briefing.attempt_count,
-                validator_id=result.briefing.validator_id,
+                attempt_count=briefing.attempt_count,
+                validator_id=briefing.validator_id,
+                stored=True,
             )
-            return result.briefing
+            # The confirmation is identical to a first-attempt success — it reports storage,
+            # not the attempt that produced the briefing (FR-040, FR-032).
+            return briefing
         category = result.category
         _log_outcome(
             student_deidentified_hash=student_hash,

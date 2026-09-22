@@ -102,12 +102,24 @@ class ValidationOutcome(BaseModel):
 
 class ValidatedBriefing(BaseModel):
     """A briefing the validation seam passed; the only briefing form returned to a
-    caller or handed to the persistence seam (FR-018, FR-025, FR-029)."""
+    caller or handed to the persistence seam (FR-018, FR-025, FR-029).
+
+    ``storage_confirmed`` records that the validated-briefing store has confirmed it holds this
+    briefing (Feature-002 FR-035, amendment 2026-09-22). Like ``source`` it is stamped by
+    ``StudentService`` on the way out, never by a producer or a store: ``_persist`` sets it only
+    after ``save_validated`` returns, and the retrieval paths set it because they read the
+    briefing out of the store. It is a property of storage, not of the generation attempt, so it
+    is identical for an attempt-1 and an attempt-2 briefing and carries no retry indication
+    (FR-040, FR-032). A briefing is serialised into the store *before* its save is confirmed, so
+    the stored document always records ``False``; the retrieval path restamps it, exactly as it
+    already restamps ``source``.
+    """
 
     student_deidentified_hash: str
     text: str
     source: str
     validated: bool = True
+    storage_confirmed: bool = False
     validator_id: str
     generated_at: datetime
     attempt_count: int = 1

@@ -8,6 +8,10 @@ from typing import Any
 
 import streamlit as st
 
+from student_attrition_risk.briefing_messages import (
+    existing_briefing_message,
+    storage_confirmation_message,
+)
 from student_attrition_risk.main import build_service
 from student_attrition_risk.student_service import (
     BriefingNotProducedError,
@@ -355,6 +359,7 @@ def clear_selected_student() -> None:
         "selected_hash",
         "reviewed",
         "ui_message",
+        "ui_success",
     ):
         st.session_state.pop(key, None)
 
@@ -365,6 +370,7 @@ def load_student(student_hash: str) -> None:
     st.session_state.selected_hash = student_hash
     st.session_state.briefing = None
     st.session_state.reviewed = False
+    st.session_state.pop("ui_success", None)
 
 
 def request_briefing(*, regenerate: bool = False) -> None:
@@ -373,9 +379,22 @@ def request_briefing(*, regenerate: bool = False) -> None:
     if profile is None:
         return
 
-    briefing = service.request_briefing(
-        profile.prediction.student_deidentified_hash,
-        regenerate=regenerate,
+    student_hash = profile.prediction.student_deidentified_hash
+
+    # Whether a successful regeneration will supersede an existing briefing (FR-039). Only the
+    # regenerate path is ambiguous from the result alone, so this is the only path that pays for
+    # the extra store read: without ``regenerate`` the service returns any briefing the student
+    # already has rather than generating, so a briefing it generates is necessarily a first save.
+    replaced = regenerate and service.has_stored_briefing(student_hash)
+
+    briefing = service.request_briefing(student_hash, regenerate=regenerate)
+
+    # Reached only when the request succeeded — a storage failure raises, so the advisor is
+    # never told a briefing was saved when it was not (FR-038).
+    st.session_state.ui_success = (
+        existing_briefing_message()
+        if briefing.source == "stored"
+        else storage_confirmation_message(replaced=replaced)
     )
     st.session_state.briefing = briefing
     st.session_state.reviewed = False
@@ -391,12 +410,15 @@ def retrieve_stored_briefing() -> None:
         profile.prediction.student_deidentified_hash
     )
 
+    st.session_state.pop("ui_success", None)
+
     if briefing is None:
         st.session_state.ui_message = (
             "No previously validated briefing is available."
         )
         return
 
+    st.session_state.ui_message = existing_briefing_message()
     st.session_state.briefing = briefing
     st.session_state.reviewed = False
 
@@ -674,6 +696,10 @@ with left_column:
             "Briefing generation is unavailable."
         )
 
+    confirmation = st.session_state.pop("ui_success", None)
+    if confirmation:
+        st.success(confirmation)
+
     message = st.session_state.pop("ui_message", None)
     if message:
         st.info(message)
@@ -708,7 +734,7 @@ with right_column:
                 &nbsp;·&nbsp;
                 Validation: {html.escape(briefing.validator_id)}
                 &nbsp;·&nbsp;
-                Attempt: {briefing.attempt_count}
+                Saved: {"Yes" if briefing.storage_confirmed else "No"}
             </div>
             """,
             unsafe_allow_html=True,
