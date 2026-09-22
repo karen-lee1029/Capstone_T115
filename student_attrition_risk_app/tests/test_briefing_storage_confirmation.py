@@ -213,8 +213,12 @@ def test_only_the_replacement_confirmation_mentions_superseding_an_earlier_brief
     first_save = storage_confirmation_message(replaced=False)
     replacement = storage_confirmation_message(replaced=True)
 
-    assert "replaces" in replacement.lower()
-    assert "replace" not in first_save.lower()
+    assert "supersedes" in replacement.lower()
+    assert "supersede" not in first_save.lower()
+    # Storage is append-only: the earlier briefing is retained in the store, it simply stops
+    # being the most recent. Wording that implied deletion would misdescribe what happened.
+    for destructive in ("replaces", "deletes", "overwrites", "removes"):
+        assert destructive not in replacement.lower(), f"wording implies destruction: {destructive}"
     assert replacement.startswith(first_save)
 
 

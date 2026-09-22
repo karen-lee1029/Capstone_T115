@@ -12,7 +12,7 @@ keeps the wording required by Feature-002 FR-038/FR-039/FR-041 directly unit-tes
 _SAVED = (
     "This briefing passed validation and has been saved to the validated briefing store."
 )
-_REPLACED = " It replaces the briefing previously saved for this student."
+_REPLACED = " It supersedes the briefing previously saved for this student."
 _ALREADY_SAVED = (
     "Showing the validated briefing already saved for this student."
 )
