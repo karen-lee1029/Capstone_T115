@@ -14,7 +14,8 @@ _SAVED = (
 )
 _REPLACED = " It supersedes the briefing previously saved for this student."
 _ALREADY_SAVED = (
-    "Showing the validated briefing already saved for this student."
+    "This student already has a validated briefing, so it was shown rather than generated "
+    "again. Use Regenerate to produce a new one."
 )
 
 
@@ -29,9 +30,11 @@ def storage_confirmation_message(*, replaced: bool) -> str:
 
 
 def existing_briefing_message() -> str:
-    """Report a briefing that was returned from the store rather than newly saved.
+    """Explain a briefing that was returned from the store rather than newly generated.
 
     The request generated and saved nothing, so it must not claim a save (FR-038, and the spec's
-    "A non-regeneration request returns an already-stored briefing" edge case).
+    "A non-regeneration request returns an already-stored briefing" edge case). It is rendered
+    through the neutral notice, never the confirmation, and it names the action that would
+    actually produce a new briefing so the advisor is not left guessing why nothing changed.
     """
     return _ALREADY_SAVED

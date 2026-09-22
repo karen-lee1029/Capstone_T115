@@ -429,12 +429,15 @@ def request_briefing(*, regenerate: bool = False) -> None:
     briefing = service.request_briefing(student_hash, regenerate=regenerate)
 
     # Reached only when the request succeeded — a storage failure raises, so the advisor is
-    # never told a briefing was saved when it was not (FR-038).
-    st.session_state.ui_success = (
-        existing_briefing_message()
-        if briefing.source == "stored"
-        else storage_confirmation_message(replaced=replaced)
-    )
+    # never told a briefing was saved when it was not (FR-038). A briefing the service returned
+    # from the store was not saved by this request, so it goes to the neutral notice rather than
+    # the confirmation: the confirmation channel means "this request saved something".
+    if briefing.source == "stored":
+        st.session_state.pop("ui_success", None)
+        st.session_state.ui_message = existing_briefing_message()
+    else:
+        st.session_state.pop("ui_message", None)
+        st.session_state.ui_success = storage_confirmation_message(replaced=replaced)
     st.session_state.briefing = briefing
     st.session_state.reviewed = False
 
@@ -457,7 +460,7 @@ def retrieve_stored_briefing() -> None:
         )
         return
 
-    st.session_state.ui_message = existing_briefing_message()
+    st.session_state.pop("ui_message", None)
     st.session_state.briefing = briefing
     st.session_state.reviewed = False
 

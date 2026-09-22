@@ -227,6 +227,23 @@ def test_the_existing_briefing_message_does_not_claim_a_save():
     assert "has been saved" not in existing_briefing_message().lower()
 
 
+def test_the_existing_notice_is_not_mistakable_for_a_save_confirmation():
+    """The two say different things, so the advisor can tell a save from a no-op.
+
+    They previously shared the confirmation channel, which made a request that generated and
+    saved nothing look like a successful save.
+    """
+    existing = existing_briefing_message()
+
+    assert existing != storage_confirmation_message(replaced=False)
+    assert existing != storage_confirmation_message(replaced=True)
+
+
+def test_the_existing_notice_names_the_action_that_would_generate_one():
+    """Explaining why nothing happened is only useful with the way to make it happen."""
+    assert "regenerate" in existing_briefing_message().lower()
+
+
 @pytest.mark.parametrize(
     "message",
     [
