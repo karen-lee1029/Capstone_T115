@@ -277,6 +277,45 @@ st.markdown(
             border-color: #00558c;
         }
 
+        /* The download action is a primary action too, so it carries the primary colour. */
+        div.stDownloadButton > button {
+            background: #00558c;
+            border-color: #00558c;
+            color: #ffffff;
+        }
+
+        div.stDownloadButton > button:hover {
+            background: #004473;
+            border-color: #004473;
+            color: #ffffff;
+        }
+
+        /* Page-owned notices. Streamlit's own st.success / st.info follow Streamlit's theme
+           rather than this stylesheet, which renders dark-on-dark wherever the browser or OS
+           resolves to a dark theme. Every colour on this page is defined here, so these are
+           rendered as ordinary page elements instead. */
+        .save-confirmation {
+            background: #00558c;
+            border: 1px solid #00558c;
+            border-radius: 8px;
+            color: #ffffff;
+            padding: 0.75rem 0.9rem;
+            margin-bottom: 1rem;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        .page-notice {
+            background: #eff8ff;
+            border: 1px solid #b2ddff;
+            border-radius: 8px;
+            color: #175cd3;
+            padding: 0.75rem 0.9rem;
+            margin-bottom: 1rem;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
         @media (max-width: 900px) {
             .page-title {
                 font-size: 1.75rem;
@@ -691,18 +730,27 @@ with left_column:
                             "The briefing workflow is currently unavailable."
                         )
     else:
-        st.info(
+        st.markdown(
+            '<div class="page-notice">'
             "This student is not currently classified as at risk. "
             "Briefing generation is unavailable."
+            "</div>",
+            unsafe_allow_html=True,
         )
 
     confirmation = st.session_state.pop("ui_success", None)
     if confirmation:
-        st.success(confirmation)
+        st.markdown(
+            f'<div class="save-confirmation">{html.escape(confirmation)}</div>',
+            unsafe_allow_html=True,
+        )
 
     message = st.session_state.pop("ui_message", None)
     if message:
-        st.info(message)
+        st.markdown(
+            f'<div class="page-notice">{html.escape(message)}</div>',
+            unsafe_allow_html=True,
+        )
 
 
 with right_column:
