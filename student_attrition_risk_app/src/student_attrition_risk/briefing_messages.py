@@ -29,6 +29,21 @@ def storage_confirmation_message(*, replaced: bool) -> str:
     return _SAVED + (_REPLACED if replaced else "")
 
 
+_RETRIEVED = (
+    "Retrieved the validated briefing saved for this student."
+)
+
+
+def retrieved_briefing_message() -> str:
+    """Confirm an explicit Retrieve Saved action succeeded.
+
+    Distinct from the save confirmation: nothing was generated or written, the stored briefing
+    was read back. Distinct from the already-has-one notice too, so the advisor can tell which
+    of the two paths produced what is on screen.
+    """
+    return _RETRIEVED
+
+
 def existing_briefing_message() -> str:
     """Explain a briefing that was returned from the store rather than newly generated.
 

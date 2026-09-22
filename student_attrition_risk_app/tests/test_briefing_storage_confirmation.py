@@ -20,6 +20,7 @@ from doubles import ScriptedGenerationProvider, ScriptedValidator
 from student_attrition_risk.briefing_instructions import InterimInstructions
 from student_attrition_risk.briefing_messages import (
     existing_briefing_message,
+    retrieved_briefing_message,
     storage_confirmation_message,
 )
 from student_attrition_risk.briefing_store import InMemoryBriefingStore
@@ -244,6 +245,27 @@ def test_the_existing_notice_names_the_action_that_would_generate_one():
     assert "regenerate" in existing_briefing_message().lower()
 
 
+def test_every_advisor_message_is_distinct():
+    """Three outcomes, three sentences. Identical copy would make the buttons
+    indistinguishable, which is what an earlier revision got wrong."""
+    messages = [
+        storage_confirmation_message(replaced=False),
+        storage_confirmation_message(replaced=True),
+        existing_briefing_message(),
+        retrieved_briefing_message(),
+    ]
+
+    assert len(set(messages)) == len(messages)
+
+
+def test_the_retrieved_message_reports_a_read_not_a_write():
+    """Retrieve Saved writes nothing, so it must not claim a save (FR-038)."""
+    message = retrieved_briefing_message().lower()
+
+    assert "retrieved" in message
+    assert "has been saved" not in message
+
+
 @pytest.mark.parametrize(
     "message",
     [
@@ -275,6 +297,28 @@ def test_advisor_copy_never_mentions_attempts_or_retries(message: str):
 
 
 # --- FR-032 correction: the attempt count is no longer advisor-facing ------------------------
+
+
+def test_notices_never_rely_on_colour_alone():
+    """Each notice leads with a bold label, so meaning survives monochrome and any colour
+    vision deficiency. The renderer is what guarantees it, so assert on the renderer."""
+    source = UI_SOURCE.read_text(encoding="utf-8")
+
+    assert "notice-label" in source
+    assert 'def render_notice(' in source
+    # Every notice goes through the renderer; none is hand-built without a label.
+    assert '<div class="page-notice">' not in source
+    assert '<div class="save-confirmation">' not in source
+
+
+def test_notice_colours_avoid_the_red_green_pair():
+    """Green is not used for the confirmation: under the common red-green deficiencies it
+    converges with the red used for errors. Teal keeps a blue component and stays distinct."""
+    source = UI_SOURCE.read_text(encoding="utf-8")
+    confirmation = source[source.index(".save-confirmation {") :][:400]
+
+    for green in ("#067647", "#dcfae6", "#12b76a"):
+        assert green not in confirmation, f"confirmation uses a success green: {green}"
 
 
 def test_the_advisor_surface_does_not_render_the_attempt_count():

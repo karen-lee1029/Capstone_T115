@@ -10,6 +10,7 @@ import streamlit as st
 
 from student_attrition_risk.briefing_messages import (
     existing_briefing_message,
+    retrieved_briefing_message,
     storage_confirmation_message,
 )
 from student_attrition_risk.main import build_service
@@ -272,33 +273,57 @@ st.markdown(
             font-weight: 650;
         }
 
-        div.stButton > button[kind="primary"] {
+        /* Every action on this page is in the primary blue family: solid for primary
+           actions, outlined for secondary ones so the hierarchy survives. Notices are never
+           blue, so a notice can never be mistaken for something clickable. */
+        div.stButton > button[kind="primary"],
+        div.stDownloadButton > button,
+        div[data-testid="stLinkButton"] > a {
             background: #00558c;
-            border-color: #00558c;
-        }
-
-        /* The download action is a primary action too, so it carries the primary colour. */
-        div.stDownloadButton > button {
-            background: #00558c;
-            border-color: #00558c;
+            border: 1px solid #00558c;
             color: #ffffff;
         }
 
-        div.stDownloadButton > button:hover {
+        div.stButton > button[kind="primary"]:hover,
+        div.stDownloadButton > button:hover,
+        div[data-testid="stLinkButton"] > a:hover {
             background: #004473;
             border-color: #004473;
             color: #ffffff;
         }
 
-        /* Page-owned notices. Streamlit's own st.success / st.info follow Streamlit's theme
-           rather than this stylesheet, which renders dark-on-dark wherever the browser or OS
-           resolves to a dark theme. Every colour on this page is defined here, so these are
-           rendered as ordinary page elements instead. */
-        .save-confirmation {
-            background: #00558c;
+        div.stButton > button[kind="secondary"] {
+            background: #ffffff;
             border: 1px solid #00558c;
+            color: #00558c;
+        }
+
+        div.stButton > button[kind="secondary"]:hover {
+            background: #eff8ff;
+            border-color: #004473;
+            color: #004473;
+        }
+
+        /* Page-owned notices. Streamlit's own st.success / st.info follow Streamlit's theme
+           rather than this stylesheet, so they are not used. Colour never carries the meaning
+           on its own: every notice leads with a bold label, so it still reads correctly in
+           monochrome and under any form of colour vision deficiency. Green and red are avoided
+           for the pair a reader must tell apart, since those two converge under the common
+           red-green deficiencies. Teal keeps a strong blue component and stays distinct from
+           the red used for errors. */
+        .notice-label {
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            margin-right: 0.45rem;
+        }
+
+        .save-confirmation {
+            background: #f0fdf9;
+            border: 1px solid #5fe9d0;
+            border-left: 4px solid #107569;
             border-radius: 8px;
-            color: #ffffff;
+            color: #107569;
             padding: 0.75rem 0.9rem;
             margin-bottom: 1rem;
             font-size: 0.9rem;
@@ -306,10 +331,11 @@ st.markdown(
         }
 
         .page-notice {
-            background: #eff8ff;
-            border: 1px solid #b2ddff;
+            background: #f8fafc;
+            border: 1px solid #d0d5dd;
+            border-left: 4px solid #667085;
             border-radius: 8px;
-            color: #175cd3;
+            color: #344054;
             padding: 0.75rem 0.9rem;
             margin-bottom: 1rem;
             font-size: 0.9rem;
@@ -412,6 +438,20 @@ def load_student(student_hash: str) -> None:
     st.session_state.pop("ui_success", None)
 
 
+def render_notice(label: str, body: str, *, style: str = "page-notice") -> None:
+    """Render a page-owned notice.
+
+    The bold label, not the colour, is what tells one notice from another, so the meaning
+    survives monochrome printing and any colour vision deficiency.
+    """
+    st.markdown(
+        f'<div class="{style}">'
+        f'<span class="notice-label">{html.escape(label)}</span>'
+        f"{html.escape(body)}</div>",
+        unsafe_allow_html=True,
+    )
+
+
 def request_briefing(*, regenerate: bool = False) -> None:
     profile = st.session_state.get("profile")
 
@@ -434,7 +474,7 @@ def request_briefing(*, regenerate: bool = False) -> None:
     # the confirmation: the confirmation channel means "this request saved something".
     if briefing.source == "stored":
         st.session_state.pop("ui_success", None)
-        st.session_state.ui_message = existing_briefing_message()
+        st.session_state.ui_message = ("No change", existing_briefing_message())
     else:
         st.session_state.pop("ui_message", None)
         st.session_state.ui_success = storage_confirmation_message(replaced=replaced)
@@ -456,11 +496,12 @@ def retrieve_stored_briefing() -> None:
 
     if briefing is None:
         st.session_state.ui_message = (
-            "No previously validated briefing is available."
+            "None saved",
+            "No previously validated briefing is available.",
         )
         return
 
-    st.session_state.pop("ui_message", None)
+    st.session_state.ui_message = ("Retrieved", retrieved_briefing_message())
     st.session_state.briefing = briefing
     st.session_state.reviewed = False
 
@@ -733,27 +774,19 @@ with left_column:
                             "The briefing workflow is currently unavailable."
                         )
     else:
-        st.markdown(
-            '<div class="page-notice">'
+        render_notice(
+            "Not at risk",
             "This student is not currently classified as at risk. "
-            "Briefing generation is unavailable."
-            "</div>",
-            unsafe_allow_html=True,
+            "Briefing generation is unavailable.",
         )
 
     confirmation = st.session_state.pop("ui_success", None)
     if confirmation:
-        st.markdown(
-            f'<div class="save-confirmation">{html.escape(confirmation)}</div>',
-            unsafe_allow_html=True,
-        )
+        render_notice("Saved", confirmation, style="save-confirmation")
 
     message = st.session_state.pop("ui_message", None)
     if message:
-        st.markdown(
-            f'<div class="page-notice">{html.escape(message)}</div>',
-            unsafe_allow_html=True,
-        )
+        render_notice(*message)
 
 
 with right_column:
