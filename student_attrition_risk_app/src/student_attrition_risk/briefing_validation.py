@@ -6,7 +6,8 @@ acceptance-criteria validation is owned by **US-14** and will be supplied throug
 seam without changing the orchestration (FR-016).
 """
 
-from .models import BriefingGenerationContext, DraftBriefing, ValidationOutcome
+import re
+from .models import BriefingGenerationContext, DraftBriefing, ValidationOutcome, UNAVAILABLE, SUPPRESSED
 
 
 class InterimValidator:
@@ -25,3 +26,218 @@ class InterimValidator:
             feedback=None,
             validator_id=self.validator_id,
         )
+
+class StructuredBriefingValidator:
+    validator_id = "structured-validator"
+
+    def validate(
+        self, draft: DraftBriefing, context: BriefingGenerationContext
+    ) -> ValidationOutcome:
+        failed_criteria: list[str] = []
+        feedback_parts: list[str] = []
+        text_lower = draft.text.lower()
+
+        # --- AC1: Correct student context ---
+        # The briefing must use the information corresponding to the selected
+        # deidentified student and their associated ML attrition risk prediction.
+        # The displayed risk level and risk score must correspond to the prediction.
+
+        # Student's deidentified hash is incorrect
+        if draft.student_deidentified_hash != context.student_deidentified_hash:
+            failed_criteria.append("AC1")
+            feedback_parts.append(
+                "The briefing's student_deidentified_hash does not match the student "
+                "selected in the context."
+            )
+        
+        # Student's risk level is not mentioned
+        if "at risk" not in text_lower and "at-risk" not in text_lower:
+            if "AC1" not in failed_criteria:
+                failed_criteria.append("AC1")
+            feedback_parts.append(
+                "The briefing does not reference the selected student's risk level "
+                "from the prediction record."
+            )
+
+        # Student's risk score is not mentioned
+        risk_pct = context.prediction.attrition_risk_percentage
+        risk_pct_str = f"{risk_pct:.1f}%"
+        mentions_risk = (
+            risk_pct_str in draft.text
+            or str(int(risk_pct)) in draft.text
+            or str(round(risk_pct, 1)) in draft.text
+        )
+        if not mentions_risk:
+            if "AC1" not in failed_criteria:
+                failed_criteria.append("AC1")
+            feedback_parts.append(
+                "The briefing does not reference the selected student's risk "
+                "score from the prediction record."
+            )
+
+        # --- AC2: Structured briefing format ---
+        # The briefing must contain clearly identifiable sections covering the four
+        # required areas, clearly labelled and presented in a readable format.
+        required_sections = [
+            "risk summary",
+            "relevant student context",
+            "recommended advisor actions",
+            "suggested next steps",
+        ]
+        missing_sections = [s for s in required_sections if s not in text_lower]
+        if missing_sections:
+            failed_criteria.append("AC2")
+            feedback_parts.append(
+                "The briefing text is missing the following required section(s): "
+                + ", ".join(s.title() for s in missing_sections)
+                + "."
+            )
+
+        # --- AC3: Evidence-based briefing content ---
+        # Requires semantic/NLP judgment to verify the context section does not
+        # invent information beyond the provided feature values, and that global
+        # feature importance is not presented as individual student-level evidence.
+        # Skipped as too difficult to implement reliably with deterministic rules.
+
+        # --- AC4: Recommended advisor actions ---
+        # The actions must be presented as suggestions for the advisor to consider.
+        # The AI must not make the intervention decision on behalf of the advisor.
+        # Heuristic: flag first-person decision-making language suggesting the AI
+        # itself is taking the intervention action rather than recommending it.
+        ai_decision_patterns = [
+            r"\bi\s+will\s+(intervene|contact|reach\s+out|enrol|withdraw|suspend)",
+            r"\bi\s+(am|m)\s+going\s+to\s+(intervene|contact|enrol|withdraw)",
+            r"\bthe\s+ai\s+(will|should|shall)\s+(intervene|contact|decide|enrol|withdraw)",
+            r"\bi\s+(have|ve)\s+(enrolled|withdrawn|contacted|suspended)",
+        ]
+        # Only check within the Recommended Advisor Actions section if present
+        actions_text = ""
+        if "recommended advisor actions" in text_lower:
+            start = text_lower.find("recommended advisor actions")
+            next_section = len(text_lower)
+            for section in required_sections:
+                if section == "recommended advisor actions":
+                    continue
+                pos = text_lower.find(section, start + 1)
+                if pos != -1 and pos < next_section:
+                    next_section = pos
+            actions_text = text_lower[start:next_section]
+        ac4_violations = [p for p in ai_decision_patterns if re.search(p, actions_text)]
+        if ac4_violations:
+            failed_criteria.append("AC4")
+            feedback_parts.append(
+                "Recommended Advisor Actions contain language that presents the AI as "
+                "making the intervention decision rather than recommending it to the advisor."
+            )
+
+        # --- AC5: Suggested next steps ---
+        # The proposed steps must be actionable and relevant to the available student
+        # context. The AI must not invent or assume a timeframe.
+        if "suggested next steps" in text_lower:
+            start = text_lower.find("suggested next steps")
+            next_steps_text = text_lower[start:]
+            action_words = [
+                "arrange", "schedule", "contact", "refer", "follow up",
+                "follow-up", "meet", "discuss", "review", "send", "notify",
+                "recommend", "plan", "book", "invite", "connect", "initiate",
+                "encourage", "monitor", "check-in", "check in", "explore"
+            ]
+            has_action = any(w in next_steps_text for w in action_words)
+            body = next_steps_text.replace("suggested next steps", "").strip()
+            if not body or not has_action:
+                failed_criteria.append("AC5")
+                feedback_parts.append(
+                    "The Suggested Next Steps section lacks actionable, task-oriented "
+                    "language."
+                )
+            # Detect invented timeframes — the AI should not assume specific deadlines.
+            timeframe_patterns = [
+                r"\bwithin\s+\d+\s+(hour|day|week|month)s?\b",
+                r"\bby\s+(monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b",
+                r"\bby\s+(tomorrow|next\s+week|next\s+month)\b",
+                r"\bby\s+end\s+of\s+(today|week|month|semester)\b",
+                r"\bin\s+\d+\s+(hour|day|week|month)s?\b",
+            ]
+            timeframe_found = [
+                p for p in timeframe_patterns if re.search(p, next_steps_text)
+            ]
+            if timeframe_found:
+                failed_criteria.append("AC5")
+                feedback_parts.append(
+                    "The Suggested Next Steps section contains assumed timeframes. "
+                    "The AI must not invent specific deadlines."
+                )
+
+        # --- AC6: AI transparency and human review ---
+        # The disclaimer that advisor briefing is AI generated and requires human
+        # review is present in the user interface.
+
+        # --- AC7: Privacy and de-identification ---
+        # The briefing must use only approved project information and maintain the
+        # project's privacy and de-identification requirements. The AI must not
+        # introduce unnecessary PII or infer sensitive characteristics.
+        # Heuristic regex check for common PII patterns.
+        pii_patterns = [
+            r"\b[a-z0-9.\-_]+@[a-z0-9.\-_]+\.[a-z]{2,}\b",  # email
+            r"\b\+?\d{8,11}\b",  # phone numbers
+            r"\b\d{8,10}\b",  # long numeric IDs (student numbers)
+        ]
+        # Skip the deidentified hash itself — it is expected to appear
+        hash_pattern = re.escape(draft.student_deidentified_hash)
+        text_without_hash = re.sub(hash_pattern, "", draft.text)
+        pii_found = [
+            p for p in pii_patterns if re.search(p, text_without_hash, re.IGNORECASE)
+        ]
+        if pii_found:
+            failed_criteria.append("AC7")
+            feedback_parts.append(
+                "The briefing text may contain directly identifiable student "
+                "information (e.g. email, phone number, or numeric student ID)."
+            )
+
+        # --- AC8: Traceability ---
+        # The generated briefing must correspond to the selected student's retrieved
+        # context and associated ML prediction. It must not provide generic student
+        # information unrelated to the selected student.
+        # Heuristic: verify at least one feature value from the context is referenced.
+        feature_values = context.features.values
+        feature_mentions = 0
+        for value in feature_values.values():
+            if value is None:
+                continue
+            if isinstance(value, str) and value in (UNAVAILABLE, SUPPRESSED):
+                continue
+            if isinstance(value, (int, float)):
+                if str(int(value)) in draft.text or str(value) in draft.text:
+                    feature_mentions += 1
+            elif isinstance(value, str):
+                key_words = value.split("_")
+                for word in key_words:
+                    if word and word.lower() in text_lower and word.lower() != "is":
+                        feature_mentions += 1
+        if feature_mentions == 0:
+            failed_criteria.append("AC8")
+            feedback_parts.append(
+                "The briefing does not appear to reference the selected student's "
+                "specific retrieved context or feature values."
+            )
+
+        # --- AC9: Error handling ---
+        # Primarily managed by the application UI/backend rather than the AI system
+        # prompt. Not validated here.
+
+        # --- AC10: Briefing storage and retrieval ---
+        # Primarily managed by the application/backend rather than the AI system
+        # prompt. Retrievability is outside the scope of this validation.
+
+        # ========== FINAL OUTPUT ==========
+        passed = len(failed_criteria) == 0
+        feedback = "; ".join(feedback_parts) if feedback_parts else None
+
+        return ValidationOutcome(
+            passed=passed,
+            failed_criteria=failed_criteria,
+            feedback=feedback,
+            validator_id=self.validator_id,
+        )
+        

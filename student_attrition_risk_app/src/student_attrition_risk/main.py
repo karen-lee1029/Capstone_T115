@@ -9,7 +9,7 @@ from .api import create_api
 # from .briefing_instructions import InterimInstructions
 # from .briefing_provider import StubGenerationProvider
 from .briefing_store import InMemoryBriefingStore, VolumeBriefingStore
-from .briefing_validation import InterimValidator
+from .briefing_validation import StructuredBriefingValidator
 from .mcp_server import create_mcp_server
 from .retry_workflow import SingleRetryWorkflow
 from .streamlit_host import StreamlitHost, StreamlitProxy
@@ -35,7 +35,7 @@ def build_service(settings: Settings | None = None) -> StudentService:
         model_name=settings.model_name,
     )
     # generation_provider = StubGenerationProvider()
-    validator = InterimValidator()
+    validator = StructuredBriefingValidator()
     store = VolumeBriefingStore(settings) if settings.briefing_volume else InMemoryBriefingStore()
     return StudentService(
         repository=repository,
