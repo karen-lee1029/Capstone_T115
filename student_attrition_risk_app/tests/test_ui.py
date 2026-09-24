@@ -6,6 +6,8 @@ review checkbox, download button, and the Dashboard link — across happy
 paths and error states.  The real ``build_service`` is replaced by a
 ``FakeService`` backed by ``MockStudentRepository`` so no Databricks
 connection is required.
+
+NOTE: When running tests, Python environment must have Streamlit installed.
 """
 
 from __future__ import annotations
