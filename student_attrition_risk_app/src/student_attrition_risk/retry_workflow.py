@@ -74,7 +74,7 @@ class SingleRetryWorkflow:
     ``run`` performs the generation boundary **exactly once** and the validation boundary
     **at most once**. There is no loop or recursion, so a third generation attempt is
     structurally impossible (FR-002). It never raises except to let a ``ConfigurationError``
-    from the retry generation propagate unchanged (FR-004).
+    from the retry generation or validation propagate unchanged (FR-004).
     """
 
     def __init__(
@@ -95,7 +95,12 @@ class SingleRetryWorkflow:
         except Exception:
             return TerminalFailure(category="generation")  # Attempt 2 generation failed (FR-012)
 
-        outcome = self.validator.validate(draft, retry_context)
+        try:
+            outcome = self.validator.validate(draft, retry_context)
+        except ConfigurationError:
+            raise
+        except Exception:
+            return TerminalFailure(category="validation")  # Attempt 2 validator raised (B2)
         if not outcome.passed:
             return TerminalFailure(category="validation")  # Attempt 2 briefing rejected (FR-013)
 
