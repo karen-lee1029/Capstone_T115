@@ -88,8 +88,8 @@ No foundational phase: the tracks share no prerequisite beyond T001.
 
 ## Phase 6: Register and close-out (US5, P5)
 
-- [ ] T018 [US5] In `specs/004-final-defect-resolution/defect-register.md`: set B2, B4, C3 (Renny half) and B1 to `Closed (tests/test_defect_resolution.py — section <ID>)`; add a "Post-fix results" row to § 1 with the new pytest/ruff counts; confirm § 4 still lists the six open High defects with owners and states that Feature-004 completes US-20 for Renny's scope only (spec FR-031, FR-032).
-- [ ] T019 Run `specs/004-final-defect-resolution/quickstart.md` §§ 1-2 and record the final counts in the PR description.
+- [X] T018 [US5] In `specs/004-final-defect-resolution/defect-register.md`: set B2, B4, C3 (Renny half) and B1 to `Closed (tests/test_defect_resolution.py — section <ID>)`; add a "Post-fix results" row to § 1 with the new pytest/ruff counts; confirm § 4 still lists the six open High defects with owners and states that Feature-004 completes US-20 for Renny's scope only (spec FR-031, FR-032).
+- [X] T019 Run `specs/004-final-defect-resolution/quickstart.md` §§ 1-2 and record the final counts in the PR description.
 
 ---
 

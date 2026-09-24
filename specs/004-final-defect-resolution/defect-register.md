@@ -20,6 +20,20 @@ regression test group (named after the register ID) passes in
 | Skips | 13 in `tests/test_dashboard.py` (need a live Databricks workspace) |
 | `uv run ruff check .` | 7 errors: 5 × I001 (import order), 2 × F401 (unused import); all autofixable (A8, A9, A10) |
 
+### 1.1 Post-fix results (after B2, C3, B4, B1 merged; `27c5db0`, 2026-09-24)
+
+Quickstart §§ 1-2 (T019), run from `student_attrition_risk_app/`.
+
+| Check | Before (`3181882`) | After (`27c5db0`) |
+|---|---|---|
+| `uv run pytest -q` | 209 passed, 5 failed, 13 skipped | **236 passed, 5 failed, 13 skipped** |
+| Failures | 5, all `tests/test_ui.py` (A1–A4 / C1) | The same 5 `tests/test_ui.py` tests, no others |
+| Skips | 13 in `tests/test_dashboard.py` | Unchanged |
+| `uv run pytest tests/test_defect_resolution.py -q` | — (file did not exist) | 27 passed (B2 6, B4 4, C3 9, B1 8) |
+| `uv run ruff check` on the files Feature-004 changed (`retry_workflow.py`, `student_service.py`, `briefing_store.py`, `mcp_server.py`, `api.py`, `tests/test_defect_resolution.py`) | — | All checks passed |
+| `uv run ruff check src/student_attrition_risk/ui.py` | 3 findings: I001 line 3 (A10), F401 `Decimal` line 6 (A8), F401 `StudentNotAtRiskError` line 20 (A9) | The same 3 findings (A9 now at line 21 because B1 added one import line); Feature-004 adds none |
+| `uv run ruff check .` | 7 errors | The same 7 errors, all on lines Feature-004 did not touch |
+
 ## 2. Decisions (product owner, 2026-09-24 — final)
 
 | # | Decision |
@@ -45,10 +59,10 @@ Action values: **Fix in Feature-004** · **Logged to owner** · **Not a defect �
 
 | ID | File:line | Description | Spec reference | Severity | Owner | Action | Status |
 |---|---|---|---|---|---|---|---|
-| B1 (= C2, A7) | `student_service.py:122` → `api.py:64-67`; `ui.py:467` (also `ui.py:768-771`) | A store **read** outage during `POST /briefing` (non-regenerate) or during the UI Regenerate pre-check is reported as "Validated briefing could not be stored" / "generated but could not be stored", although nothing was generated or written. | 002 Edge Cases (read-time unreachable → explicit error); 002 FR-036 / FR-038 (misleading outcome) | Medium | Renny | Fix in Feature-004 | Open |
-| B2 | `retry_workflow.py:98` (also `student_service.py:150`) | An exception raised by the validator on Attempt 2 escapes `SingleRetryWorkflow.run`: no terminal outcome is logged and the API answers "Databricks data source unavailable". Real trigger: D4 (NaN score). | 002 FR-005, SC-002 | High | Renny | Fix in Feature-004 | Open |
-| B4 | `briefing_store.py:64-66`, `84-89` | Any non-briefing file in a student's Volume folder makes `has_validated` true and becomes the "latest" briefing, so every retrieval for that student fails until the file is deleted by hand. | 002 FR-022 / FR-023, SC-008 | Medium | Renny | Fix in Feature-004 | Open |
-| C3 (Renny half) | `mcp_server.py:34-57` (sweep cited 49-58; DEC-11) | The MCP briefing tools let backend exceptions through; FastMCP forwards the raw text (Volume paths, warehouse errors) to the client, while REST returns safe 503 messages. | App README ("503 with safe messages"); constitution X, XI (sweep also cited 002 FR-032, which concerns attempt-count display) | Medium | Renny | Fix in Feature-004 | Open |
+| B1 (= C2, A7) | `student_service.py:122` → `api.py:64-67`; `ui.py:467` (also `ui.py:768-771`) | A store **read** outage during `POST /briefing` (non-regenerate) or during the UI Regenerate pre-check is reported as "Validated briefing could not be stored" / "generated but could not be stored", although nothing was generated or written. | 002 Edge Cases (read-time unreachable → explicit error); 002 FR-036 / FR-038 (misleading outcome) | Medium | Renny | Fix in Feature-004 | Closed (tests/test_defect_resolution.py — section B1; fix `c7f80b2`, merge `27c5db0`; see § 5) |
+| B2 | `retry_workflow.py:98` (also `student_service.py:150`) | An exception raised by the validator on Attempt 2 escapes `SingleRetryWorkflow.run`: no terminal outcome is logged and the API answers "Databricks data source unavailable". Real trigger: D4 (NaN score). | 002 FR-005, SC-002 | High | Renny | Fix in Feature-004 | Closed (tests/test_defect_resolution.py — section B2; fix `3778a58`, merge `46c65ed`; see § 5) |
+| B4 | `briefing_store.py:64-66`, `84-89` | Any non-briefing file in a student's Volume folder makes `has_validated` true and becomes the "latest" briefing, so every retrieval for that student fails until the file is deleted by hand. | 002 FR-022 / FR-023, SC-008 | Medium | Renny | Fix in Feature-004 | Closed (tests/test_defect_resolution.py — section B4; fix `2824837`, merge `0fa503d`; see § 5) |
+| C3 (Renny half) | `mcp_server.py:34-57` (sweep cited 49-58; DEC-11) | The MCP briefing tools let backend exceptions through; FastMCP forwards the raw text (Volume paths, warehouse errors) to the client, while REST returns safe 503 messages. | App README ("503 with safe messages"); constitution X, XI (sweep also cited 002 FR-032, which concerns attempt-count display) | Medium | Renny | Fix in Feature-004 | Closed (tests/test_defect_resolution.py — section C3; fix `7447dd6`, merge `cf8187e`; see § 5) |
 | C7 | `api.py:81-84` | `GET /briefing` says "store unavailable" when the data source is what is down (503 either way). | — | Low | Renny | Logged to owner | Open |
 | A9 | `ui.py:20` | Unused import `StudentNotAtRiskError` (F401). | — | Low | Renny | Logged to owner | Open |
 
@@ -112,12 +126,64 @@ Recorded so they are not lost; none is treated as a defect until reproduced.
 | Severity | Total | Fix in Feature-004 | Logged to owner |
 |---|---|---|---|
 | Critical | 0 | 0 | 0 |
-| High | 7 | 1 (B2) | 6 (D1, D2, D3, A1–A4/C1, A5, D7) |
-| Medium | 6 | 3 (B1, B4, C3 Renny half) | 3 (D4, D6, C3 other half) |
-| Low | 11 | 0 | 11 (incl. Renny's C7, A9) |
+| High | 7 | 1 (B2) — Closed | 6 (D1, D2, D3, A1–A4/C1, A5, D7) — Open |
+| Medium | 6 | 3 (B1, B4, C3 Renny half) — Closed | 3 (D4, D6, C3 other half) — Open |
+| Low | 11 | 0 | 11 (incl. Renny's C7, A9) — Open |
 
 Design decisions (C6, DD-2) and unverified items (U1–U8) carry no severity and are not counted.
 
 US-20 status against DEC-1: the only High defect in Renny's scope (B2) is fixed by Feature-004.
 Six High defects remain open with their owners (Karen: D1, D2, D3, A1–A4/C1, A5; GuaGuaGua88: D7).
 Closing them is outside Feature-004 under DEC-2.
+
+## 5. Closure evidence
+
+Each closed entry's regression group is in `student_attrition_risk_app/tests/test_defect_resolution.py`
+and passes at `27c5db0`. Merge commits are local to `feat/feature-004-final-defect-resolution`.
+
+| ID | Fix commit | Merge commit | Regression tests |
+|---|---|---|---|
+| B2 (High) | `3778a58` | `46c65ed` | 6 tests: `test_b2_attempt2_validator_exception_is_terminal_validation_failure`, `test_b2_attempt2_validator_exception_is_reported_as_briefing_failure_over_rest`, `test_b2_attempt2_validator_exception_logs_one_metadata_only_terminal_outcome`, `test_b2_attempt1_validator_exception_proceeds_to_retry_with_original_prompt`, `test_b2_validator_configuration_error_is_surfaced_unchanged` (parametrised: attempt 1, attempt 2) |
+| C3, Renny half (Medium) | `7447dd6` | `cf8187e` | 9 tests: `test_c3_get_student_briefing_store_read_failure_is_safe`, `test_c3_get_student_briefing_other_failure_is_safe`, `test_c3_mcp_client_receives_only_the_safe_message` (parametrised: both tools), `test_c3_generate_student_briefing_data_source_failure_is_safe`, `test_c3_safely_mapped_failures_are_unchanged` (parametrised: 3 cases), `test_c3_configuration_failure_keeps_its_own_text` |
+| B4 (Medium) | `2824837` | `0fa503d` | 4 tests: `test_b4_folder_with_only_an_unrelated_file_has_no_briefing`, `test_b4_unrelated_file_sorting_last_does_not_hide_the_stored_briefing`, `test_b4_save_after_a_stray_file_becomes_latest_and_leaves_the_file_untouched`, `test_b4_unrelated_files_are_ignored_without_logging` |
+| B1 = C2, A7 (Medium) | `c7f80b2` | `27c5db0` | 8 tests: `test_b1_store_read_failure_raises_store_unavailable_without_generating` (parametrised: `regenerate` False / True), `test_b1_store_read_failure_logs_one_store_unavailable_outcome`, `test_b1_rest_post_briefing_store_read_failure_is_store_unavailable`, `test_b1_generate_tool_store_read_failure_is_store_unavailable`, `test_b1_write_failure_is_still_could_not_be_stored`, `test_b1_ui_store_read_failure_shows_red_store_unavailable_notice` (parametrised: Generate and Regenerate) |
+
+C2 and A7 are sweep duplicates of B1 and close with it. For A7 this covers Renny's
+`request_briefing()` (DEC-10); GuaGuaGua88's handlers at `ui.py:730-733` and `768-771` were not changed.
+
+## 6. Known limitations and open items at delivery
+
+**US-20 is complete for Renny's scope.** Every defect marked "Fix in Feature-004" (B1, B2, B4,
+C3 Renny half) is Closed with a passing regression group, and no Critical or High defect remains
+open in Renny's scope. **US-20 overall stays open** until the owners close the listed High
+defects: D1, D2, D3, A1–A4/C1, A5 and D7 (FR-032, DEC-1, DEC-2).
+
+### 6.1 Open defects by owner
+
+| Owner | High | Medium | Low |
+|---|---|---|---|
+| Karen (karen-lee1029 / k224.lee) | D1, D2, D3, A1–A4/C1, A5 (joint with D7) | D4, D6 | D5, A10 (Karen part) |
+| GuaGuaGua88 (l52.yang) | D7 (= A6, B5, C5; joint with A5) | C3 (other half, `mcp_server.py:21-33`) | D8, D9, D10, C4, C8, A8, A10 (part) |
+| Renny (RennyMatis2000) | — | — | C7, A9 (logged only, DEC-4) |
+| Third party | — | — | A11 |
+
+Design decisions C6 and DD-2 stand as recorded in § 3.5. Unverified items U1–U8 (§ 3.6) remain
+unconfirmed and are not counted as defects.
+
+### 6.2 Other limitations
+
+- **Known test failures**: `uv run pytest -q` shows 5 failures, all in `tests/test_ui.py`
+  (A1–A4 / C1, Karen): `test_not_at_risk_student_shows_info_and_no_briefing_actions`,
+  `test_generate_briefing_displays_text_metadata_checkbox_and_download`,
+  `test_retrieve_saved_no_briefing_shows_info`, `test_regenerate_displays_briefing`,
+  `test_regenerate_not_produced_shows_error`. They are not edited or superseded (DEC-6).
+- **Pre-existing lint**: `uv run ruff check .` reports 7 findings, identical to the baseline and all
+  on lines Feature-004 did not touch. Six belong to teammates (A8: F401 `Decimal` in `ui.py`;
+  A10: I001 in `ui.py`, `main.py`, `briefing_instructions.py`, `briefing_validation.py`,
+  `tests/test_ui.py`) and one is Renny's logged Low A9 (F401 `StudentNotAtRiskError` in `ui.py`).
+  All are autofixable; none were fixed because DEC-4 and DEC-2 keep them out of Feature-004.
+- **Feature-001 SC-007**: the validation half is satisfied by Karen's `StructuredBriefingValidator`
+  wiring in `main.build_service` (`87670e4`). The instructions half (US-12) is still open and is
+  not a Feature-004 item (DEC-9).
+- **Test skips**: 13 tests in `tests/test_dashboard.py` skip without a live Databricks workspace;
+  unchanged from the baseline.
