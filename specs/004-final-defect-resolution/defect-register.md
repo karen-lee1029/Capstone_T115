@@ -35,6 +35,7 @@ regression test group (named after the register ID) passes in
 | DEC-9 | Karen's `StructuredBriefingValidator` is already wired in `main.build_service` (`87670e4`), so the validation half of Feature-001 SC-007 is satisfied by her work. The instructions half (US-12) is still open. Not a Feature-004 item. |
 | DEC-10 | (2026-09-24, clarification) B1's advisor-facing message is produced only inside Renny's `request_briefing()` (`ui.py:461-480`) as a red page-owned notice in the existing error palette. GuaGuaGua88's handlers (`ui.py:730-733`, `768-771`) are not changed. |
 | DEC-11 | (2026-09-24, clarification) C3's Renny half covers both briefing tools, `generate_student_briefing` and `get_student_briefing` (`mcp_server.py:34-57`). Lines 21-33 are not changed. |
+| DEC-12 | (2026-09-24, clarification) C3 read-outage re-raised as BriefingStorageError with safe text to preserve the Feature-003 boundary test. `get_student_briefing` maps a `BriefingStorageError` to a fresh `BriefingStorageError("validated briefing store unavailable") from None`; any other unexpected failure in either briefing tool becomes a `ToolError` with the REST-matching safe message. |
 
 ## 3. Register
 

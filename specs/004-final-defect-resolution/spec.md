@@ -104,6 +104,12 @@ recorded as DEC-1 to DEC-9 in the defect register and are authoritative for this
 - Q: Does C3 cover one briefing tool or both? → A: Both briefing tools — the one that requests a
   briefing and the one that retrieves a stored briefing. The profile and list tools are not
   changed.
+- Decision (DEC-12): C3 read-outage re-raised as BriefingStorageError with safe text to preserve
+  the Feature-003 boundary test. The retrieval tool keeps the error type that
+  `test_tool_boundary_does_not_report_a_read_outage_as_absence` expects, but with the message
+  "validated briefing store unavailable" and the original cause suppressed, so no storage path
+  or warehouse text reaches the client. Other unexpected failures in either briefing tool use
+  the safe REST-matching message.
 
 ## User Scenarios & Testing *(mandatory)*
 
