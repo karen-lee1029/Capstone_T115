@@ -147,7 +147,19 @@ class StudentService:
                 student_hash, context, GenerationFailed(), generation_exc=exc
             )
 
-        outcome = self.validator.validate(draft, context)
+        try:
+            outcome = self.validator.validate(draft, context)
+        except ConfigurationError:
+            raise
+        except Exception:
+            # A validator error is a validation failure with no criteria or feedback, so the
+            # retry reuses the original prompt (B2, Feature-004 FR-010).
+            failure = ValidationOutcome(
+                passed=False, validator_id=getattr(self.validator, "validator_id", "unavailable")
+            )
+            return self._hand_off_to_retry(
+                student_hash, context, ValidationFailed(outcome=failure)
+            )
         if outcome.passed:
             briefing = self._build_validated(student_hash, prediction, draft.text, outcome, 1)
             briefing = self._persist(student_hash, briefing)
