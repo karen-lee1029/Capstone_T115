@@ -12,6 +12,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import streamlit as st
 import pytest
 from streamlit.testing.v1 import AppTest
 
@@ -122,6 +123,7 @@ def app(monkeypatch):
             "student_attrition_risk.main.build_service",
             lambda *_a, **_kw: service,
         )
+        st.cache_resource.clear()
         at = AppTest.from_file(UI_PATH, default_timeout=10)
         at.run()
         return at
@@ -130,7 +132,7 @@ def app(monkeypatch):
 
 
 def _set_input(at, value):
-    at.text_input[0].input_value.set(value).run()
+    at.text_input[0].set_value(value).run()
     return at
 
 
@@ -166,7 +168,13 @@ def test_initial_load_shows_search_retrieve_and_dashboard_link(app):
     at = app(FakeService())
     assert at.text_input[0].label == "Deidentified student reference"
     assert "Retrieve" in _button_labels(at)
-    assert any(b.label == "View Dashboard" for b in at.link_button)
+    # st.link_button is not a queryable AppTest attribute in streamlit 1.64;
+    # the LinkButton proto lives in a column as an UnknownElement.
+    assert any(
+        getattr(child.proto, "label", None) == "View Dashboard"
+        for col in at.columns
+        for child in col.children.values()
+    )
 
 
 def test_initial_load_shows_empty_state(app):
