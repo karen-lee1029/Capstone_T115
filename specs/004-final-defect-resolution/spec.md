@@ -95,6 +95,15 @@ recorded as DEC-1 to DEC-9 in the defect register and are authoritative for this
 - Q: What failure text do the briefing tools return when a backend dependency fails? → A: The same
   safe messages the equivalent REST endpoints already return for the same failure. No
   tool-specific wording is introduced.
+- Q: The advisor-facing messages for a failed briefing request sit in handlers owned by another
+  contributor. Where is the store-unavailable message produced? → A: Only inside this
+  contributor's own briefing-request step on the advisor-facing surface. It catches the read
+  failure, shows the "store unavailable" wording as a red page-owned notice in the existing error
+  palette (not a built-in alert widget), and returns so the page refreshes and shows it. The other
+  contributor's handlers are not changed.
+- Q: Does C3 cover one briefing tool or both? → A: Both briefing tools — the one that requests a
+  briefing and the one that retrieves a stored briefing. The profile and list tools are not
+  changed.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -154,7 +163,10 @@ generation is attempted, and no "could not be stored" wording appears.
 2. **Given** the same store failure, **When** the advisor starts a regeneration from the
    advisor-facing surface, **Then** the advisor is told, in the existing "store unavailable"
    wording, that the store is unavailable, not that a briefing was generated but not stored.
-3. **Given** the store fails while writing a validated briefing, **When** the request completes,
+3. **Given** the store-unavailable notice is shown, **When** the advisor reads it, **Then** it
+   appears as a red page-owned notice in the existing error palette, and the other contributor's
+   error handlers are unchanged.
+4. **Given** the store fails while writing a validated briefing, **When** the request completes,
    **Then** the existing "could not be stored" failure is still surfaced unchanged.
 
 ---
@@ -296,7 +308,10 @@ group; every other entry stays Open with its owner.
   stored.
 - **FR-014**: The advisor-facing surface, for both a first request and the regenerate pre-check,
   MUST report a store read failure with the existing "store unavailable" wording, and MUST NOT say
-  that a briefing was generated or could not be stored.
+  that a briefing was generated or could not be stored. The message MUST be produced within this
+  contributor's own briefing-request step and shown as a red page-owned notice in the existing
+  error palette, never a built-in alert widget. The other contributor's request handlers MUST NOT
+  change.
 - **FR-015**: A failure while writing a validated briefing MUST still be surfaced as it is today.
 
 #### B4 — unrelated files in governed storage
@@ -310,14 +325,15 @@ group; every other entry stays Open with its owner.
 
 #### C3 (Renny half) — briefing tool error text
 
-- **FR-019**: The briefing tools at the tool interface MUST map storage failures and any other
+- **FR-019**: Both briefing tools at the tool interface (requesting a briefing and retrieving a
+  stored one) MUST map storage failures and any other
   unexpected backend failure to the same safe message the equivalent REST endpoint returns for
   that failure.
 - **FR-020**: No briefing tool failure MUST carry internal storage paths, data-warehouse error
   text or credentials.
 - **FR-021**: Failures the briefing tools already map safely MUST keep their current results. No
   tool-specific failure wording MUST be introduced.
-- **FR-022**: The profile and list tools (the other half of C3) MUST NOT be changed.
+- **FR-022**: The prediction, profile and list tools (the other half of C3) MUST NOT be changed.
 
 #### Regression verification and done-gate
 

@@ -26,13 +26,15 @@ regression test group (named after the register ID) passes in
 |---|---|
 | DEC-1 | Severity scale is Critical / High / Medium / Low. US-20 is met when every Critical and High defect in scope is closed and every lower-priority defect is documented here. |
 | DEC-2 | Feature-004 fixes Renny's (RennyMatis2000) own defects only. Teammates' defects are logged with owner and severity and left unfixed (constitution Principle XVI). |
-| DEC-3 | Fixed in Feature-004: **B1, B2, B4, C3 (the `mcp_server.py:49-58` half only)**. B2 is rated High. |
+| DEC-3 | Fixed in Feature-004: **B1, B2, B4, C3 (the briefing-tool half only, `mcp_server.py:34-57`; see DEC-11)**. B2 is rated High. |
 | DEC-4 | Renny's defects logged only, not fixed: **C7** (Low), **A9** (Low). |
 | DEC-5 | Not defects, recorded as design decisions: **C6** (`st.error` kept on error paths, deliberately red) and **DD-2** (small-group suppression commented out at `student_repository.py:367`, deliberate). |
 | DEC-6 | Karen's five failing `tests/test_ui.py` tests are logged against Karen. They are not edited and not superseded. |
 | DEC-7 | Done-gate for each fix: ruff clean on changed files; `uv run pytest` shows exactly the 5 known `tests/test_ui.py` failures and no others. |
 | DEC-8 | Regression tests go in a new file `tests/test_defect_resolution.py` only, one test group per defect named after its register ID. Merged test files are never edited. |
 | DEC-9 | Karen's `StructuredBriefingValidator` is already wired in `main.build_service` (`87670e4`), so the validation half of Feature-001 SC-007 is satisfied by her work. The instructions half (US-12) is still open. Not a Feature-004 item. |
+| DEC-10 | (2026-09-24, clarification) B1's advisor-facing message is produced only inside Renny's `request_briefing()` (`ui.py:461-480`) as a red page-owned notice in the existing error palette. GuaGuaGua88's handlers (`ui.py:730-733`, `768-771`) are not changed. |
+| DEC-11 | (2026-09-24, clarification) C3's Renny half covers both briefing tools, `generate_student_briefing` and `get_student_briefing` (`mcp_server.py:34-57`). Lines 21-33 are not changed. |
 
 ## 3. Register
 
@@ -45,7 +47,7 @@ Action values: **Fix in Feature-004** · **Logged to owner** · **Not a defect �
 | B1 (= C2, A7) | `student_service.py:122` → `api.py:64-67`; `ui.py:467` (also `ui.py:768-771`) | A store **read** outage during `POST /briefing` (non-regenerate) or during the UI Regenerate pre-check is reported as "Validated briefing could not be stored" / "generated but could not be stored", although nothing was generated or written. | 002 Edge Cases (read-time unreachable → explicit error); 002 FR-036 / FR-038 (misleading outcome) | Medium | Renny | Fix in Feature-004 | Open |
 | B2 | `retry_workflow.py:98` (also `student_service.py:150`) | An exception raised by the validator on Attempt 2 escapes `SingleRetryWorkflow.run`: no terminal outcome is logged and the API answers "Databricks data source unavailable". Real trigger: D4 (NaN score). | 002 FR-005, SC-002 | High | Renny | Fix in Feature-004 | Open |
 | B4 | `briefing_store.py:64-66`, `84-89` | Any non-briefing file in a student's Volume folder makes `has_validated` true and becomes the "latest" briefing, so every retrieval for that student fails until the file is deleted by hand. | 002 FR-022 / FR-023, SC-008 | Medium | Renny | Fix in Feature-004 | Open |
-| C3 (Renny half) | `mcp_server.py:49-58` | The MCP briefing tools let backend exceptions through; FastMCP forwards the raw text (Volume paths, warehouse errors) to the client, while REST returns safe 503 messages. | App README ("503 with safe messages"); constitution X, XI (sweep also cited 002 FR-032, which concerns attempt-count display) | Medium | Renny | Fix in Feature-004 | Open |
+| C3 (Renny half) | `mcp_server.py:34-57` (sweep cited 49-58; DEC-11) | The MCP briefing tools let backend exceptions through; FastMCP forwards the raw text (Volume paths, warehouse errors) to the client, while REST returns safe 503 messages. | App README ("503 with safe messages"); constitution X, XI (sweep also cited 002 FR-032, which concerns attempt-count display) | Medium | Renny | Fix in Feature-004 | Open |
 | C7 | `api.py:81-84` | `GET /briefing` says "store unavailable" when the data source is what is down (503 either way). | — | Low | Renny | Logged to owner | Open |
 | A9 | `ui.py:20` | Unused import `StudentNotAtRiskError` (F401). | — | Low | Renny | Logged to owner | Open |
 
