@@ -76,6 +76,26 @@ recorded as DEC-1 to DEC-9 in the defect register and are authoritative for this
 - Done-gate for every fix: changed files are lint-clean, and the full verification suite shows
   exactly the five known advisor-interface failures and no others.
 
+### Session 2026-09-24
+
+- Q: Does Feature-004 complete US-20 while six High-severity defects owned by teammates (D1, D2,
+  D3, A1–A4 / C1, A5, D7) remain open? → A: Yes, for this contributor's scope only. Feature-004
+  completes US-20 for that scope, and the register names each open High defect and its owner.
+  US-20 as a whole stays open until those defects are closed by their owners.
+- Q: Is an unexpected error from the validation step on the first attempt in scope, as well as on
+  the retry attempt? → A: Yes. On the first attempt it is treated as a validation failure and the
+  request goes on to the single retry. On the retry attempt it becomes a terminal validation
+  failure.
+- Q: What does the advisor see when the store cannot be read during a briefing request? → A: The
+  existing "store unavailable" wording that the stored-briefing retrieval path already uses. No new
+  wording is introduced.
+- Q: How does the governed store treat items in a student's storage location that it does not
+  recognise as its own briefings? → A: It ignores them silently. They are not logged, reported,
+  modified or removed.
+- Q: What failure text do the briefing tools return when a backend dependency fails? → A: The same
+  safe messages the equivalent REST endpoints already return for the same failure. No
+  tool-specific wording is introduced.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - The retry workflow always ends with an explicit outcome (Priority: P1)
@@ -103,8 +123,9 @@ outcome is recorded in the operational records, and nothing is stored.
 3. **Given** the same case, **When** the operational records are inspected, **Then** exactly one
    terminal outcome is recorded, carrying metadata only.
 4. **Given** the validation step raises an unexpected error on the first attempt, **When** the
-   request completes, **Then** it is handled consistently with the retry-attempt case and still
-   ends with exactly one explicit outcome.
+   request continues, **Then** it is treated as a validation failure carrying no failed criteria
+   or feedback, the single retry is attempted, and the request still ends with exactly one
+   explicit outcome.
 5. **Given** a configuration failure during the retry attempt, **When** the request completes,
    **Then** it is still surfaced unchanged, as Feature-002 requires.
 
@@ -128,10 +149,11 @@ generation is attempted, and no "could not be stored" wording appears.
 
 1. **Given** the store fails when checked for an existing briefing, **When** a briefing is
    requested without asking for a fresh one, **Then** an explicit store-unavailable failure is
-   surfaced, distinct from a failure to write, and no generation is attempted.
+   surfaced with the existing "store unavailable" wording, distinct from a failure to write, and
+   no generation is attempted.
 2. **Given** the same store failure, **When** the advisor starts a regeneration from the
-   advisor-facing surface, **Then** the advisor is told the store is unavailable, not that a
-   briefing was generated but not stored.
+   advisor-facing surface, **Then** the advisor is told, in the existing "store unavailable"
+   wording, that the store is unavailable, not that a briefing was generated but not stored.
 3. **Given** the store fails while writing a validated briefing, **When** the request completes,
    **Then** the existing "could not be stored" failure is still surfaced unchanged.
 
@@ -225,8 +247,8 @@ group; every other entry stays Open with its owner.
   defective behaviour and its corrected result are verified.
 - **A fix changes a known advisor-interface failure**: not expected, because those five failures
   have causes unrelated to B1–B4. If their count or identity changes, the done-gate fails.
-- **The first-attempt validation step raises unexpectedly**: covered by User Story 1, scenario 4,
-  so the retry fix does not leave an asymmetric gap.
+- **The first-attempt validation step raises unexpectedly**: treated as a validation failure with
+  no criteria or feedback, so the single retry runs (User Story 1, scenario 4).
 - **An unconfirmed suspicion is reproduced during the work**: it is added to the register as a new
   entry with owner and severity. It is fixed here only if the product owner approves.
 - **The register and the source disagree on a line number after a fix**: the register keeps the
@@ -260,18 +282,21 @@ group; every other entry stays Open with its owner.
   metadata-only outcome, and nothing MUST be stored.
 - **FR-009**: At the REST and tool-interface boundaries, that outcome MUST be reported as a
   briefing failure, never as a data-source outage.
-- **FR-010**: An unexpected error from the validation step on the first attempt MUST also end in
-  exactly one explicit outcome, handled consistently with FR-007.
+- **FR-010**: An unexpected error from the validation step on the first attempt MUST be treated as
+  a validation failure carrying no failed criteria and no feedback, and the request MUST go on to
+  the single retry. If the retry attempt then fails, FR-007 applies.
 - **FR-011**: A configuration failure MUST still be surfaced unchanged on either attempt.
 
 #### B1 — read-time storage outage
 
 - **FR-012**: A store failure while checking for an existing briefing MUST be surfaced as an
-  explicit store-unavailable failure, distinct from a failure to write a validated briefing.
+  explicit store-unavailable failure, distinct from a failure to write a validated briefing, using
+  the same wording the stored-briefing retrieval path already uses for an unavailable store.
 - **FR-013**: When that read failure occurs, no generation MUST be attempted and nothing MUST be
   stored.
-- **FR-014**: The advisor-facing regenerate pre-check MUST report a store read failure as the
-  store being unavailable, and MUST NOT say that a briefing was generated or could not be stored.
+- **FR-014**: The advisor-facing surface, for both a first request and the regenerate pre-check,
+  MUST report a store read failure with the existing "store unavailable" wording, and MUST NOT say
+  that a briefing was generated or could not be stored.
 - **FR-015**: A failure while writing a validated briefing MUST still be surfaced as it is today.
 
 #### B4 — unrelated files in governed storage
@@ -280,15 +305,18 @@ group; every other entry stays Open with its owner.
   wrote itself, recognised by its own naming convention.
 - **FR-017**: Presence checks and latest-briefing retrieval MUST ignore every other item in a
   student's storage location.
-- **FR-018**: The governed store MUST NOT modify or remove items it does not recognise.
+- **FR-018**: The governed store MUST ignore unrecognised items silently: it MUST NOT log,
+  report, modify or remove them.
 
 #### C3 (Renny half) — briefing tool error text
 
 - **FR-019**: The briefing tools at the tool interface MUST map storage failures and any other
-  unexpected backend failure to a safe, generic failure.
+  unexpected backend failure to the same safe message the equivalent REST endpoint returns for
+  that failure.
 - **FR-020**: No briefing tool failure MUST carry internal storage paths, data-warehouse error
   text or credentials.
-- **FR-021**: Failures the briefing tools already map safely MUST keep their current results.
+- **FR-021**: Failures the briefing tools already map safely MUST keep their current results. No
+  tool-specific failure wording MUST be introduced.
 - **FR-022**: The profile and list tools (the other half of C3) MUST NOT be changed.
 
 #### Regression verification and done-gate
@@ -312,8 +340,9 @@ group; every other entry stays Open with its owner.
   owner's decisions.
 - **FR-031**: On completion, each defect fixed by Feature-004 MUST be marked Closed with the name of
   its regression group. Every other entry MUST stay Open with its owner.
-- **FR-032**: The register MUST state which High-severity defects remain open, and with whom, so
-  the extent to which US-20's criterion is met is visible.
+- **FR-032**: The register MUST state which High-severity defects remain open and who owns each,
+  and MUST record that Feature-004 completes US-20 for this contributor's scope only; US-20 as a
+  whole stays open until those defects are closed.
 
 ### Key Entities
 
@@ -334,7 +363,8 @@ group; every other entry stays Open with its owner.
 - **SC-001**: 100% of defects marked "Fix in Feature-004" (4 of 4) are Closed, each with a passing
   regression group.
 - **SC-002**: 100% of Critical and High defects in this contributor's scope are Closed (B2; no
-  Critical was found).
+  Critical was found). The six High defects owned by teammates are listed as open with their
+  owners; US-20 as a whole is not reported complete while any of them remains open.
 - **SC-003**: 100% of sweep findings appear in the register with owner, severity and action; 0
   findings are missing.
 - **SC-004**: 0 teammate source files and 0 merged verification artifacts are changed.
@@ -372,7 +402,8 @@ group; every other entry stays Open with its owner.
 - **The defect register** in this directory — the defect list US-20's criterion names.
 - **Teammates' work** — Karen (US-14 validation, advisor-interface verification) and GuaGuaGua88
   (configuration, data access, advisor-interface layout) own the logged defects. Their resolution
-  is outside Feature-004 and determines when US-20 is fully closed for the team.
+  is outside Feature-004. Feature-004 completes US-20 for this contributor's scope only; US-20 as
+  a whole stays open until the six open High defects are closed by their owners.
 
 ## Out of Scope
 
