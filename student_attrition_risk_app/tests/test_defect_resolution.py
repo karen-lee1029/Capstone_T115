@@ -11,6 +11,7 @@ double a group needs is defined locally in its own section. No merged test file 
 """
 
 import logging
+from datetime import timedelta
 
 import pytest
 from fastmcp import Client
@@ -34,6 +35,8 @@ from workflow_doubles import (
     failed,
     passed,
     rendered_log_output,
+    validated_briefing,
+    volume_store,
 )
 
 # ---- B2: validator exception escapes the retry workflow (register B2) ----
@@ -149,6 +152,56 @@ def test_b2_validator_configuration_error_is_surfaced_unchanged(actions):
 
 
 # ---- B4: unrelated files in a student's Volume folder hide the briefing (register B4) ----
+
+B4_STUDENT = "synthetic-student-b4"
+B4_DIR = f"/Volumes/main/advising/briefings/{B4_STUDENT}"
+B4_STRAY_BODY = "not a briefing"
+
+
+def test_b4_folder_with_only_an_unrelated_file_has_no_briefing():
+    store, fake = volume_store()
+    fake.files[f"{B4_DIR}/notes.txt"] = B4_STRAY_BODY
+
+    assert store.has_validated(B4_STUDENT) is False
+    assert store.get_latest_validated(B4_STUDENT) is None
+
+
+def test_b4_unrelated_file_sorting_last_does_not_hide_the_stored_briefing():
+    store, fake = volume_store()
+    stored = validated_briefing(B4_STUDENT, "Stored B4 briefing.")
+    store.save_validated(stored)
+    fake.files[f"{B4_DIR}/zzz-readme.json"] = B4_STRAY_BODY
+
+    assert store.has_validated(B4_STUDENT) is True
+    assert store.get_latest_validated(B4_STUDENT) == stored
+
+
+def test_b4_save_after_a_stray_file_becomes_latest_and_leaves_the_file_untouched():
+    store, fake = volume_store()
+    stray = f"{B4_DIR}/zzz-readme.json"
+    fake.files[stray] = B4_STRAY_BODY
+    first = validated_briefing(B4_STUDENT, "First B4 briefing.")
+    store.save_validated(first)
+    newest = validated_briefing(B4_STUDENT, "Newest B4 briefing.").model_copy(
+        update={"generated_at": first.generated_at + timedelta(seconds=1)}
+    )
+    store.save_validated(newest)
+
+    assert store.get_latest_validated(B4_STUDENT) == newest
+    assert fake.files[stray] == B4_STRAY_BODY
+
+
+def test_b4_unrelated_files_are_ignored_without_logging(caplog):
+    store, fake = volume_store()
+    store.save_validated(validated_briefing(B4_STUDENT, "Logged-nothing B4 briefing."))
+    fake.files[f"{B4_DIR}/notes.txt"] = B4_STRAY_BODY
+    fake.files[f"{B4_DIR}/zzz-readme.json"] = B4_STRAY_BODY
+
+    with caplog.at_level(logging.DEBUG):
+        store.has_validated(B4_STUDENT)
+        store.get_latest_validated(B4_STUDENT)
+
+    assert caplog.records == []
 
 
 

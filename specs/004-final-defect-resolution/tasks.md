@@ -51,9 +51,9 @@ No foundational phase: the tracks share no prerequisite beyond T001.
 
 **Independent test**: section `B4` passes.
 
-- [ ] T006 [P] [US3] In the `B4` section of `tests/test_defect_resolution.py`, using `volume_store()` / `FakeFilesClient` from `workflow_doubles`: (a) student folder holding only `notes.txt` → `has_validated` is `False` and `get_latest_validated` is `None`; (b) a stored briefing plus `zzz-readme.json` (sorts last) → latest returns the stored briefing; (c) with a stray file present, `save_validated` makes the new briefing the latest and the stray file is still in `fake.files` unchanged; (d) no log record is emitted for the stray file (`caplog`). Confirm (a)–(c) fail before T007.
-- [ ] T007 [US3] In `src/student_attrition_risk/briefing_store.py`: add `import re` (lines 8-10) and a module constant `_BRIEFING_NAME = re.compile(r"^\d{8}T\d{12}Z-attempt\d+-[0-9a-f]{6}\.json$")` after the imports (line 16); in `has_validated` (lines 64-66) and `get_latest_validated` (lines 84-86) count an entry only if it is not a directory **and** `_BRIEFING_NAME.match(entry.path.rsplit("/", 1)[-1])`. Leave `save_validated` (101-118) and `_file_path` unchanged. No logging.
-- [ ] T008 [US3] Done-gate B4: ruff clean on `src/student_attrition_risk/briefing_store.py` and the test file; full suite shows only the 5 known failures.
+- [X] T006 [P] [US3] In the `B4` section of `tests/test_defect_resolution.py`, using `volume_store()` / `FakeFilesClient` from `workflow_doubles`: (a) student folder holding only `notes.txt` → `has_validated` is `False` and `get_latest_validated` is `None`; (b) a stored briefing plus `zzz-readme.json` (sorts last) → latest returns the stored briefing; (c) with a stray file present, `save_validated` makes the new briefing the latest and the stray file is still in `fake.files` unchanged; (d) no log record is emitted for the stray file (`caplog`). Confirm (a)–(c) fail before T007.
+- [X] T007 [US3] In `src/student_attrition_risk/briefing_store.py`: add `import re` (lines 8-10) and a module constant `_BRIEFING_NAME = re.compile(r"^\d{8}T\d{12}Z-attempt\d+-[0-9a-f]{6}\.json$")` after the imports (line 16); in `has_validated` (lines 64-66) and `get_latest_validated` (lines 84-86) count an entry only if it is not a directory **and** `_BRIEFING_NAME.match(entry.path.rsplit("/", 1)[-1])`. Leave `save_validated` (101-118) and `_file_path` unchanged. No logging.
+- [X] T008 [US3] Done-gate B4: ruff clean on `src/student_attrition_risk/briefing_store.py` and the test file; full suite shows only the 5 known failures.
 
 ---
 
