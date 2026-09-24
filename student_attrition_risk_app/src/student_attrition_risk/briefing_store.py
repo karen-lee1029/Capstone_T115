@@ -6,6 +6,7 @@ Unity Catalog Volume implementation, behind the same interface (FR-021, FR-025).
 """
 
 import io
+import re
 import secrets
 from typing import Any
 
@@ -14,6 +15,8 @@ from databricks.sdk.errors import NotFound
 from .config import ConfigurationError, Settings
 from .models import ValidatedBriefing
 from .student_service import BriefingStorageError
+
+_BRIEFING_NAME = re.compile(r"^\d{8}T\d{12}Z-attempt\d+-[0-9a-f]{6}\.json$")
 
 
 class InMemoryBriefingStore:
@@ -62,7 +65,9 @@ class VolumeBriefingStore:
     def has_validated(self, student_hash: str) -> bool:
         try:
             for entry in self._files.list_directory_contents(self._dir(student_hash)):
-                if not getattr(entry, "is_directory", False):
+                if not getattr(entry, "is_directory", False) and _BRIEFING_NAME.match(
+                    entry.path.rsplit("/", 1)[-1]
+                ):
                     return True
             return False
         except NotFound:
@@ -82,7 +87,10 @@ class VolumeBriefingStore:
                 f"could not list stored briefings for {student_hash}"
             ) from exc
         names = sorted(
-            entry.path for entry in entries if not getattr(entry, "is_directory", False)
+            entry.path
+            for entry in entries
+            if not getattr(entry, "is_directory", False)
+            and _BRIEFING_NAME.match(entry.path.rsplit("/", 1)[-1])
         )
         if not names:
             return None
