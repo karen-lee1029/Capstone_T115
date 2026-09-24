@@ -7,6 +7,7 @@ from .models import HealthStatus, StudentPrediction, StudentRiskProfile, Validat
 from .student_service import (
     BriefingNotProducedError,
     BriefingStorageError,
+    BriefingStoreUnavailableError,
     StudentNotAtRiskError,
     StudentNotFoundError,
     StudentService,
@@ -60,6 +61,10 @@ def create_api(service: StudentService) -> FastAPI:
         except BriefingNotProducedError as exc:
             raise HTTPException(
                 status_code=502, detail=f"Briefing could not be produced ({exc.category})"
+            ) from exc
+        except BriefingStoreUnavailableError as exc:
+            raise HTTPException(
+                status_code=503, detail="Validated briefing store unavailable"
             ) from exc
         except BriefingStorageError as exc:
             raise HTTPException(

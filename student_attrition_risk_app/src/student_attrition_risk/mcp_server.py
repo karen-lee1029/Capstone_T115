@@ -6,6 +6,7 @@ from .config import ConfigurationError
 from .student_service import (
     BriefingNotProducedError,
     BriefingStorageError,
+    BriefingStoreUnavailableError,
     StudentNotAtRiskError,
     StudentNotFoundError,
     StudentService,
@@ -41,10 +42,14 @@ def create_mcp_server(service: StudentService) -> Any:
             raise ToolError("student is not flagged at risk") from exc
         except BriefingNotProducedError as exc:
             raise ToolError(f"briefing could not be produced ({exc.category})") from exc
+        except BriefingStoreUnavailableError as exc:
+            raise ToolError("validated briefing store unavailable") from exc
         except BriefingStorageError as exc:
             raise ToolError("validated briefing could not be stored") from exc
         except ConfigurationError as exc:
             raise ToolError(str(exc).lower()) from exc
+        except Exception as exc:
+            raise ToolError("databricks data source unavailable") from exc
 
     @mcp.tool()
     def get_student_briefing(student_hash: str) -> dict[str, Any]:
@@ -52,6 +57,10 @@ def create_mcp_server(service: StudentService) -> Any:
             briefing = service.get_stored_briefing(student_hash)
         except StudentNotFoundError as exc:
             raise ToolError("student hash not found") from exc
+        except BriefingStorageError:
+            raise BriefingStorageError("validated briefing store unavailable") from None
+        except Exception as exc:
+            raise ToolError("validated briefing store unavailable") from exc
         if briefing is None:
             return {"available": False, "student_hash": student_hash}
         return briefing.model_dump(mode="json")
