@@ -12,6 +12,8 @@ table and are skipped when no SQL warehouse is configured.
 
 from __future__ import annotations
 
+import math
+
 import pytest
 
 from student_attrition_risk.student_repository import MockStudentRepository
@@ -73,8 +75,8 @@ def _student_id(student_hash: str) -> str:
 
 
 def _risk_pct(percentage: float) -> float:
-    """Replicate ROUND(attrition_risk_percentage, 1)."""
-    return round(percentage, 1)
+    """Replicate CAST(FLOOR(attrition_risk_percentage * 10) AS DOUBLE) / 10."""
+    return math.floor(percentage * 10) / 10
 
 
 # ---------------------------------------------------------------------------
@@ -165,8 +167,8 @@ class TestRiskPctRounding:
     def test_already_one_decimal(self):
         assert _risk_pct(18.0) == 18.0
 
-    def test_rounds_up(self):
-        assert _risk_pct(64.06) == 64.1
+    def test_truncates_down(self):
+        assert _risk_pct(49.99) == 49.9
 
 
 # ---------------------------------------------------------------------------
