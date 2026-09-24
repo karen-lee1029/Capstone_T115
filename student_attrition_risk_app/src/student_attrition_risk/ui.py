@@ -17,6 +17,7 @@ from student_attrition_risk.main import build_service
 from student_attrition_risk.student_service import (
     BriefingNotProducedError,
     BriefingStorageError,
+    BriefingStoreUnavailableError,
     StudentNotAtRiskError,
     StudentNotFoundError,
 )
@@ -342,6 +343,18 @@ st.markdown(
             font-weight: 600;
         }
 
+        .store-error-notice {
+            background: #fee4e2;
+            border: 1px solid #d92d20;
+            border-left: 4px solid #d92d20;
+            border-radius: 8px;
+            color: #b42318;
+            padding: 0.75rem 0.9rem;
+            margin-bottom: 1rem;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
         @media (max-width: 900px) {
             .page-title {
                 font-size: 1.75rem;
@@ -438,7 +451,7 @@ def load_student(student_hash: str) -> None:
     st.session_state.pop("ui_success", None)
 
 
-def render_notice(label: str, body: str, *, style: str = "page-notice") -> None:
+def render_notice(label: str, body: str, style: str = "page-notice") -> None:
     """Render a page-owned notice.
 
     The bold label, not the colour, is what tells one notice from another, so the meaning
@@ -464,9 +477,20 @@ def request_briefing(*, regenerate: bool = False) -> None:
     # regenerate path is ambiguous from the result alone, so this is the only path that pays for
     # the extra store read: without ``regenerate`` the service returns any briefing the student
     # already has rather than generating, so a briefing it generates is necessarily a first save.
-    replaced = regenerate and service.has_stored_briefing(student_hash)
+    try:
+        replaced = regenerate and service.has_stored_briefing(student_hash)
 
-    briefing = service.request_briefing(student_hash, regenerate=regenerate)
+        briefing = service.request_briefing(student_hash, regenerate=regenerate)
+    except BriefingStoreUnavailableError:
+        # The store could not be read, so nothing was generated or saved (B1): say so in red,
+        # not "could not be stored". Returning lets the caller's rerun render the notice.
+        st.session_state.pop("ui_success", None)
+        st.session_state.ui_message = (
+            "Store unavailable",
+            "Validated briefing store unavailable.",
+            "store-error-notice",
+        )
+        return
 
     # Reached only when the request succeeded — a storage failure raises, so the advisor is
     # never told a briefing was saved when it was not (FR-038). A briefing the service returned

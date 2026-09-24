@@ -54,6 +54,10 @@ class BriefingStorageError(Exception):
     """The persistence seam reported that a validated briefing could not be stored (FR-024)."""
 
 
+class BriefingStoreUnavailableError(BriefingStorageError):
+    """The store could not be read, so nothing was generated or written (B1, Feature-004 FR-012)."""
+
+
 def _log_outcome(
     *,
     student_deidentified_hash: str,
@@ -119,8 +123,14 @@ class StudentService:
             _log_outcome(student_deidentified_hash=student_hash, outcome="not_at_risk")
             raise StudentNotAtRiskError(student_hash)
 
-        if not regenerate and self.store.has_validated(student_hash):
-            existing = self.store.get_latest_validated(student_hash)
+        try:
+            has_existing = not regenerate and self.store.has_validated(student_hash)
+            existing = self.store.get_latest_validated(student_hash) if has_existing else None
+        except BriefingStorageError as exc:
+            # A read outage, not a failed write: nothing is generated or stored (B1, FR-012/13).
+            _log_outcome(student_deidentified_hash=student_hash, outcome="store_unavailable", exception=exc)
+            raise BriefingStoreUnavailableError("validated briefing store unavailable") from exc
+        if has_existing:
             assert existing is not None  # has_validated guarantees this
             _log_outcome(
                 student_deidentified_hash=student_hash,
@@ -201,7 +211,11 @@ class StudentService:
         Lets the advisor-facing surface tell a first save from one that supersedes an earlier
         briefing (FR-039) by asking the service rather than reaching through it into the store.
         """
-        return self.store.has_validated(student_hash)
+        try:
+            return self.store.has_validated(student_hash)
+        except BriefingStorageError as exc:
+            _log_outcome(student_deidentified_hash=student_hash, outcome="store_unavailable", exception=exc)
+            raise BriefingStoreUnavailableError("validated briefing store unavailable") from exc
 
     def health_check(self) -> HealthStatus:
         healthy = self.repository.health_check()

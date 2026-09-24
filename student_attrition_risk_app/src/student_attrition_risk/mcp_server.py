@@ -6,6 +6,7 @@ from .config import ConfigurationError
 from .student_service import (
     BriefingNotProducedError,
     BriefingStorageError,
+    BriefingStoreUnavailableError,
     StudentNotAtRiskError,
     StudentNotFoundError,
     StudentService,
@@ -41,6 +42,8 @@ def create_mcp_server(service: StudentService) -> Any:
             raise ToolError("student is not flagged at risk") from exc
         except BriefingNotProducedError as exc:
             raise ToolError(f"briefing could not be produced ({exc.category})") from exc
+        except BriefingStoreUnavailableError as exc:
+            raise ToolError("validated briefing store unavailable") from exc
         except BriefingStorageError as exc:
             raise ToolError("validated briefing could not be stored") from exc
         except ConfigurationError as exc:

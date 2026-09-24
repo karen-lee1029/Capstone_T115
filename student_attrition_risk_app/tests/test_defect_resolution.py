@@ -11,15 +11,22 @@ double a group needs is defined locally in its own section. No merged test file 
 """
 
 import logging
+from pathlib import Path
 
 import pytest
+import streamlit as st
 from fastmcp import Client
 from fastmcp.exceptions import ToolError
+from streamlit.testing.v1 import AppTest
 
 from student_attrition_risk.config import ConfigurationError
 from student_attrition_risk.models import ValidationOutcome
 from student_attrition_risk.student_repository import MockStudentRepository
-from student_attrition_risk.student_service import BriefingNotProducedError, BriefingStorageError
+from student_attrition_risk.student_service import (
+    BriefingNotProducedError,
+    BriefingStorageError,
+    BriefingStoreUnavailableError,
+)
 from workflow_doubles import (
     FLAGGED,
     NOT_FLAGGED,
@@ -31,6 +38,7 @@ from workflow_doubles import (
     build_mcp_server,
     build_rest_client,
     build_service,
+    draft,
     failed,
     passed,
     rendered_log_output,
@@ -308,8 +316,105 @@ async def test_c3_configuration_failure_keeps_its_own_text():
 # ---- B1: store read outage reported as "could not be stored" (register B1) ----
 
 
+UI_PATH = str(Path(__file__).resolve().parent.parent / "src" / "student_attrition_risk" / "ui.py")
 
 
+class _B1UnreadableStore(_UnreadableStore):
+    """B1: every read fails with ``BriefingStorageError``; writes are recorded, never expected."""
+
+    def __init__(self):
+        self.saved = []
+
+    def save_validated(self, briefing):
+        self.saved.append(briefing)
 
 
+def _b1_service(store=None):
+    gen = ScriptedGenerationProvider(draft("B1 draft"))
+    store = store if store is not None else _B1UnreadableStore()
+    return build_service(generation=gen, validation=ScriptedValidator(passed()), store=store), gen, store
 
+
+@pytest.mark.parametrize("regenerate", [False, True])
+def test_b1_store_read_failure_raises_store_unavailable_without_generating(regenerate):
+    service, gen, store = _b1_service()
+    request = (
+        service.has_stored_briefing if regenerate else service.request_briefing
+    )
+
+    with pytest.raises(BriefingStoreUnavailableError) as caught:
+        request(FLAGGED)
+
+    assert isinstance(caught.value, BriefingStorageError)  # existing handlers still catch it
+    assert "/Volumes" not in str(caught.value)
+    assert gen.calls == 0
+    assert store.saved == []
+
+
+def test_b1_store_read_failure_logs_one_store_unavailable_outcome(caplog):
+    service, _, _ = _b1_service()
+
+    with caplog.at_level(logging.INFO, logger=SERVICE_LOGGER):
+        with pytest.raises(BriefingStoreUnavailableError):
+            service.request_briefing(FLAGGED)
+
+    lines = [r.getMessage() for r in caplog.records if r.name == SERVICE_LOGGER]
+    assert len(lines) == 1
+    assert "outcome=store_unavailable" in lines[0]
+    assert "/Volumes" not in rendered_log_output(caplog)
+
+
+def test_b1_rest_post_briefing_store_read_failure_is_store_unavailable():
+    service, _, _ = _b1_service()
+
+    response = build_rest_client(service).post(f"/api/students/{FLAGGED}/briefing")
+
+    assert response.status_code == 503
+    assert response.json()["detail"] == "Validated briefing store unavailable"
+
+
+@pytest.mark.anyio
+async def test_b1_generate_tool_store_read_failure_is_store_unavailable():
+    service, _, _ = _b1_service()
+
+    with pytest.raises(ToolError) as caught:
+        await _c3_call(build_mcp_server(service), "generate_student_briefing", student_hash=FLAGGED)
+
+    assert str(caught.value) == "validated briefing store unavailable"
+
+
+@pytest.mark.anyio
+async def test_b1_write_failure_is_still_could_not_be_stored():
+    service, _, store = _b1_service(CountingStore(raise_on_save=True))
+
+    response = build_rest_client(service).post(f"/api/students/{FLAGGED}/briefing")
+    assert response.status_code == 503
+    assert response.json()["detail"] == "Validated briefing could not be stored"
+
+    service, _, store = _b1_service(CountingStore(raise_on_save=True))
+    with pytest.raises(ToolError) as caught:
+        await _c3_call(build_mcp_server(service), "generate_student_briefing", student_hash=FLAGGED)
+    assert str(caught.value) == "validated briefing could not be stored"
+
+
+@pytest.mark.parametrize("button", ["Generate Advisor Briefing", "Regenerate"])
+def test_b1_ui_store_read_failure_shows_red_store_unavailable_notice(monkeypatch, button):
+    service, gen, store = _b1_service()
+    monkeypatch.setattr("student_attrition_risk.main.build_service", lambda *_a, **_kw: service)
+    st.cache_resource.clear()
+    at = AppTest.from_file(UI_PATH, default_timeout=10)
+    at.run()
+    at.text_input[0].set_value(FLAGGED).run()
+    next(b for b in at.button if b.label == "Retrieve").click().run()
+
+    next(b for b in at.button if b.label == button).click().run()
+
+    notices = [el.value for el in at.markdown if 'class="store-error-notice"' in el.value]
+    assert len(notices) == 1
+    assert "Store unavailable" in notices[0]
+    assert "Validated briefing store unavailable." in notices[0]
+    rendered = [el.value for el in at.markdown] + [el.value for el in at.error]
+    assert not any("could not be stored" in text for text in rendered)
+    assert len(at.error) == 0
+    assert gen.calls == 0
+    assert store.saved == []
