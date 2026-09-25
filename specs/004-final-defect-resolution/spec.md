@@ -111,6 +111,16 @@ recorded as DEC-1 to DEC-9 in the defect register and are authoritative for this
   or warehouse text reaches the client. Other unexpected failures in either briefing tool use
   the safe REST-matching message.
 
+### Session 2026-09-25
+
+- Decision (DEC-13): Karen and GuaGuaGua88 approved resolving their six High defects (D1, D2, D3,
+  A1–A4/C1, A5, D7). This supersedes the "log teammates' defects, don't fix them" scope and the
+  "US-20 complete for Renny's scope only" answer for those items. `tests/test_ui.py` is corrected
+  in place with its owner's approval, and the other regression tests go in the new file
+  `tests/test_defect_resolution_teammate_highs.py`. With these closed, US-20 is met
+  project-wide: no Critical or High defect remains, and the lower-priority ones are documented in
+  the defect register.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - The retry workflow always ends with an explicit outcome (Priority: P1)

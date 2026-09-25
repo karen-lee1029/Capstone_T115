@@ -34,6 +34,18 @@ Quickstart §§ 1-2 (T019), run from `student_attrition_risk_app/`.
 | `uv run ruff check src/student_attrition_risk/ui.py` | 3 findings: I001 line 3 (A10), F401 `Decimal` line 6 (A8), F401 `StudentNotAtRiskError` line 20 (A9) | The same 3 findings (A9 now at line 21 because B1 added one import line); Feature-004 adds none |
 | `uv run ruff check .` | 7 errors | The same 7 errors, all on lines Feature-004 did not touch |
 
+### 1.2 Post-fix results (teammate High defects resolved; `1b5225e`, 2026-09-25)
+
+| Check | Before (`1b5225e`'s parent, `main` after PR #114) | After (`1b5225e`) |
+|---|---|---|
+| `uv run pytest -q` | 236 passed, 5 failed, 13 skipped | **260 passed, 0 failed, 13 skipped** |
+| `uv run pytest tests/test_defect_resolution_teammate_highs.py -q` | — (file did not exist) | 19 passed (D1 3, D2 4, D3 6, A5 2, D7 3, baseline 1) |
+| `uv run pytest tests/test_ui.py -q` | 14 passed, 5 failed | 19 passed |
+| `uv run ruff check .` | 7 errors | 4 errors, all on files this change did not touch (`ui.py`: A8, A9, A10; `briefing_instructions.py`: A10) |
+| Mock-mode smoke (`USE_MOCK_DATA=true`, no model name) | Every route 500 | `/api/health` 200; profile 200; `POST /briefing` 503 "Briefing generation is not configured" |
+
+Each new regression test fails against the code before `1b5225e` and passes after it.
+
 ## 2. Decisions (product owner, 2026-09-24 — final)
 
 | # | Decision |
@@ -49,6 +61,8 @@ Quickstart §§ 1-2 (T019), run from `student_attrition_risk_app/`.
 | DEC-9 | Karen's `StructuredBriefingValidator` is already wired in `main.build_service` (`87670e4`), so the validation half of Feature-001 SC-007 is satisfied by her work. The instructions half (US-12) is still open. Not a Feature-004 item. |
 | DEC-10 | (2026-09-24, clarification) B1's advisor-facing message is produced only inside Renny's `request_briefing()` (`ui.py:461-480`) as a red page-owned notice in the existing error palette. GuaGuaGua88's handlers (`ui.py:730-733`, `768-771`) are not changed. |
 | DEC-11 | (2026-09-24, clarification) C3's Renny half covers both briefing tools, `generate_student_briefing` and `get_student_briefing` (`mcp_server.py:34-57`). Lines 21-33 are not changed. |
+| DEC-13 | (2026-09-25) Karen and GuaGuaGua88 approved resolving their six High defects (D1, D2, D3, A1–A4/C1, A5, D7). This supersedes DEC-2 and DEC-6 for those items only. `tests/test_ui.py` is corrected in place with the owner's approval; the other regression tests go in a new file, `tests/test_defect_resolution_teammate_highs.py`. Fixed in `1b5225e`. |
+| DEC-14 | (2026-09-25) The remaining Medium and Low defects are **accepted as documented known limitations and not fixed**: US-20 requires only Critical and High defects to be closed. This covers D5, D6, C3 (other half), C4, C7, C8, D8, D9, D10, A8, A9, A10 (remaining part) and A11. Their status is "Documented (DEC-14)". |
 | DEC-12 | (2026-09-24, clarification) C3 read-outage re-raised as BriefingStorageError with safe text to preserve the Feature-003 boundary test. `get_student_briefing` maps a `BriefingStorageError` to a fresh `BriefingStorageError("validated briefing store unavailable") from None`; any other unexpected failure in either briefing tool becomes a `ToolError` with the REST-matching safe message. |
 
 ## 3. Register
@@ -63,41 +77,41 @@ Action values: **Fix in Feature-004** · **Logged to owner** · **Not a defect �
 | B2 | `retry_workflow.py:98` (also `student_service.py:150`) | An exception raised by the validator on Attempt 2 escapes `SingleRetryWorkflow.run`: no terminal outcome is logged and the API answers "Databricks data source unavailable". Real trigger: D4 (NaN score). | 002 FR-005, SC-002 | High | Renny | Fix in Feature-004 | Closed (tests/test_defect_resolution.py — section B2; fix `3778a58`, merge `46c65ed`; see § 5) |
 | B4 | `briefing_store.py:64-66`, `84-89` | Any non-briefing file in a student's Volume folder makes `has_validated` true and becomes the "latest" briefing, so every retrieval for that student fails until the file is deleted by hand. | 002 FR-022 / FR-023, SC-008 | Medium | Renny | Fix in Feature-004 | Closed (tests/test_defect_resolution.py — section B4; fix `2824837`, merge `0fa503d`; see § 5) |
 | C3 (Renny half) | `mcp_server.py:34-57` (sweep cited 49-58; DEC-11) | The MCP briefing tools let backend exceptions through; FastMCP forwards the raw text (Volume paths, warehouse errors) to the client, while REST returns safe 503 messages. | App README ("503 with safe messages"); constitution X, XI (sweep also cited 002 FR-032, which concerns attempt-count display) | Medium | Renny | Fix in Feature-004 | Closed (tests/test_defect_resolution.py — section C3; fix `7447dd6`, merge `cf8187e`; see § 5) |
-| C7 | `api.py:81-84` | `GET /briefing` says "store unavailable" when the data source is what is down (503 either way). | — | Low | Renny | Logged to owner | Open |
-| A9 | `ui.py:20` | Unused import `StudentNotAtRiskError` (F401). | — | Low | Renny | Logged to owner | Open |
+| C7 | `api.py:81-84` | `GET /briefing` says "store unavailable" when the data source is what is down (503 either way). | — | Low | Renny | Logged to owner | Documented (DEC-14) |
+| A9 | `ui.py:20` | Unused import `StudentNotAtRiskError` (F401). | — | Low | Renny | Logged to owner | Documented (DEC-14) |
 
 ### 3.2 Karen (karen-lee1029 / k224.lee)
 
 | ID | File:line | Description | Spec reference | Severity | Owner | Action | Status |
 |---|---|---|---|---|---|---|---|
-| D1 | `briefing_validation.py:54` | Risk-level check is a substring match on "at risk", so "Not At Risk" passes. | US-14 | High | Karen | Logged to owner | Open |
-| D2 | `briefing_validation.py:67` | Score check accepts the integer part anywhere in the text ("78" for 78.5%). | US-14 | High | Karen | Logged to owner | Open |
-| D3 | `briefing_validation.py:211` | "Mentions student data" check effectively always passes (0/1 values match any digit). | US-14 | High | Karen | Logged to owner | Open |
-| D4 | `briefing_validation.py:211` | NaN raises `ValueError`, inf raises `OverflowError`; triggers B2 on Attempt 2. | US-14 | Medium | Karen | Logged to owner | Open |
-| D5 | `briefing_validation.py:148`, `165` | AC5 is appended to the failed criteria twice. | US-14 | Low | Karen | Logged to owner | Open |
-| D6 | `briefing_validation.py:109`, `111` | The "I'm going to" / "I've contacted" regexes never match. | US-14 | Medium | Karen | Logged to owner | Open |
-| A1–A4 / C1 | `tests/test_ui.py:235-337` | 5 tests fail against the current UI: they expect `st.info`, an "Attempt:" label (contradicts 002 FR-032), and a `FakeService` without `has_stored_briefing`. Not edited, not superseded (DEC-6). | 002 FR-032 | High | Karen | Logged to owner | Open |
-| A5 | `main.py:81-84` | `ConfigurationError` is swallowed and `app=None`, so every route returns 500 with no cause shown. Joint with D7. | 001 FR-014 | High | Karen (joint with GuaGuaGua88, D7) | Logged to owner | Open |
-| A10 (Karen part) | `briefing_validation.py:9`, `tests/test_ui.py:13` | I001 unsorted imports. | — | Low | Karen | Logged to owner | Open |
+| D1 | `briefing_validation.py:54` | Risk-level check is a substring match on "at risk", so "Not At Risk" passes. | US-14 | High | Karen | Fixed with owner approval (DEC-13) | Closed (`1b5225e`; see § 5.1) |
+| D2 | `briefing_validation.py:67` | Score check accepts the integer part anywhere in the text ("78" for 78.5%). | US-14 | High | Karen | Fixed with owner approval (DEC-13) | Closed (`1b5225e`; see § 5.1) |
+| D3 | `briefing_validation.py:211` | "Mentions student data" check effectively always passes (0/1 values match any digit). | US-14 | High | Karen | Fixed with owner approval (DEC-13) | Closed (`1b5225e`; see § 5.1) |
+| D4 | `briefing_validation.py:211` | NaN raises `ValueError`, inf raises `OverflowError`; triggers B2 on Attempt 2. | US-14 | Medium | Karen | Closed incidentally by the D3 fix | Closed (`1b5225e`; `test_d3_non_finite_values_are_skipped_rather_than_crashing`) |
+| D5 | `briefing_validation.py:148`, `165` | AC5 is appended to the failed criteria twice. | US-14 | Low | Karen | Logged to owner | Documented (DEC-14) |
+| D6 | `briefing_validation.py:109`, `111` | The "I'm going to" / "I've contacted" regexes never match. | US-14 | Medium | Karen | Logged to owner | Documented (DEC-14) |
+| A1–A4 / C1 | `tests/test_ui.py:235-337` | 5 tests fail against the current UI: they expect `st.info`, an "Attempt:" label (contradicts 002 FR-032), and a `FakeService` without `has_stored_briefing`. Corrected in place with the owner's approval (DEC-13). | 002 FR-032 | High | Karen | Fixed with owner approval (DEC-13) | Closed (`1b5225e`; see § 5.1) |
+| A5 | `main.py:81-84` | `ConfigurationError` is swallowed and `app=None`, so every route returns 500 with no cause shown. Joint with D7. | 001 FR-014 | High | Karen (joint with GuaGuaGua88, D7) | Fixed with owner approval (DEC-13) | Closed (`1b5225e`; see § 5.1) |
+| A10 (Karen part) | `briefing_validation.py:9`, `tests/test_ui.py:13` | I001 unsorted imports. | — | Low | Karen | Fixed while editing these files (DEC-13) | Closed (`1b5225e`) |
 
 ### 3.3 GuaGuaGua88 (l52.yang)
 
 | ID | File:line | Description | Spec reference | Severity | Owner | Action | Status |
 |---|---|---|---|---|---|---|---|
-| D7 (= A6, B5, C5) | `main.py:29-32` | Mock mode requires `DATABRICKS_MODEL_NAME`, so the README quick start fails and the whole app is unusable. | 001 FR-014 | High | GuaGuaGua88 | Logged to owner | Open |
-| D8 | `config.py:87-88` | A blank or non-numeric port raises an uncaught `ValueError` at import. | — | Low | GuaGuaGua88 | Logged to owner | Open |
-| D9 | `config.py:78` | `USE_MOCK_DATA` values "1" / "yes" / " true" are read as false, so the app silently runs live. | — | Low | GuaGuaGua88 | Logged to owner | Open |
-| D10 | `databricks_client.py:16-21` | Token set with host unset raises `AttributeError`. | — | Low | GuaGuaGua88 | Logged to owner | Open |
-| C3 (other half) | `mcp_server.py:21-33` | Profile and list MCP tools leak raw exception text. | App README; 001 | Medium | GuaGuaGua88 | Logged to owner | Open |
-| C4 | `mcp_server.py:21-28` | REST and MCP disagree for an unknown student and for `limit=0`. | — | Low | GuaGuaGua88 | Logged to owner | Open |
-| C8 | `ui.py:793-856` | Opening and closing `div` wrappers are emitted in separate `st.markdown` calls, so they never wrap the content. | — | Low | GuaGuaGua88 | Logged to owner | Open |
-| A8, A10 (part) | `ui.py:6`; `ui.py`, `main.py`, `briefing_instructions.py` | F401 unused `Decimal`; I001 import order. | — | Low | GuaGuaGua88 | Logged to owner | Open |
+| D7 (= A6, B5, C5) | `main.py:29-32` | Mock mode requires `DATABRICKS_MODEL_NAME`, so the README quick start fails and the whole app is unusable. | 001 FR-014 | High | GuaGuaGua88 | Fixed with owner approval (DEC-13) | Closed (`1b5225e`; see § 5.1) |
+| D8 | `config.py:87-88` | A blank or non-numeric port raises an uncaught `ValueError` at import. | — | Low | GuaGuaGua88 | Logged to owner | Documented (DEC-14) |
+| D9 | `config.py:78` | `USE_MOCK_DATA` values "1" / "yes" / " true" are read as false, so the app silently runs live. | — | Low | GuaGuaGua88 | Logged to owner | Documented (DEC-14) |
+| D10 | `databricks_client.py:16-21` | Token set with host unset raises `AttributeError`. | — | Low | GuaGuaGua88 | Logged to owner | Documented (DEC-14) |
+| C3 (other half) | `mcp_server.py:21-33` | Profile and list MCP tools leak raw exception text. | App README; 001 | Medium | GuaGuaGua88 | Logged to owner | Documented (DEC-14) |
+| C4 | `mcp_server.py:21-28` | REST and MCP disagree for an unknown student and for `limit=0`. | — | Low | GuaGuaGua88 | Logged to owner | Documented (DEC-14) |
+| C8 | `ui.py:793-856` | Opening and closing `div` wrappers are emitted in separate `st.markdown` calls, so they never wrap the content. | — | Low | GuaGuaGua88 | Logged to owner | Documented (DEC-14) |
+| A8, A10 (part) | `ui.py:6`; `ui.py`, `main.py`, `briefing_instructions.py` | F401 unused `Decimal`; I001 import order. The `main.py` import order was fixed in `1b5225e` while resolving D7; `ui.py` and `briefing_instructions.py` remain. | — | Low | GuaGuaGua88 | Logged to owner | Documented (DEC-14; partly fixed) |
 
 ### 3.4 Third party
 
 | ID | File:line | Description | Spec reference | Severity | Owner | Action | Status |
 |---|---|---|---|---|---|---|---|
-| A11 | — (test run warnings) | Starlette / Authlib deprecation warnings. | — | Low | Third party | Logged to owner | Open |
+| A11 | — (test run warnings) | Starlette / Authlib deprecation warnings. | — | Low | Third party | Logged to owner | Documented (DEC-14) |
 
 ### 3.5 Design decisions (not defects)
 
@@ -126,15 +140,16 @@ Recorded so they are not lost; none is treated as a defect until reproduced.
 | Severity | Total | Fix in Feature-004 | Logged to owner |
 |---|---|---|---|
 | Critical | 0 | 0 | 0 |
-| High | 7 | 1 (B2) — Closed | 6 (D1, D2, D3, A1–A4/C1, A5, D7) — Open |
-| Medium | 6 | 3 (B1, B4, C3 Renny half) — Closed | 3 (D4, D6, C3 other half) — Open |
+| High | 7 | 1 (B2) — Closed | 6 (D1, D2, D3, A1–A4/C1, A5, D7) — **Closed** with owner approval (DEC-13) |
+| Medium | 6 | 3 (B1, B4, C3 Renny half) — Closed | 3: D4 Closed (by the D3 fix); D6, C3 other half — Open |
 | Low | 11 | 0 | 11 (incl. Renny's C7, A9) — Open |
 
 Design decisions (C6, DD-2) and unverified items (U1–U8) carry no severity and are not counted.
 
-US-20 status against DEC-1: the only High defect in Renny's scope (B2) is fixed by Feature-004.
-Six High defects remain open with their owners (Karen: D1, D2, D3, A1–A4/C1, A5; GuaGuaGua88: D7).
-Closing them is outside Feature-004 under DEC-2.
+US-20 status against DEC-1: **met project-wide.** No Critical defect was found, and all seven High
+defects are closed: B2 by Feature-004, and the six teammate-owned Highs (Karen: D1, D2, D3, A1–A4/C1,
+A5; GuaGuaGua88: D7) in `1b5225e` with their owners' approval (DEC-13). Every remaining lower-priority
+defect is documented in § 6.
 
 ## 5. Closure evidence
 
@@ -151,19 +166,33 @@ and passes at `27c5db0`. Merge commits are local to `feat/feature-004-final-defe
 C2 and A7 are sweep duplicates of B1 and close with it. For A7 this covers Renny's
 `request_briefing()` (DEC-10); GuaGuaGua88's handlers at `ui.py:730-733` and `768-771` were not changed.
 
+### 5.1 Teammate-owned High defects (DEC-13)
+
+Regression groups are in `student_attrition_risk_app/tests/test_defect_resolution_teammate_highs.py`, except A1–A4/C1, which are closed by
+the corrected `tests/test_ui.py` itself. All pass at `1b5225e`.
+
+| ID | Fix | Regression tests |
+|---|---|---|
+| D1 (High) | Risk level must match the prediction; the negated "not at risk" form is checked separately | `test_d1_not_at_risk_briefing_fails_for_a_flagged_student`, `test_d1_hyphenated_at_risk_is_accepted_for_a_flagged_student`, `test_d1_not_at_risk_is_required_for_a_student_who_is_not_flagged` |
+| D2 (High) | Score accepted only as supplied, to one decimal place with `%` | `test_d2_wrong_score_with_an_unrelated_78_fails`, `test_d2_score_without_its_decimal_place_fails`, `test_d2_score_inside_a_larger_number_fails`, `test_d2_score_with_a_space_before_the_percent_sign_passes` |
+| D3 (High), D4 (Medium) | Whole-number and whole-phrase matching; 0/1, boolean and non-finite values skipped | `test_d3_generic_context_fails_traceability`, `test_d3_digits_inside_other_numbers_do_not_count_as_a_mention`, `test_d3_zero_and_one_values_do_not_count_as_a_mention`, `test_d3_common_words_from_text_values_do_not_count_as_a_mention`, `test_d3_a_whole_text_value_counts_as_a_mention`, `test_d3_non_finite_values_are_skipped_rather_than_crashing` |
+| A5 (High) | Invalid configuration yields a stand-in app that answers 503 naming the problem, and logs it | `test_a5_configuration_error_app_names_the_problem_with_503`, `test_a5_configuration_error_is_logged` |
+| D7 (High) | No model name → `StubGenerationProvider`, which fails only when a briefing is requested (001 FR-014) | `test_d7_mock_mode_builds_without_a_model_name` (parametrised: unset, blank), `test_d7_briefing_request_without_a_model_name_fails_only_at_request_time` |
+| A1–A4 / C1 (High) | Assertions updated to the current UI: page-owned notices, no attempt label (002 FR-032), `has_stored_briefing` on `FakeService` | The five previously failing `tests/test_ui.py` tests now pass |
+
 ## 6. Known limitations and open items at delivery
 
-**US-20 is complete for Renny's scope.** Every defect marked "Fix in Feature-004" (B1, B2, B4,
-C3 Renny half) is Closed with a passing regression group, and no Critical or High defect remains
-open in Renny's scope. **US-20 overall stays open** until the owners close the listed High
-defects: D1, D2, D3, A1–A4/C1, A5 and D7 (FR-032, DEC-1, DEC-2).
+**US-20 is complete.** Every Critical and High defect is closed: B1, B2, B4 and C3 (Renny half) by
+Feature-004, and D1, D2, D3, A1–A4/C1, A5 and D7 with their owners' approval (DEC-13). The
+lower-priority defects that remain are documented below, as the US-20 acceptance criterion requires,
+and are accepted as known limitations rather than fixed (DEC-14).
 
 ### 6.1 Open defects by owner
 
 | Owner | High | Medium | Low |
 |---|---|---|---|
-| Karen (karen-lee1029 / k224.lee) | D1, D2, D3, A1–A4/C1, A5 (joint with D7) | D4, D6 | D5, A10 (Karen part) |
-| GuaGuaGua88 (l52.yang) | D7 (= A6, B5, C5; joint with A5) | C3 (other half, `mcp_server.py:21-33`) | D8, D9, D10, C4, C8, A8, A10 (part) |
+| Karen (karen-lee1029 / k224.lee) | — | D6 | D5 |
+| GuaGuaGua88 (l52.yang) | — | C3 (other half, `mcp_server.py:21-33`) | D8, D9, D10, C4, C8, A8, A10 (`ui.py`, `briefing_instructions.py`) |
 | Renny (RennyMatis2000) | — | — | C7, A9 (logged only, DEC-4) |
 | Third party | — | — | A11 |
 
@@ -172,16 +201,10 @@ unconfirmed and are not counted as defects.
 
 ### 6.2 Other limitations
 
-- **Known test failures**: `uv run pytest -q` shows 5 failures, all in `tests/test_ui.py`
-  (A1–A4 / C1, Karen): `test_not_at_risk_student_shows_info_and_no_briefing_actions`,
-  `test_generate_briefing_displays_text_metadata_checkbox_and_download`,
-  `test_retrieve_saved_no_briefing_shows_info`, `test_regenerate_displays_briefing`,
-  `test_regenerate_not_produced_shows_error`. They are not edited or superseded (DEC-6).
-- **Pre-existing lint**: `uv run ruff check .` reports 7 findings, identical to the baseline and all
-  on lines Feature-004 did not touch. Six belong to teammates (A8: F401 `Decimal` in `ui.py`;
-  A10: I001 in `ui.py`, `main.py`, `briefing_instructions.py`, `briefing_validation.py`,
-  `tests/test_ui.py`) and one is Renny's logged Low A9 (F401 `StudentNotAtRiskError` in `ui.py`).
-  All are autofixable; none were fixed because DEC-4 and DEC-2 keep them out of Feature-004.
+- **Test failures**: none. `uv run pytest -q` shows 260 passed, 0 failed, 13 skipped at `1b5225e`.
+- **Pre-existing lint**: `uv run ruff check .` reports 4 findings, all autofixable and on files not
+  touched by the fixes: A8 (F401 `Decimal`), A9 (F401 `StudentNotAtRiskError`) and A10 (I001) in
+  `ui.py`, and A10 (I001) in `briefing_instructions.py`.
 - **Feature-001 SC-007**: the validation half is satisfied by Karen's `StructuredBriefingValidator`
   wiring in `main.build_service` (`87670e4`). The instructions half (US-12) is still open and is
   not a Feature-004 item (DEC-9).
