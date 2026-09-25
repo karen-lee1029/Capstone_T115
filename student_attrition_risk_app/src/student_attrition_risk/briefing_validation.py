@@ -6,8 +6,30 @@ acceptance-criteria validation is owned by **US-14** and will be supplied throug
 seam without changing the orchestration (FR-016).
 """
 
+import math
 import re
-from .models import BriefingGenerationContext, DraftBriefing, ValidationOutcome, UNAVAILABLE, SUPPRESSED
+
+from .models import SUPPRESSED, UNAVAILABLE, BriefingGenerationContext, DraftBriefing, ValidationOutcome
+
+# "not at risk" / "not at-risk", and "at risk" / "at-risk" as whole words.
+_NEGATED_RISK_LEVEL = re.compile(r"\bnot\s+at[\s-]risk\b")
+_RISK_LEVEL = re.compile(r"\bat[\s-]risk\b")
+
+
+def _mentions_number(text: str, number: str) -> bool:
+    """True when ``number`` appears as a whole number in ``text``: "78" does not match
+    inside "178", "2026" or "78.5"."""
+    return re.search(rf"(?<![\d.]){re.escape(number)}(?!\d|\.\d)", text) is not None
+
+
+def _numeric_feature_forms(value: int | float) -> list[str]:
+    """Written forms of a numeric feature value that count as mentioning it. Booleans, 0/1
+    values and non-finite numbers are skipped: they cannot identify a particular student."""
+    if isinstance(value, bool) or not math.isfinite(value) or value in (0, 1):
+        return []
+    if float(value).is_integer():
+        return [str(int(value))]
+    return [str(value)]
 
 
 class InterimValidator:
@@ -50,22 +72,30 @@ class StructuredBriefingValidator:
                 "selected in the context."
             )
         
-        # Student's risk level is not mentioned
-        if "at risk" not in text_lower and "at-risk" not in text_lower:
+        # Student's risk level is not mentioned, or the opposite classification is stated.
+        # "Not At Risk" contains "at risk", so the negated form is checked separately.
+        says_not_at_risk = _NEGATED_RISK_LEVEL.search(text_lower) is not None
+        says_at_risk = _RISK_LEVEL.search(_NEGATED_RISK_LEVEL.sub("", text_lower)) is not None
+        if context.prediction.attrition_risk_flag:
+            states_risk_level = says_at_risk and not says_not_at_risk
+        else:
+            states_risk_level = says_not_at_risk and not says_at_risk
+        if not states_risk_level:
             if "AC1" not in failed_criteria:
                 failed_criteria.append("AC1")
             feedback_parts.append(
-                "The briefing does not reference the selected student's risk level "
-                "from the prediction record."
+                "The briefing does not state the selected student's risk level from the "
+                "prediction record, or states the opposite classification."
             )
 
-        # Student's risk score is not mentioned
+        # Student's risk score is not mentioned. Only the score as supplied to the model
+        # (one decimal place, e.g. "78.5%") counts; a bare "78" elsewhere does not.
         risk_pct = context.prediction.attrition_risk_percentage
-        risk_pct_str = f"{risk_pct:.1f}%"
         mentions_risk = (
-            risk_pct_str in draft.text
-            or str(int(risk_pct)) in draft.text
-            or str(round(risk_pct, 1)) in draft.text
+            re.search(
+                rf"(?<![\d.]){re.escape(f'{risk_pct:.1f}')}\s?%", draft.text
+            )
+            is not None
         )
         if not mentions_risk:
             if "AC1" not in failed_criteria:
@@ -208,13 +238,15 @@ class StructuredBriefingValidator:
             if isinstance(value, str) and value in (UNAVAILABLE, SUPPRESSED):
                 continue
             if isinstance(value, (int, float)):
-                if str(int(value)) in draft.text or str(value) in draft.text:
+                if any(_mentions_number(draft.text, form) for form in _numeric_feature_forms(value)):
                     feature_mentions += 1
             elif isinstance(value, str):
-                key_words = value.split("_")
-                for word in key_words:
-                    if word and word.lower() in text_lower and word.lower() != "is":
-                        feature_mentions += 1
+                # The whole value as a phrase ("Full_time" -> "full time"), not any one of its
+                # words: single words such as "student" or "low" (inside "follow") match
+                # almost any briefing.
+                phrase = value.replace("_", " ").strip().lower()
+                if phrase and re.search(rf"\b{re.escape(phrase)}\b", text_lower):
+                    feature_mentions += 1
         if feature_mentions == 0:
             failed_criteria.append("AC8")
             feedback_parts.append(
