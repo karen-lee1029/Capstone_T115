@@ -1,0 +1,1170 @@
+{
+  "datasets": [
+    {
+      "name": "b798cf1c",
+      "displayName": "student_attrition_risk_prediction",
+      "config": {
+        "version": "1.1",
+        "source": "workspace.student_aggregate.student_attrition_risk_prediction",
+        "dimensions": [
+          {
+            "expr": "source.*"
+          },
+          {
+            "name": "risk_level",
+            "expr": "CASE\n  WHEN source.attrition_risk_percentage >= 50 THEN 'High'\n  ELSE 'Low'\nEND",
+            "displayName": "Risk Level"
+          },
+          {
+            "name": "risk_score_bucket",
+            "expr": "CASE\n  WHEN source.attrition_risk_percentage < 46 THEN '0-46%'\n  WHEN source.attrition_risk_percentage < 48 THEN '46-48%'\n  WHEN source.attrition_risk_percentage < 49 THEN '48-49%'\n  WHEN source.attrition_risk_percentage < 50 THEN '49-50%'\n  WHEN source.attrition_risk_percentage < 51 THEN '50-51%'\n  WHEN source.attrition_risk_percentage < 52 THEN '51-52%'\n  WHEN source.attrition_risk_percentage < 54 THEN '52-54%'\n  ELSE '54-100%'\nEND",
+            "displayName": "Risk Score Range"
+          },
+          {
+            "name": "student_id",
+            "expr": "LEFT(source.student_deidentified_hash, 8)",
+            "displayName": "Student ID"
+          },
+          {
+            "name": "risk_pct",
+            "expr": "CAST(FLOOR(source.attrition_risk_percentage * 10) AS DOUBLE) / 10",
+            "displayName": "Risk %",
+            "format": {
+              "type": "number",
+              "decimalPlaces": {
+                "type": "exact",
+                "places": 1.0
+              }
+            }
+          },
+          {
+            "name": "scored_date",
+            "expr": "CAST(source.scored_at AS DATE)",
+            "displayName": "Scored Date",
+            "format": {
+              "type": "date",
+              "dateFormat": "year_month_day"
+            }
+          }
+        ],
+        "measures": [
+          {
+            "name": "count",
+            "expr": "COUNT(DISTINCT source.student_deidentified_hash)",
+            "comment": "Count of unique students by deidentified hash",
+            "displayName": "Student Count"
+          }
+        ]
+      }
+    },
+    {
+      "name": "student_enrolment",
+      "displayName": "Student Enrolment Details",
+      "config": {
+        "source": "SELECT\n  student_deidentified_hash,\n  curriculum_item_title,\n  curriculum_item_type,\n  study_mode,\n  attendance_mode,\n  study_area_b_key,\n  course_key,\n  student_gender,\n  age_band,\n  international_domestic_student,\n  socioeconomic_status,\n  student_is_first_nations_student,\n  student_home_language,\n  citizenship_country,\n  student_birth_country,\n  commencing_continuing,\n  enrolment_year,\n  status,\n  stage\nFROM (\n  SELECT\n    e.*,\n    ROW_NUMBER() OVER (PARTITION BY e.student_deidentified_hash ORDER BY e.census_date DESC, e.enrolment_year DESC) as rn\n  FROM workspace.student_aggregate.rpt_student_management__fact__all_enrolment_eftsl__deidentified e\n) t\nWHERE t.rn = 1",
+        "measures": [
+          {
+            "name": "student_count",
+            "expr": "COUNT(*)",
+            "displayName": "Student Count"
+          }
+        ],
+        "version": "1.1",
+        "dimensions": [
+          {
+            "name": "student_deidentified_hash",
+            "expr": "source.student_deidentified_hash"
+          },
+          {
+            "name": "faculty",
+            "expr": "study_area.owning_faculty_organisation_name",
+            "displayName": "Faculty"
+          },
+          {
+            "name": "program",
+            "expr": "source.curriculum_item_title",
+            "displayName": "Program"
+          },
+          {
+            "name": "study_mode",
+            "expr": "source.study_mode",
+            "displayName": "Study Mode"
+          },
+          {
+            "name": "attendance_mode",
+            "expr": "source.attendance_mode",
+            "displayName": "Attendance Mode"
+          },
+          {
+            "name": "gender",
+            "expr": "source.student_gender",
+            "displayName": "Gender"
+          },
+          {
+            "name": "age_band",
+            "expr": "source.age_band",
+            "displayName": "Age Band"
+          },
+          {
+            "name": "international_domestic",
+            "expr": "source.international_domestic_student",
+            "displayName": "International/Domestic"
+          },
+          {
+            "name": "socioeconomic_status",
+            "expr": "source.socioeconomic_status",
+            "displayName": "Socioeconomic Status"
+          },
+          {
+            "name": "first_nations",
+            "expr": "source.student_is_first_nations_student",
+            "displayName": "First Nations"
+          },
+          {
+            "name": "home_language",
+            "expr": "source.student_home_language",
+            "displayName": "Home Language"
+          },
+          {
+            "name": "commencing_continuing",
+            "expr": "source.commencing_continuing",
+            "displayName": "Commencing/Continuing"
+          },
+          {
+            "name": "enrolment_status",
+            "expr": "source.status",
+            "displayName": "Enrolment Status"
+          }
+        ],
+        "joins": [
+          {
+            "name": "study_area",
+            "source": "workspace.student_aggregate.dwh_curriculum__study_area_b",
+            "on": "source.study_area_b_key = study_area.study_area_b_key"
+          }
+        ]
+      }
+    }
+  ],
+  "relationshipGraphs": [
+    {
+      "sources": [
+        {
+          "name": "student_attrition_risk_prediction",
+          "datasetName": "b798cf1c"
+        },
+        {
+          "name": "Student_Enrolment_Details",
+          "datasetName": "student_enrolment"
+        }
+      ],
+      "relationships": [
+        {
+          "name": "relationship_0",
+          "from": "student_attrition_risk_prediction",
+          "to": "Student_Enrolment_Details",
+          "on": "`student_attrition_risk_prediction`.`student_deidentified_hash` = `Student_Enrolment_Details`.`student_deidentified_hash`",
+          "cardinality": "CARDINALITY_MANY_TO_ONE"
+        }
+      ]
+    }
+  ],
+  "pages": [
+    {
+      "name": "f8c29798",
+      "displayName": "Overview",
+      "layout": [
+        {
+          "widget": {
+            "name": "section_header",
+            "multilineTextboxSpec": {
+              "lines": [
+                "<div style=\"border-left: 4px solid #D32F2F; padding-left: 12px; margin: 4px 0;\">\n",
+                "<div style=\"color: #D32F2F; font-size: 15px; font-weight: 700;\">Students Requiring Attention</div>\n",
+                "<div style=\"color: #666; font-size: 11px; margin-top: 2px;\">Use the filters below to search for specific students or narrow by risk level and risk flag</div>\n",
+                "</div>"
+              ]
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 27,
+            "width": 12,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "synthetic_notice",
+            "multilineTextboxSpec": {
+              "lines": [
+                "<div style=\"background-color: #F5F7FA; border-left: 3px solid #00407A; border-radius: 4px; padding: 10px 16px; color: #555; font-size: 12px;\">\n",
+                "<strong>Privacy Notice:</strong> Student identifiers are deidentified for privacy. Predictions are generated using machine learning models to support Academic Advisor decision-making.\n",
+                "</div>"
+              ]
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 48,
+            "width": 12,
+            "height": 1
+          }
+        },
+        {
+          "widget": {
+            "name": "last_updated",
+            "multilineTextboxSpec": {
+              "lines": [
+                "<div style=\"text-align: right; color: #999; font-size: 11px; font-style: italic; padding: 4px 0;\">\n",
+                "Last updated: September 18, 2026 &bull; Data source: ML attrition risk model\n",
+                "</div>"
+              ]
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 49,
+            "width": 12,
+            "height": 1
+          }
+        },
+        {
+          "widget": {
+            "name": "counter_total",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "fields": [
+                    {
+                      "name": "measure(student_attrition_risk_prediction__count)",
+                      "expression": "MEASURE(`student_attrition_risk_prediction`.`count`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showDescription": false,
+                "showTitle": true,
+                "title": {
+                  "value": "Total Students",
+                  "fields": []
+                }
+              },
+              "style": {
+                "fontColor": {
+                  "dark": "#00407A",
+                  "light": "#00407A"
+                }
+              },
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "measure(student_attrition_risk_prediction__count)",
+                  "format": {
+                    "abbreviation": "none",
+                    "type": "number-plain"
+                  }
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 2,
+            "width": 4,
+            "height": 4
+          }
+        },
+        {
+          "widget": {
+            "name": "counter_high",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "fields": [
+                    {
+                      "name": "measure(student_attrition_risk_prediction__count)",
+                      "expression": "MEASURE(`student_attrition_risk_prediction`.`count`)"
+                    }
+                  ],
+                  "filters": [
+                    {
+                      "expression": "`student_attrition_risk_prediction`.`risk_level` IN ('High')"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showDescription": false,
+                "showTitle": true,
+                "title": {
+                  "value": "High Risk",
+                  "fields": []
+                }
+              },
+              "style": {
+                "fontColor": {
+                  "dark": "#1565C0",
+                  "light": "#1565C0"
+                }
+              },
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "measure(student_attrition_risk_prediction__count)",
+                  "format": {
+                    "abbreviation": "none",
+                    "type": "number-plain"
+                  }
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 4,
+            "y": 2,
+            "width": 4,
+            "height": 4
+          }
+        },
+        {
+          "widget": {
+            "name": "counter_low",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "fields": [
+                    {
+                      "name": "measure(student_attrition_risk_prediction__count)",
+                      "expression": "MEASURE(`student_attrition_risk_prediction`.`count`)"
+                    }
+                  ],
+                  "filters": [
+                    {
+                      "expression": "`student_attrition_risk_prediction`.`risk_level` IN ('Low')"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showDescription": false,
+                "showTitle": true,
+                "title": {
+                  "value": "Low Risk",
+                  "fields": []
+                }
+              },
+              "style": {
+                "fontColor": {
+                  "dark": "#42A5F5",
+                  "light": "#42A5F5"
+                }
+              },
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "measure(student_attrition_risk_prediction__count)",
+                  "format": {
+                    "abbreviation": "none",
+                    "type": "number-plain"
+                  }
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 8,
+            "y": 2,
+            "width": 4,
+            "height": 4
+          }
+        },
+        {
+          "widget": {
+            "name": "chart_risk_donut",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "fields": [
+                    {
+                      "name": "student_attrition_risk_prediction__risk_level",
+                      "expression": "`student_attrition_risk_prediction`.`risk_level`"
+                    },
+                    {
+                      "name": "measure(student_attrition_risk_prediction__count)",
+                      "expression": "MEASURE(`student_attrition_risk_prediction`.`count`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showDescription": true,
+                "showTitle": true,
+                "title": {
+                  "value": "Risk Level Distribution",
+                  "fields": []
+                },
+                "description": {
+                  "value": "Student count by risk category",
+                  "fields": []
+                }
+              },
+              "version": 3,
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "measure(student_attrition_risk_prediction__count)",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "y": {
+                  "fieldName": "student_attrition_risk_prediction__risk_level",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "color": {
+                  "fieldName": "student_attrition_risk_prediction__risk_level",
+                  "scale": {
+                    "mappings": [
+                      {
+                        "color": "#1565C0",
+                        "value": "High"
+                      },
+                      {
+                        "color": "#42A5F5",
+                        "value": "Low"
+                      }
+                    ],
+                    "type": "categorical"
+                  }
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 8,
+            "width": 6,
+            "height": 9
+          }
+        },
+        {
+          "widget": {
+            "name": "chart_risk_by_faculty",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "fields": [
+                    {
+                      "name": "student_attrition_risk_prediction__risk_level",
+                      "expression": "`student_attrition_risk_prediction`.`risk_level`"
+                    },
+                    {
+                      "name": "student_attrition_risk_prediction__risk_score_bucket",
+                      "expression": "`student_attrition_risk_prediction`.`risk_score_bucket`"
+                    },
+                    {
+                      "name": "measure(student_attrition_risk_prediction__count)",
+                      "expression": "MEASURE(`student_attrition_risk_prediction`.`count`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showDescription": true,
+                "showTitle": true,
+                "title": {
+                  "value": "Risk Score Distribution",
+                  "fields": []
+                },
+                "description": {
+                  "value": "Student count by risk score range",
+                  "fields": []
+                }
+              },
+              "version": 3,
+              "mark": {
+                "layout": "stack"
+              },
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "student_attrition_risk_prediction__risk_score_bucket",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "y": {
+                  "fieldName": "measure(student_attrition_risk_prediction__count)",
+                  "format": {
+                    "abbreviation": "compact",
+                    "type": "number-plain"
+                  },
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "color": {
+                  "fieldName": "student_attrition_risk_prediction__risk_level",
+                  "scale": {
+                    "mappings": [
+                      {
+                        "color": "#1565C0",
+                        "value": "High"
+                      },
+                      {
+                        "color": "#42A5F5",
+                        "value": "Low"
+                      }
+                    ],
+                    "type": "categorical"
+                  }
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 6,
+            "y": 8,
+            "width": 6,
+            "height": 9
+          }
+        },
+        {
+          "widget": {
+            "name": "student_table",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "fields": [
+                    {
+                      "name": "student_attrition_risk_prediction__student_id",
+                      "expression": "`student_attrition_risk_prediction`.`student_id`"
+                    },
+                    {
+                      "name": "student_attrition_risk_prediction__risk_pct",
+                      "expression": "`student_attrition_risk_prediction`.`risk_pct`"
+                    },
+                    {
+                      "name": "student_attrition_risk_prediction__attrition_risk_flag",
+                      "expression": "`student_attrition_risk_prediction`.`attrition_risk_flag`"
+                    },
+                    {
+                      "name": "student_attrition_risk_prediction__risk_level",
+                      "expression": "`student_attrition_risk_prediction`.`risk_level`"
+                    },
+                    {
+                      "name": "Student_Enrolment_Details__gender",
+                      "expression": "`Student_Enrolment_Details`.`gender`"
+                    },
+                    {
+                      "name": "Student_Enrolment_Details__international_domestic",
+                      "expression": "`Student_Enrolment_Details`.`international_domestic`"
+                    },
+                    {
+                      "name": "student_attrition_risk_prediction__scored_date",
+                      "expression": "`student_attrition_risk_prediction`.`scored_date`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showDescription": true,
+                "showTitle": true,
+                "title": {
+                  "value": "Student Details",
+                  "fields": []
+                },
+                "description": {
+                  "value": "Showing students prioritized by risk level (use filters to narrow results)",
+                  "fields": []
+                }
+              },
+              "version": 2,
+              "widgetType": "table",
+              "encodings": {
+                "columns": [
+                  {
+                    "fieldName": "student_attrition_risk_prediction__student_id",
+                    "useForSearch": true,
+                    "displayName": "Student ID"
+                  },
+                  {
+                    "fieldName": "student_attrition_risk_prediction__risk_pct",
+                    "displayName": "Risk %"
+                  },
+                  {
+                    "fieldName": "student_attrition_risk_prediction__attrition_risk_flag",
+                    "displayName": "Risk Flag"
+                  },
+                  {
+                    "fieldName": "student_attrition_risk_prediction__risk_level",
+                    "displayName": "Risk Level"
+                  },
+                  {
+                    "fieldName": "Student_Enrolment_Details__gender",
+                    "displayName": "Gender"
+                  },
+                  {
+                    "fieldName": "Student_Enrolment_Details__international_domestic",
+                    "displayName": "Origin"
+                  },
+                  {
+                    "fieldName": "student_attrition_risk_prediction__scored_date",
+                    "displayName": "Scored Date"
+                  }
+                ]
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 32,
+            "width": 12,
+            "height": 16
+          }
+        },
+        {
+          "widget": {
+            "name": "chart_risk_study_mode",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "fields": [
+                    {
+                      "name": "student_attrition_risk_prediction__risk_level",
+                      "expression": "`student_attrition_risk_prediction`.`risk_level`"
+                    },
+                    {
+                      "name": "measure(student_attrition_risk_prediction__count)",
+                      "expression": "MEASURE(`student_attrition_risk_prediction`.`count`)"
+                    },
+                    {
+                      "name": "Student_Enrolment_Details__age_band",
+                      "expression": "`Student_Enrolment_Details`.`age_band`"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showDescription": false,
+                "showTitle": true,
+                "title": {
+                  "value": "Risk by Age Band",
+                  "fields": []
+                }
+              },
+              "version": 3,
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "measure(student_attrition_risk_prediction__count)",
+                  "format": {
+                    "abbreviation": "compact",
+                    "type": "number-plain"
+                  },
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "y": {
+                  "fieldName": "Student_Enrolment_Details__age_band",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "color": {
+                  "fieldName": "student_attrition_risk_prediction__risk_level",
+                  "scale": {
+                    "mappings": [
+                      {
+                        "color": "#1565C0",
+                        "value": "High"
+                      },
+                      {
+                        "color": "#42A5F5",
+                        "value": "Low"
+                      }
+                    ],
+                    "type": "categorical"
+                  }
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 19,
+            "width": 4,
+            "height": 8
+          }
+        },
+        {
+          "widget": {
+            "name": "chart_risk_gender",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "fields": [
+                    {
+                      "name": "student_attrition_risk_prediction__risk_level",
+                      "expression": "`student_attrition_risk_prediction`.`risk_level`"
+                    },
+                    {
+                      "name": "measure(student_attrition_risk_prediction__count)",
+                      "expression": "MEASURE(`student_attrition_risk_prediction`.`count`)"
+                    },
+                    {
+                      "name": "Student_Enrolment_Details__gender",
+                      "expression": "`Student_Enrolment_Details`.`gender`"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showDescription": false,
+                "showTitle": true,
+                "title": {
+                  "value": "Risk by Gender",
+                  "fields": []
+                }
+              },
+              "version": 3,
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "measure(student_attrition_risk_prediction__count)",
+                  "format": {
+                    "abbreviation": "compact",
+                    "type": "number-plain"
+                  },
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "y": {
+                  "fieldName": "Student_Enrolment_Details__gender",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "color": {
+                  "fieldName": "student_attrition_risk_prediction__risk_level",
+                  "scale": {
+                    "mappings": [
+                      {
+                        "color": "#1565C0",
+                        "value": "High"
+                      },
+                      {
+                        "color": "#42A5F5",
+                        "value": "Low"
+                      }
+                    ],
+                    "type": "categorical"
+                  }
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 4,
+            "y": 19,
+            "width": 4,
+            "height": 8
+          }
+        },
+        {
+          "widget": {
+            "name": "chart_risk_intl",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "fields": [
+                    {
+                      "name": "student_attrition_risk_prediction__risk_level",
+                      "expression": "`student_attrition_risk_prediction`.`risk_level`"
+                    },
+                    {
+                      "name": "measure(student_attrition_risk_prediction__count)",
+                      "expression": "MEASURE(`student_attrition_risk_prediction`.`count`)"
+                    },
+                    {
+                      "name": "Student_Enrolment_Details__international_domestic",
+                      "expression": "`Student_Enrolment_Details`.`international_domestic`"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showDescription": false,
+                "showTitle": true,
+                "title": {
+                  "value": "Risk by Origin",
+                  "fields": []
+                }
+              },
+              "version": 3,
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "measure(student_attrition_risk_prediction__count)",
+                  "format": {
+                    "abbreviation": "compact",
+                    "type": "number-plain"
+                  },
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "y": {
+                  "fieldName": "Student_Enrolment_Details__international_domestic",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "color": {
+                  "fieldName": "student_attrition_risk_prediction__risk_level",
+                  "scale": {
+                    "mappings": [
+                      {
+                        "color": "#1565C0",
+                        "value": "High"
+                      },
+                      {
+                        "color": "#42A5F5",
+                        "value": "Low"
+                      }
+                    ],
+                    "type": "categorical"
+                  }
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 8,
+            "y": 19,
+            "width": 4,
+            "height": 8
+          }
+        },
+        {
+          "widget": {
+            "name": "section_risk_analysis",
+            "multilineTextboxSpec": {
+              "lines": [
+                "<div style=\"border-left: 4px solid #00407A; padding-left: 12px; margin: 4px 0;\">\n",
+                "<div style=\"color: #00407A; font-size: 15px; font-weight: 700;\">Risk Analysis</div>\n",
+                "<div style=\"color: #666; font-size: 11px; margin-top: 2px;\">Distribution of students across risk categories and score ranges</div>\n",
+                "</div>"
+              ]
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 6,
+            "width": 12,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "section_demographics",
+            "multilineTextboxSpec": {
+              "lines": [
+                "<div style=\"border-left: 4px solid #0066CC; padding-left: 12px; margin: 4px 0;\">\n",
+                "<div style=\"color: #0066CC; font-size: 15px; font-weight: 700;\">Demographic Breakdown</div>\n",
+                "<div style=\"color: #666; font-size: 11px; margin-top: 2px;\">Risk distribution by gender, origin, and age band</div>\n",
+                "</div>"
+              ]
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 17,
+            "width": 12,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "filter_risk_level",
+            "queries": [
+              {
+                "name": "dashboards/01f1b232102f1045b5d3828ffc7abc0a/datasets/01f1b23538a51c35ad997623cc8172dc_risk_level",
+                "query": {
+                  "datasetName": "b798cf1c",
+                  "fields": [
+                    {
+                      "name": "risk_level",
+                      "expression": "`risk_level`"
+                    },
+                    {
+                      "name": "risk_level_associativity",
+                      "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "frame": {
+                "showTitle": true,
+                "title": {
+                  "value": "Filter by Risk Level",
+                  "fields": []
+                }
+              },
+              "widgetType": "filter-multi-select",
+              "encodings": {
+                "fields": [
+                  {
+                    "fieldName": "risk_level",
+                    "queryName": "dashboards/01f1b232102f1045b5d3828ffc7abc0a/datasets/01f1b23538a51c35ad997623cc8172dc_risk_level"
+                  }
+                ]
+              }
+            }
+          },
+          "position": {
+            "x": 4,
+            "y": 29,
+            "width": 4,
+            "height": 3
+          }
+        },
+        {
+          "widget": {
+            "name": "filter_faculty",
+            "queries": [
+              {
+                "name": "dashboards/01f1b232102f1045b5d3828ffc7abc0a/datasets/01f1b23538a51c35ad997623cc8172dc_attrition_risk_flag",
+                "query": {
+                  "datasetName": "b798cf1c",
+                  "fields": [
+                    {
+                      "name": "attrition_risk_flag",
+                      "expression": "`attrition_risk_flag`"
+                    },
+                    {
+                      "name": "attrition_risk_flag_associativity",
+                      "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "frame": {
+                "showTitle": true,
+                "title": "Filter by Risk Flag"
+              },
+              "widgetType": "filter-multi-select",
+              "encodings": {
+                "fields": [
+                  {
+                    "fieldName": "attrition_risk_flag",
+                    "queryName": "dashboards/01f1b232102f1045b5d3828ffc7abc0a/datasets/01f1b23538a51c35ad997623cc8172dc_attrition_risk_flag"
+                  }
+                ]
+              }
+            }
+          },
+          "position": {
+            "x": 8,
+            "y": 29,
+            "width": 4,
+            "height": 3
+          }
+        },
+        {
+          "widget": {
+            "name": "filter_search",
+            "queries": [
+              {
+                "name": "dashboards/01f1b232102f1045b5d3828ffc7abc0a/datasets/01f1b23538a51c35ad997623cc8172dc_student_id",
+                "query": {
+                  "datasetName": "b798cf1c",
+                  "fields": [
+                    {
+                      "name": "student_id",
+                      "expression": "`student_id`"
+                    },
+                    {
+                      "name": "student_id_associativity",
+                      "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "frame": {
+                "showTitle": true,
+                "title": {
+                  "value": "Search Student",
+                  "fields": []
+                }
+              },
+              "widgetType": "filter-single-select",
+              "encodings": {
+                "fields": [
+                  {
+                    "fieldName": "student_id",
+                    "queryName": "dashboards/01f1b232102f1045b5d3828ffc7abc0a/datasets/01f1b23538a51c35ad997623cc8172dc_student_id"
+                  }
+                ]
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 29,
+            "width": 4,
+            "height": 3
+          }
+        },
+        {
+          "widget": {
+            "name": "2b28df60",
+            "multilineTextboxSpec": {
+              "lines": [
+                "<div style=\"background: #FFFFFF; padding: 16px 20px; margin: -8px; border-radius: 4px; border: 1px solid #E5E7EB; box-shadow: 0 1px 3px rgba(0,0,0,0.05);\">\n",
+                "  <h1 style=\"color: #1E1E1E; font-size: 26px; font-weight: 700; margin: 0 0 8px 0; line-height: 1.2;\">Student Attrition Risk Overview</h1>\n",
+                "  <p style=\"color: #757575; font-size: 13px; margin: 0; line-height: 1.4;\">Monitor student attrition risk and access AI-assisted advisor briefings.</p>\n",
+                "</div>"
+              ]
+            },
+            "specExtensions": {
+              "widgetBackgroundColor": {
+                "light": "#FFFFFF"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 12,
+            "height": 2
+          }
+        }
+      ],
+      "pageType": "PAGE_TYPE_CANVAS",
+      "layoutVersion": "GRID_V1"
+    }
+  ],
+  "uiSettings": {
+    "theme": {
+      "canvasBackgroundColor": {
+        "light": "#D5EEFF",
+        "dark": "#1B1F23"
+      },
+      "widgetBackgroundColor": {
+        "light": "#FFFFFF",
+        "dark": "#2A2F35"
+      },
+      "widgetBorderColor": {
+        "light": "#D7E1E9",
+        "dark": "#3C444C"
+      },
+      "fontColor": {
+        "light": "#374151",
+        "dark": "#E4E9EE"
+      },
+      "selectionColor": {
+        "light": "#5FA8D3",
+        "dark": "#5FA8D3"
+      },
+      "visualizationColors": [
+        "#5FA8D3",
+        "#70BEE1",
+        "#89CCE7",
+        "#A1DAEC",
+        "#B3E6DC",
+        "#89C7A8",
+        "#6EAD80",
+        "#589F60",
+        "#478743",
+        "#356C2A"
+      ],
+      "widgetHeaderAlignment": "LEFT"
+    },
+    "applyModeEnabled": false
+  }
+}
