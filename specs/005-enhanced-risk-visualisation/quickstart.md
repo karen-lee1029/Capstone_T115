@@ -29,13 +29,14 @@ uv run ruff check .
 uv run pytest -q
 ```
 
-Expected: ruff reports only the 4 findings that already existed before Feature-005 (`ui.py` I001 and two F401, `briefing_instructions.py` I001 — not Feature-005 lines, not fixed here); pytest reports 0 failed (260 passed and 13 skipped before Feature-005, plus the new tests). `tests/test_ui.py` is unchanged
+Expected: ruff reports only the 4 findings that already existed before Feature-005 (`ui.py` I001 and two F401, `briefing_instructions.py` I001 — not Feature-005 lines, not fixed here); pytest reports 0 failed (260 passed and 13 skipped before Feature-005; 296 passed and 13 skipped at merge commit `1f74a4f`). `tests/test_ui.py` is unchanged
 (`git diff 9469edc -- tests/test_ui.py` is empty) and passes.
 
 ## 3. Local look at the badge (optional, mock mode)
 
 Run the advisor page locally in mock mode, open `synthetic-student-001` (badge "At Risk" on dark
-blue, white text) and `synthetic-student-002` (badge "Not At Risk" on light blue, dark text).
+blue, white text; score circle a dark-blue ring with dark-blue text) and `synthetic-student-002`
+(badge "Not At Risk" on light blue, dark text; score circle a light-blue ring with dark text).
 
 ## 4. Publish the dashboard (product owner, in the Databricks workspace)
 
@@ -87,7 +88,8 @@ browser chrome, no mock window frames, no dark code boxes.
    descriptions visible.
 3. Demographic Breakdown row: the three demographic charts.
 4. The **Filter by Risk Level** dropdown open, showing At Risk / Not At Risk.
-5. Advisor page: one at-risk and one not-at-risk student summary showing the blue badges.
+5. Advisor page: one at-risk and one not-at-risk student summary showing the blue badges and the
+   matching blue score rings.
 
 Save the images under the team's evidence folder with the date and `US-28` in each file name, and
 list them in [traceability.md](./traceability.md).

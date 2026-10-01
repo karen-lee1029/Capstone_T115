@@ -106,8 +106,10 @@ spec leaves to planning.
 
 ## R6 — Things deliberately left unchanged
 
-- The advisor page's `.risk-circle` (red score ring) — not part of the badge decision; recorded in
-  the spec's Out of Scope.
+- ~~The advisor page's `.risk-circle` (red score ring)~~ — superseded on 2026-10-01: the product
+  owner brought the score circle into scope (spec decision 10, FR-024). It keeps its ring shape
+  and white fill and takes the category blues (contract § 7a, teammate-changes.md TC-4). Only its
+  responsive size rule in the `ui.py` media query is left unchanged.
 - The counters' existing font colours already match their category blues (`counter_high`
   `#1565C0`, `counter_low` `#42A5F5`) — no edit needed (FR-007 already holds).
 - `uiSettings.theme.visualizationColors` — only used for series without an explicit mapping; every

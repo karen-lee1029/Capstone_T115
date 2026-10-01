@@ -114,6 +114,11 @@ authoritative for this specification and are not re-opened.
   Every change to them is recorded in `teammate-changes.md` with file and lines, original author
   and commit, what changed and why, the commit that made it, and exact revert instructions, so the
   product owner can revert quickly if a teammate is unhappy.
+- Q: Does the advisor page's relative-risk score circle (a red ring next to the badge) change too?
+  → A: Yes (decision 10, raised after Track A). It keeps its ring shape and white fill and takes
+  the category colours: an `#1565C0` ring with `#1565C0` text for At Risk, and an `#42A5F5` ring
+  with `#172033` text for Not At Risk. This is a further approved change to GuaGuaGua88's styling,
+  recorded as TC-4 in `teammate-changes.md`.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -271,6 +276,10 @@ evidence step.
   4.5:1.
 - **FR-009**: The badge MUST remain a page-owned element styled by the page; built-in alert widgets
   MUST NOT be used.
+- **FR-024** (added 2026-10-01, decision 10): The advisor page's relative-risk score circle MUST stay
+  a ring on a white fill, with the ring and text in the student's category colour (`#1565C0` ring
+  and text for At Risk; `#42A5F5` ring with `#172033` text for Not At Risk). Its text MUST reach a
+  contrast ratio of at least 4.5:1 against white.
 
 #### Ordering
 
@@ -348,7 +357,7 @@ evidence step.
   colour mapping in legends; the product owner confirms this visually when publishing.
 - The table's "Risk Flag" column (the model's flag) is unchanged; only the "Risk Level" values are
   renamed.
-- The advisor page's relative-risk score circle is not part of the badge and keeps its colour.
+- The advisor page's relative-risk score circle follows the category colours (decision 10, FR-024).
 
 ## Dependencies
 
@@ -365,6 +374,6 @@ evidence step.
 - Briefing wording or behaviour (briefing provider, instructions, validation, retry, storage).
 - Changing the scoring model, the at-risk flag, the 50% threshold or the score-range boundaries.
 - A third category or a new chart type.
-- The advisor page's relative-risk score circle and any styling other than the two badge rules.
+- Any advisor page styling other than the two badge rules and the score-circle colours (FR-024).
 - Publishing the dashboard by an agent; any change to the workspace other than by the product owner.
 - Editing any merged test file other than the approved dashboard test file.

@@ -30,7 +30,7 @@ change. Never edit `tests/test_ui.py` or any other merged test file except `test
 | Action | Path | Track |
 |---|---|---|
 | EDIT | `dashboard/Student Attrition Risk Overview.lvdash.json` | B |
-| EDIT (lines 144-145, 155-156 only) | `src/student_attrition_risk/ui.py` | C |
+| EDIT (badge lines 144-145, 155-156; score circle lines 181, 187, 193-196, 660-664, 702 — decision 10) | `src/student_attrition_risk/ui.py` | C |
 | NEW | `tests/test_risk_badge_visualisation.py` | C |
 | EDIT (approved) | `tests/test_dashboard.py` | D |
 | NEW | `specs/005-enhanced-risk-visualisation/traceability.md` | E |
@@ -41,7 +41,7 @@ change. Never edit `tests/test_ui.py` or any other merged test file except `test
 
 ## Phase 1: Setup
 
-- [ ] T001 From `student_attrition_risk_app/`, run `uv sync --dev`, `uv run ruff check .` and `uv run pytest -q`; record the baseline counts in the task notes. Baseline at branch creation: 260 passed, 13 skipped, 0 failed; ruff reports 4 pre-existing findings (`ui.py` I001 and two F401, `briefing_instructions.py` I001) in lines Feature-005 does not own — they are not fixed here (Principles II, XVI).
+- [x] T001 From `student_attrition_risk_app/`, run `uv sync --dev`, `uv run ruff check .` and `uv run pytest -q`; record the baseline counts in the task notes. Baseline at branch creation: 260 passed, 13 skipped, 0 failed; ruff reports 4 pre-existing findings (`ui.py` I001 and two F401, `briefing_instructions.py` I001) in lines Feature-005 does not own — they are not fixed here (Principles II, XVI).
 
 **Checkpoint**: Baseline green. No foundational phase: Tracks B and C share no prerequisite beyond T001.
 
@@ -74,6 +74,7 @@ change. Never edit `tests/test_ui.py` or any other merged test file except `test
 - [x] T009 [P] [US3] Create `tests/test_risk_badge_visualisation.py` (research R5): module docstring naming Feature-005 / US-28 and `specs/005-enhanced-risk-visualisation/contracts/dashboard-visual-contract.md` § 7; a local minimal fake service on `MockStudentRepository` patched through `student_attrition_risk.main.build_service` with `st.cache_resource.clear()` and `AppTest.from_file(<ui.py>, default_timeout=10)` (same pattern as `tests/test_defect_resolution.py`, which is not imported or edited); tests: (1) parametrised over `synthetic-student-001` → `risk-badge` / `At Risk` and `synthetic-student-002` → `not-risk-badge` / `Not At Risk`: the summary markdown contains `<span class="<class>">` wrapping the label, and `at.info`, `at.success`, `at.warning` are empty; (2) parse the `.risk-badge` and `.not-risk-badge` rules from the rendered `<style>` markdown and assert `background` `#1565C0` / `#42A5F5` and `color` `#FFFFFF` / `#172033` (case-insensitive); (3) compute the WCAG contrast ratio of each parsed pair and assert ≥ 4.5. Confirm (2) and (3) fail before T010.
 - [x] T010 [US3] In `src/student_attrition_risk/ui.py`, change only lines 144-145 (`.risk-badge`: `background: #1565C0;`, `color: #FFFFFF;`) and 155-156 (`.not-risk-badge`: `background: #42A5F5;`, `color: #172033;`) (contract § 7). No other line, no label or logic change, no Streamlit alert widget.
 - [x] T011 [US3] Track C gate: `uv run ruff check tests/test_risk_badge_visualisation.py` clean and `uv run ruff check src/student_attrition_risk/ui.py` shows only the 3 baseline findings (do not fix them); `uv run pytest -q` shows 0 failed; `git diff --stat` lists only the two Track C files. Commit Track C's two files on their own (so TC-1 can be reverted with one `git revert`).
+- [x] T011a [US3] (Decision 10, added 2026-10-01) In `src/student_attrition_risk/ui.py`, recolour the relative-risk score ring per contract § 7a (FR-024): `.risk-circle` border and text `#1565C0` on the unchanged white fill; new `.risk-circle.not-risk-circle` rule (`#42A5F5` ring, `#172033` text); `circle_class` chosen from `attrition_risk_flag` and used on the score `<div>`. Add the three score-circle tests to `tests/test_risk_badge_visualisation.py`. Committed on its own as `46b4965` (TC-4).
 
 ---
 
@@ -95,10 +96,10 @@ change. Never edit `tests/test_ui.py` or any other merged test file except `test
 
 **Goal**: Every requirement is traceable, every teammate change is revert-ready, and the product owner can publish (spec FR-021–FR-023).
 
-- [ ] T015 [US4] Create `specs/005-enhanced-risk-visualisation/traceability.md` in the style of `specs/003-briefing-workflow-testing/traceability.md`: one row per FR-001–FR-023 and SC-001–SC-009 → task(s) → verifying test (file::name) or manual evidence step (quickstart §§ 4-5); a section listing scope requirements met by absence of change (FR-017, FR-019, FR-020) with the `git diff 9469edc --stat` evidence.
-- [ ] T016 [US4] In `specs/005-enhanced-risk-visualisation/teammate-changes.md`, replace each "pending" with the Track B, C and D commit hashes; confirm each TC entry's line numbers and revert command against the final diff.
-- [ ] T017 [US4] Run the `speckit-converge` assessment: compare the final JSON, `ui.py` and tests with spec, plan and contract; confirm quickstart § 4 (publish) and § 5 (evidence) match the final dashboard (19 widgets, `how_to_read` under the title); append any remaining unbuilt work as new tasks.
-- [ ] T018 Final gate: `uv run ruff check .` shows only the 4 baseline findings (T001); `uv run pytest -q` 0 failed; `git diff 9469edc --stat` shows only the files in "Files touched" plus this feature's `specs/005-enhanced-risk-visualisation/` documents; `git diff 9469edc -- student_attrition_risk_app/tests/test_ui.py` is empty. Record counts in `traceability.md`.
+- [x] T015 [US4] Create `specs/005-enhanced-risk-visualisation/traceability.md` in the style of `specs/003-briefing-workflow-testing/traceability.md`: one row per FR-001–FR-023 and SC-001–SC-009 → task(s) → verifying test (file::name) or manual evidence step (quickstart §§ 4-5); a section listing scope requirements met by absence of change (FR-017, FR-019, FR-020) with the `git diff 9469edc --stat` evidence.
+- [x] T016 [US4] In `specs/005-enhanced-risk-visualisation/teammate-changes.md`, replace each "pending" with the Track B, C and D commit hashes; confirm each TC entry's line numbers and revert command against the final diff.
+- [x] T017 [US4] Run the `speckit-converge` assessment: compare the final JSON, `ui.py` and tests with spec, plan and contract; confirm quickstart § 4 (publish) and § 5 (evidence) match the final dashboard (19 widgets, `how_to_read` under the title); append any remaining unbuilt work as new tasks.
+- [x] T018 Final gate: `uv run ruff check .` shows only the 4 baseline findings (T001); `uv run pytest -q` 0 failed; `git diff 9469edc --stat` shows only the files in "Files touched" plus this feature's `specs/005-enhanced-risk-visualisation/` documents; `git diff 9469edc -- student_attrition_risk_app/tests/test_ui.py` is empty. Record counts in `traceability.md`.
 - [ ] T019 [US4] **Product owner (manual, not an agent)**: follow quickstart § 4 to replace and publish the dashboard in the workspace, and § 5 to capture light, professional screenshots; list them in `traceability.md`.
 
 ---

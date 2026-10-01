@@ -2,9 +2,9 @@
 
 **Spec**: [spec.md](./spec.md) (Clarifications, decision 9) | **Plan**: [plan.md](./plan.md) | **Contract**: [contracts/dashboard-visual-contract.md](./contracts/dashboard-visual-contract.md)
 
-Feature-005 changes two contributions that other team members wrote (TC-1, TC-3) and the
-dashboard definition owned by Renny (the user) (TC-2). The team approved each change for US-28
-(constitution Principle XVI). TC-2 is kept as a change log for revert purposes, not as a teammate
+Feature-005 changes contributions that other team members wrote (TC-1 and TC-4, GuaGuaGua88's
+advisor page styling; TC-3, Karen's dashboard tests) and the dashboard definition owned by Renny
+(the user) (TC-2). The team approved each change for US-28 (constitution Principle XVI). TC-2 is kept as a change log for revert purposes, not as a teammate
 contribution. This record exists so that, if a
 teammate is unhappy with a change, the product owner can revert that change quickly and on its
 own. Every entry gives the original content and an exact revert route.
@@ -24,16 +24,17 @@ branch made from it), then run `uv run pytest -q` from `student_attrition_risk_a
 | What changed | `.risk-badge` `background: #fee4e2;` → `#1565C0;`, `color: #b42318;` → `#FFFFFF;`. `.not-risk-badge` `background: #dcfae6;` → `#42A5F5;`, `color: #067647;` → `#172033;`. No other line of `ui.py`. |
 | Why | US-28 decision 3: the badge uses the dashboard's category blues so both surfaces share one colour per category, with text contrast of at least 4.5:1 (spec FR-008). Wording and logic unchanged. |
 | Commit that made it | `64d2b90` "Recolour the advisor risk badges to the dashboard blues (US-28)" (Track C; contains only `ui.py` and `tests/test_risk_badge_visualisation.py`) |
-| Dependent files | `student_attrition_risk_app/tests/test_risk_badge_visualisation.py` (new, Track C) asserts the new colours and must be removed or reverted with this entry. |
+| Dependent files | `student_attrition_risk_app/tests/test_risk_badge_visualisation.py` (new, Track C) asserts the new colours and must be removed or reverted with this entry. TC-4 (score circle, `46b4965`) was committed on top of this commit and also edits that test file. |
 
 **Revert**
 
-- Preferred: `git revert 64d2b90` (the commit contains only `ui.py` and
-  `tests/test_risk_badge_visualisation.py`).
-- Or, only if `git diff 9469edc -- student_attrition_risk_app/src/student_attrition_risk/ui.py`
-  shows no change other than these four lines:
-  `git checkout 9469edc -- student_attrition_risk_app/src/student_attrition_risk/ui.py`.
-  At `64d2b90` this holds: the four colour lines are the only `ui.py` change since `9469edc`.
+- Preferred, reverting TC-1 and TC-4 together (newest first, so neither revert conflicts):
+  `git revert 46b4965 64d2b90`.
+- Reverting TC-1 alone while keeping TC-4: use the hand route below. `git revert 64d2b90` on its
+  own would conflict in `tests/test_risk_badge_visualisation.py`, which `46b4965` changed later.
+- `git checkout 9469edc -- student_attrition_risk_app/src/student_attrition_risk/ui.py` restores
+  GuaGuaGua88's original file, but since TC-4 it undoes **both** TC-1 and TC-4. Use it only when
+  reverting both, then delete the test file as below.
 - Otherwise, by hand, restore the exact original lines in `ui.py` (lines 144-145 and 155-156):
 
   ```css
@@ -51,6 +52,30 @@ branch made from it), then run `uv run pytest -q` from `student_attrition_risk_a
   `git rm student_attrition_risk_app/tests/test_risk_badge_visualisation.py`.
 - Do **not** use `git checkout 8548e4f -- student_attrition_risk_app/src/student_attrition_risk/ui.py`:
   `ui.py` has later changes by other contributors (including Feature-004) that it would discard.
+
+---
+
+## TC-4 — Advisor page relative-risk score circle colours
+
+| Field | Value |
+|---|---|
+| File + lines | `student_attrition_risk_app/src/student_attrition_risk/ui.py`: `.risk-circle` rule lines 178-191 (`border` line 181, `color` line 187), new rule `.risk-circle.not-risk-circle` lines 193-196, new `circle_class` variable lines 660-664, and the score `<div>` on line 702 (line numbers as of `46b4965`). The responsive `.risk-circle` size rule in the media query (around line 368) is unchanged. |
+| Original author + commit | GuaGuaGua88 (Lu), `8548e4f` "firstworkingBeforeValidation" (2026-09-17) |
+| What changed | `.risk-circle` `border: 8px solid #d92d20;` → `8px solid #1565C0;`, `color: #d92d20;` → `#1565C0;` (5.75:1 on white); `background: white;` unchanged. Added the rule `.risk-circle.not-risk-circle { border-color: #42A5F5; color: #172033; }` (16.3:1 on white). Added `circle_class = ("risk-circle" if prediction.attrition_risk_flag else "risk-circle not-risk-circle")` after `badge_class`, and the score markup changed from `<div class="risk-circle">` to `<div class="{circle_class}">`. Badge logic and the score value are unchanged. |
+| Why | US-28 decision 10 (spec FR-024): the red ring sat beside the new blue badge in a different colour. The product owner chose to keep the ring shape and recolour it to the category blues. |
+| Commit that made it | `46b4965` "Recolour the risk score circle as a ring in the dashboard blues" (`ui.py` and `tests/test_risk_badge_visualisation.py` only; committed by the product owner) |
+| Dependent files | `student_attrition_risk_app/tests/test_risk_badge_visualisation.py`: `test_score_circle_uses_category_class`, `test_score_circle_is_a_white_ring_in_dashboard_blues`, `test_score_circle_text_contrast_is_at_least_4_5`, and the `CIRCLE_FILL` / `EXPECTED_CIRCLE_COLOURS` constants. |
+
+**Revert**
+
+- TC-4 alone (keeps the TC-1 badge colours): `git revert 46b4965`. That commit holds only the
+  circle change and its tests, and nothing later touches either file.
+- TC-1 and TC-4 together: `git revert 46b4965 64d2b90` (see TC-1).
+- By hand, restore in `ui.py`: `.risk-circle` `border: 8px solid #d92d20;` and
+  `color: #d92d20;`; delete the `.risk-circle.not-risk-circle` rule; delete the `circle_class`
+  assignment; change the score markup back to `<div class="risk-circle">{risk_score:.1f}%</div>`.
+  Then remove the three score-circle tests and the two circle constants from
+  `tests/test_risk_badge_visualisation.py`.
 
 ---
 

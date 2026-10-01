@@ -117,3 +117,20 @@ Required content (asserted offline): the strings `How to read this dashboard`, `
 Unchanged: every other property of both rules, the label text (`At Risk` / `Not At Risk`), the
 class choice (`attrition_risk_flag`), and the page-owned `<span>` markup. No `st.info`,
 `st.success`, `st.warning` or `st.error` is introduced.
+
+### 7a. Relative-risk score circle (added 2026-10-01, spec decision 10, FR-024)
+
+The circle keeps its ring shape (8px border, white fill, 92px, and the unchanged 76px media-query
+size) and takes the category colours. Text contrast is measured against the white fill.
+
+| Rule | Property | Before | After |
+|---|---|---|---|
+| `.risk-circle` | `border` | `8px solid #d92d20` | `8px solid #1565C0` |
+| `.risk-circle` | `color` | `#d92d20` | `#1565C0` (5.75:1 on white) |
+| `.risk-circle` | `background` | `white` | `white` (unchanged) |
+| `.risk-circle.not-risk-circle` (new rule) | `border-color` | — | `#42A5F5` |
+| `.risk-circle.not-risk-circle` (new rule) | `color` | — | `#172033` (16.3:1 on white) |
+
+Markup: a `circle_class` variable chosen from `attrition_risk_flag` (`"risk-circle"` or
+`"risk-circle not-risk-circle"`) replaces the fixed `class="risk-circle"` on the score `<div>`.
+The badge logic and the score value are unchanged.
