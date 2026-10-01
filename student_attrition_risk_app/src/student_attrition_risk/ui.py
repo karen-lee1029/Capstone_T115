@@ -110,11 +110,15 @@ st.markdown(
 
         .summary-card {
             background: white;
-            border-left: 5px solid #d92d20;
+            border-left: 5px solid #1565C0;
             border-radius: 12px;
             padding: 1.4rem 1.6rem;
             margin-bottom: 1.5rem;
             box-shadow: 0 1px 4px rgba(16, 24, 40, 0.08);
+        }
+
+        .summary-card.not-risk-card {
+            border-left-color: #42A5F5;
         }
 
         .summary-label {
@@ -662,6 +666,11 @@ circle_class = (
     if prediction.attrition_risk_flag
     else "risk-circle not-risk-circle"
 )
+card_class = (
+    "summary-card"
+    if prediction.attrition_risk_flag
+    else "summary-card not-risk-card"
+)
 risk_score = prediction.attrition_risk_percentage
 threshold_percentage = prediction.prediction_threshold * 100
 
@@ -670,7 +679,7 @@ summary_left, summary_right = st.columns([5, 1.25])
 with summary_left:
     st.markdown(
         f"""
-        <div class="summary-card">
+        <div class="{card_class}">
             <div class="summary-label">Student summary</div>
             <div class="student-reference">
                 Deidentified student
