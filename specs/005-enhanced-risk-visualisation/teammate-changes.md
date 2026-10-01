@@ -50,7 +50,7 @@ branch made from it), then run `uv run pytest -q` from `student_attrition_risk_a
 | Original author + commit | Committed by Renny (RennyMatis2000) in `9469edc` "Add dashboard file" (2026-09-30). Design ownership **to confirm** — possibly Nicole and Bilal. |
 | What changed | Categories `High` / `Low` → `At Risk` / `Not At Risk` in the dimension, counter filters, counter titles and all five colour maps; At Risk listed first in each colour map; `"sort": {"by": "natural-order"}` on each chart's categorical axis; a description on every chart; new "How to read this dashboard" text widget at `y = 2` with all lower widgets moved down by 3. Full target state: contract §§ 1-6. |
 | Why | US-28 decisions 2, 4 and 5: one vocabulary matching the advisor application, one documented order, and on-page explanations (spec FR-001–FR-014). |
-| Commit that made it | pending (Track B) |
+| Commit that made it | `e4a253e` "Rename dashboard risk categories to At Risk / Not At Risk and add explanations" (branch `kickoff/005-dashboard`; dashboard JSON only, so `git revert e4a253e` also works if no later commit touches the file) |
 | Dependent files | `student_attrition_risk_app/tests/test_dashboard.py` (TC-3) asserts the new labels; revert TC-3 together with TC-2. |
 
 **Revert**
