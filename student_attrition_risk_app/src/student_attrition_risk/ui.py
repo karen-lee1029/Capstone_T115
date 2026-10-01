@@ -141,8 +141,8 @@ st.markdown(
 
         .risk-badge {
             display: inline-block;
-            background: #fee4e2;
-            color: #b42318;
+            background: #1565C0;
+            color: #FFFFFF;
             padding: 0.3rem 0.65rem;
             margin-left: 0.6rem;
             border-radius: 999px;
@@ -152,8 +152,8 @@ st.markdown(
 
         .not-risk-badge {
             display: inline-block;
-            background: #dcfae6;
-            color: #067647;
+            background: #42A5F5;
+            color: #172033;
             padding: 0.3rem 0.65rem;
             margin-left: 0.6rem;
             border-radius: 999px;
