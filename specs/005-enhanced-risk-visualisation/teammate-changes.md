@@ -21,21 +21,31 @@ branch made from it), then run `uv run pytest -q` from `student_attrition_risk_a
 | Original author + commit | GuaGuaGua88 (Lu), `8548e4f` "firstworkingBeforeValidation" (2026-09-17) |
 | What changed | `.risk-badge` `background: #fee4e2;` → `#1565C0;`, `color: #b42318;` → `#FFFFFF;`. `.not-risk-badge` `background: #dcfae6;` → `#42A5F5;`, `color: #067647;` → `#172033;`. No other line of `ui.py`. |
 | Why | US-28 decision 3: the badge uses the dashboard's category blues so both surfaces share one colour per category, with text contrast of at least 4.5:1 (spec FR-008). Wording and logic unchanged. |
-| Commit that made it | pending (Track C) |
+| Commit that made it | `64d2b90` "Recolour the advisor risk badges to the dashboard blues (US-28)" (Track C; contains only `ui.py` and `tests/test_risk_badge_visualisation.py`) |
 | Dependent files | `student_attrition_risk_app/tests/test_risk_badge_visualisation.py` (new, Track C) asserts the new colours and must be removed or reverted with this entry. |
 
 **Revert**
 
-- If the Track C commit contains only `ui.py` and `tests/test_risk_badge_visualisation.py`:
-  `git revert <Track C commit>`.
-- Otherwise, by hand, restore the four original values in `ui.py`:
+- Preferred: `git revert 64d2b90` (the commit contains only `ui.py` and
+  `tests/test_risk_badge_visualisation.py`).
+- Or, only if `git diff 9469edc -- student_attrition_risk_app/src/student_attrition_risk/ui.py`
+  shows no change other than these four lines:
+  `git checkout 9469edc -- student_attrition_risk_app/src/student_attrition_risk/ui.py`.
+  At `64d2b90` this holds: the four colour lines are the only `ui.py` change since `9469edc`.
+- Otherwise, by hand, restore the exact original lines in `ui.py` (lines 144-145 and 155-156):
 
-  ```text
-  .risk-badge      background: #fee4e2;   color: #b42318;
-  .not-risk-badge  background: #dcfae6;   color: #067647;
+  ```css
+  /* .risk-badge */
+              background: #fee4e2;
+              color: #b42318;
+  /* .not-risk-badge */
+              background: #dcfae6;
+              color: #067647;
   ```
 
-  and delete the new test file:
+  New values being replaced: `.risk-badge` `background: #1565C0;` `color: #FFFFFF;`,
+  `.not-risk-badge` `background: #42A5F5;` `color: #172033;`. Neither rule has a border.
+- After the checkout or hand route (not needed after `git revert`), delete the new test file:
   `git rm student_attrition_risk_app/tests/test_risk_badge_visualisation.py`.
 - Do **not** use `git checkout 8548e4f -- student_attrition_risk_app/src/student_attrition_risk/ui.py`:
   `ui.py` has later changes by other contributors (including Feature-004) that it would discard.
