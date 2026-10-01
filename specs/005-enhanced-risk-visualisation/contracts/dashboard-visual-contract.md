@@ -145,3 +145,14 @@ The badge logic and the score value are unchanged.
 Markup: a `card_class` variable chosen from `attrition_risk_flag` (`"summary-card"` or
 `"summary-card not-risk-card"`) replaces the fixed `class="summary-card"`. Every other property of
 the card is unchanged. Error notices (for example `.store-error-notice`) stay red.
+
+## 8. Student ID length (added 2026-10-01, spec decision 12, FR-026)
+
+| Dimension | Before | After |
+|---|---|---|
+| `student_id` (`expr`) | `LEFT(source.student_deidentified_hash, 8)` | `LEFT(source.student_deidentified_hash, 16)` |
+
+With about 974,000 students, 8 hex characters (about 4.3 billion values) leave roughly 110 pairs
+sharing an ID; 16 characters (about 1.8 × 10^19 values) make a shared ID effectively impossible
+(expected pairs ≈ 0.00000003). The display name "Student ID", the table column and the Search
+Student filter are unchanged and pick up the longer value.

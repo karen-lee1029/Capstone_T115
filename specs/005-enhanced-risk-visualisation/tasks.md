@@ -101,6 +101,8 @@ change. Never edit `tests/test_ui.py` or any other merged test file except `test
 - [x] T017 [US4] Run the `speckit-converge` assessment: compare the final JSON, `ui.py` and tests with spec, plan and contract; confirm quickstart § 4 (publish) and § 5 (evidence) match the final dashboard (19 widgets, `how_to_read` under the title); append any remaining unbuilt work as new tasks.
 - [x] T018 Final gate: `uv run ruff check .` shows only the 4 baseline findings (T001); `uv run pytest -q` 0 failed; `git diff 9469edc --stat` shows only the files in "Files touched" plus this feature's `specs/005-enhanced-risk-visualisation/` documents; `git diff 9469edc -- student_attrition_risk_app/tests/test_ui.py` is empty. Record counts in `traceability.md`.
 - [x] T019 [US4] **Product owner (manual, not an agent)**: follow quickstart § 4 to replace and publish the dashboard in the workspace, and § 5 to capture light, professional screenshots; list them in `traceability.md`.
+- [x] T020 [US1] (Decision 12, added 2026-10-01) In `dashboard/Student Attrition Risk Overview.lvdash.json` line 25, change the `student_id` dimension to `LEFT(source.student_deidentified_hash, 16)` (contract § 8, FR-026); update the `_student_id` replica and `TestStudentIdTruncation` in `tests/test_dashboard.py` and add an offline check and a live uniqueness check. Gate: `uv run pytest -q` 0 failed.
+- [ ] T021 [US4] **Product owner (manual)**: re-publish the dashboard in place (quickstart § 4) so the table and Search Student show 16-character Student IDs, and check one ID in the table.
 
 ---
 

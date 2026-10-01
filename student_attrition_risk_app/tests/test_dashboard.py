@@ -72,9 +72,12 @@ def _risk_score_bucket(percentage: float) -> str:
     return RISK_SCORE_BUCKETS[-1][2]
 
 
+STUDENT_ID_LENGTH = 16  # 8 characters let ~110 of ~974k students share an ID (US-28)
+
+
 def _student_id(student_hash: str) -> str:
-    """Replicate LEFT(student_deidentified_hash, 8)."""
-    return student_hash[:8]
+    """Replicate LEFT(student_deidentified_hash, 16)."""
+    return student_hash[:STUDENT_ID_LENGTH]
 
 
 def _risk_pct(percentage: float) -> float:
@@ -146,8 +149,8 @@ class TestRiskScoreBucket:
 
 class TestStudentIdTruncation:
 
-    def test_truncates_to_8_chars(self):
-        assert _student_id("synthetic-student-001") == "syntheti"
+    def test_truncates_to_16_chars(self):
+        assert _student_id("synthetic-student-001") == "synthetic-studen"
 
     def test_short_hash_returns_full(self):
         assert _student_id("abc") == "abc"
@@ -155,7 +158,7 @@ class TestStudentIdTruncation:
     def test_mock_hashes_truncate_correctly(self):
         repo = MockStudentRepository()
         for h in repo.predictions:
-            assert len(_student_id(h)) <= 8
+            assert len(_student_id(h)) <= STUDENT_ID_LENGTH
 
 
 # ---------------------------------------------------------------------------
@@ -250,6 +253,17 @@ class TestPredictionDataQuality:
         )
         assert rows[0]["distinct_cnt"] == rows[0]["total_cnt"], (
             "student_deidentified_hash should be unique"
+        )
+
+    def test_dashboard_student_ids_are_unique(self):
+        """The dashboard's truncated Student ID must still identify one student."""
+        rows = self._query(
+            f"SELECT COUNT(DISTINCT LEFT(student_deidentified_hash, {STUDENT_ID_LENGTH})) AS distinct_cnt,"
+            f" COUNT(*) AS total_cnt"
+            f" FROM {PREDICTION_TABLE}"
+        )
+        assert rows[0]["distinct_cnt"] == rows[0]["total_cnt"], (
+            f"LEFT(student_deidentified_hash, {STUDENT_ID_LENGTH}) should be unique"
         )
 
     def test_risk_flag_consistent_with_model_threshold(self):
@@ -443,6 +457,10 @@ class TestRepositoryDashboardDefinition:
         assert f">= {RISK_LEVEL_THRESHOLD}" in expr
         assert "THEN 'At Risk'" in expr
         assert "ELSE 'Not At Risk'" in expr
+
+    def test_student_id_dimension_shows_16_characters(self):
+        expr = _dimension_expr(_load_repo_dashboard(), "student_id")
+        assert expr == f"LEFT(source.student_deidentified_hash, {STUDENT_ID_LENGTH})"
 
     def test_no_legacy_category_text(self):
         raw = REPO_DASHBOARD_PATH.read_text(encoding="utf-8")

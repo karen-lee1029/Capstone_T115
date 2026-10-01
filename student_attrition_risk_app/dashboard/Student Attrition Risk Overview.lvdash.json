@@ -22,7 +22,7 @@
           },
           {
             "name": "student_id",
-            "expr": "LEFT(source.student_deidentified_hash, 8)",
+            "expr": "LEFT(source.student_deidentified_hash, 16)",
             "displayName": "Student ID"
           },
           {

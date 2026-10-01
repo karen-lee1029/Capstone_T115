@@ -118,6 +118,12 @@ branch made from it), then run `uv run pytest -q` from `student_attrition_risk_a
 - If the dashboard was already published, re-publish the restored file (quickstart § 4) or the
   backup exported in quickstart § 4 step 3.
 
+**Follow-up (decision 12, FR-026): Student ID length.** Line 25, the `student_id` dimension:
+`LEFT(source.student_deidentified_hash, 8)` → `LEFT(source.student_deidentified_hash, 16)`, made in
+the "Show 16 characters of the dashboard Student ID" commit on `docs/feature-005-us28-evidence`.
+To undo only this change, set the `16` back to `8` on that line and revert the matching TC-3
+follow-up, then re-publish the dashboard.
+
 ---
 
 ## TC-3 — Karen's dashboard tests
@@ -139,3 +145,16 @@ branch made from it), then run `uv run pytest -q` from `student_attrition_risk_a
   later commit touches the file).
 - Revert TC-2 at the same time (see above), or the restored tests will describe `High` / `Low`
   while the dashboard says `At Risk` / `Not At Risk`.
+
+**Follow-up (decision 12, FR-026): Student ID length**, in the same commit as the TC-2 follow-up:
+
+- Added `STUDENT_ID_LENGTH = 16` above `_student_id`; `_student_id` now returns
+  `student_hash[:STUDENT_ID_LENGTH]` (was `[:8]`) and its docstring says 16.
+- `TestStudentIdTruncation`: `test_truncates_to_8_chars` (expected `"syntheti"`) became
+  `test_truncates_to_16_chars` (expected `"synthetic-studen"`); `test_mock_hashes_truncate_correctly`
+  checks `<= STUDENT_ID_LENGTH` (was `<= 8`). `test_short_hash_returns_full` is unchanged.
+- New live check `TestPredictionDataQuality::test_dashboard_student_ids_are_unique` (skips without a
+  SQL warehouse) and new offline check
+  `TestRepositoryDashboardDefinition::test_student_id_dimension_shows_16_characters`.
+- To undo only this change: restore the three values above to 8 / `"syntheti"` /
+  `test_truncates_to_8_chars`, and delete the two new tests and the constant.
