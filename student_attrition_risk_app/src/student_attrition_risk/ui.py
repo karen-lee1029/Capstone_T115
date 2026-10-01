@@ -605,9 +605,9 @@ with st.container(border=True):
 
     with search_column:
         student_hash = st.text_input(
-            "Student ID",
+            "Student ID (de-identified)",
             value=default_hash,
-            placeholder="Enter a Student ID from the dashboard (View Dashboard)",
+            placeholder="Enter a Student ID (de-identified) from the dashboard (View Dashboard)",
             label_visibility="collapsed",
         )
 
@@ -620,7 +620,7 @@ with st.container(border=True):
 
 if retrieve_student:
     if not student_hash.strip():
-        st.error("Enter a Student ID.")
+        st.error("Enter a Student ID (de-identified).")
     else:
         clear_selected_student()
 
@@ -628,7 +628,7 @@ if retrieve_student:
             load_student(student_hash.strip())
             st.rerun()
         except StudentNotFoundError:
-            st.error("No prediction was found for that Student ID.")
+            st.error("No prediction was found for that Student ID (de-identified).")
         except Exception:
             st.error(
                 "Student information is currently unavailable. "
@@ -646,7 +646,7 @@ if profile is None:
     st.markdown(
         """
         <div class="empty-state">
-            Enter a Student ID from the Student Attrition Risk Overview dashboard
+            Enter a Student ID (de-identified) from the Student Attrition Risk Overview dashboard
             (View Dashboard) to view the risk snapshot and advisor briefing.
         </div>
         """,
@@ -689,7 +689,7 @@ with summary_left:
                 </span>
             </div>
             <div class="student-meta">
-                Student ID:
+                Student ID (de-identified):
                 {html.escape(prediction.student_deidentified_hash[:STUDENT_ID_LENGTH])}
             </div>
             <div class="student-meta">

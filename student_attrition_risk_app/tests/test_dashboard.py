@@ -462,6 +462,11 @@ class TestRepositoryDashboardDefinition:
         expr = _dimension_expr(_load_repo_dashboard(), "student_id")
         assert expr == f"LEFT(source.student_deidentified_hash, {STUDENT_ID_LENGTH})"
 
+    def test_student_id_is_labelled_de_identified(self):
+        raw = REPO_DASHBOARD_PATH.read_text(encoding="utf-8")
+        assert raw.count('"displayName": "Student ID (de-identified)"') == 2
+        assert '"displayName": "Student ID"' not in raw
+
     def test_no_legacy_category_text(self):
         raw = REPO_DASHBOARD_PATH.read_text(encoding="utf-8")
         found = LEGACY_CATEGORY_PATTERN.findall(raw)

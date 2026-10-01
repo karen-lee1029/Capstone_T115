@@ -23,7 +23,7 @@
           {
             "name": "student_id",
             "expr": "LEFT(source.student_deidentified_hash, 16)",
-            "displayName": "Student ID"
+            "displayName": "Student ID (de-identified)"
           },
           {
             "name": "risk_pct",
@@ -638,7 +638,7 @@
                   {
                     "fieldName": "student_attrition_risk_prediction__student_id",
                     "useForSearch": true,
-                    "displayName": "Student ID"
+                    "displayName": "Student ID (de-identified)"
                   },
                   {
                     "fieldName": "student_attrition_risk_prediction__risk_pct",

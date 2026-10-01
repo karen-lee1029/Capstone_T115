@@ -134,6 +134,9 @@ authoritative for this specification and are not re-opened.
   "deidentified student hash/reference", and the student summary shows the Student ID instead of
   the full hash. Privacy is unchanged: the Student ID is a prefix of the same pseudonymous hash and
   reveals no more than it.
+- Q: Could "Student ID" be mistaken for a real student number? → A: Yes, so it is labelled
+  "Student ID (de-identified)" on the dashboard and throughout the advisor page (decision 14). The values are
+  the first 16 characters of the de-identified hash; the data holds no real student numbers.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -283,7 +286,8 @@ evidence step.
 - **FR-027** (added 2026-10-01, decision 13): The advisor page MUST retrieve a student by the
   16-character Student ID shown on the dashboard, and MUST still accept the full de-identified hash.
   A Student ID shared by more than one student MUST be treated as not found. The page's input
-  label, placeholder, empty state, error messages and student summary MUST say "Student ID".
+  label, placeholder, empty state, error messages and student summary MUST say "Student ID (de-identified)",
+  matching the dashboard column name (decision 14).
 - **FR-005**: The advisor page badge MUST keep its wording ("At Risk" / "Not At Risk") and MUST
   decide which badge to show exactly as it does today.
 

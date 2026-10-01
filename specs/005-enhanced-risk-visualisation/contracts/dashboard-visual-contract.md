@@ -154,19 +154,21 @@ the card is unchanged. Error notices (for example `.store-error-notice`) stay re
 
 With about 974,000 students, 8 hex characters (about 4.3 billion values) leave roughly 110 pairs
 sharing an ID; 16 characters (about 1.8 × 10^19 values) make a shared ID effectively impossible
-(expected pairs ≈ 0.00000003). The display name "Student ID", the table column and the Search
-Student filter are unchanged and pick up the longer value.
+(expected pairs ≈ 0.00000003). The table column and the Search Student filter pick up the longer
+value. The display name changed from "Student ID" to "Student ID (de-identified)" (decision 14), so nobody
+mistakes it for a real student number; it appears twice in the definition (the dimension and the
+table column).
 
 ## 9. Advisor page Student ID wording and lookup (added 2026-10-01, spec decision 13, FR-027)
 
 | Element | Before | After |
 |---|---|---|
-| Input label | `Deidentified student reference` | `Student ID` |
-| Input placeholder | `Enter a deidentified student hash` | `Enter a Student ID from the dashboard (View Dashboard)` |
-| Empty input error | `Enter a deidentified student reference.` | `Enter a Student ID.` |
-| Not found error | `No prediction was found for that student reference.` | `No prediction was found for that Student ID.` |
-| Empty state | `Retrieve a deidentified student record to view the risk snapshot and advisor briefing.` | `Enter a Student ID from the Student Attrition Risk Overview dashboard (View Dashboard) to view the risk snapshot and advisor briefing.` |
-| Summary line | `Reference: <full 64-character hash>` | `Student ID: <first 16 characters>` |
+| Input label | `Deidentified student reference` | `Student ID (de-identified)` |
+| Input placeholder | `Enter a deidentified student hash` | `Enter a Student ID (de-identified) from the dashboard (View Dashboard)` |
+| Empty input error | `Enter a deidentified student reference.` | `Enter a Student ID (de-identified).` |
+| Not found error | `No prediction was found for that student reference.` | `No prediction was found for that Student ID (de-identified).` |
+| Empty state | `Retrieve a deidentified student record to view the risk snapshot and advisor briefing.` | `Enter a Student ID (de-identified) from the Student Attrition Risk Overview dashboard (View Dashboard) to view the risk snapshot and advisor briefing.` |
+| Summary line | `Reference: <full 64-character hash>` | `Student ID (de-identified): <first 16 characters>` |
 
 Lookup: `StudentService.get_student_profile` first tries the input as a full hash; if nothing is
 found and the input is 16 characters long, it matches `LEFT(student_deidentified_hash, 16)` and

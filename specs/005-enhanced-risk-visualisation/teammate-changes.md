@@ -105,7 +105,7 @@ branch made from it), then run `uv run pytest -q` from `student_attrition_risk_a
 |---|---|
 | File + lines | `student_attrition_risk_app/src/student_attrition_risk/ui.py`: new import of `STUDENT_ID_LENGTH` (line 17), input label and placeholder (608, 610), empty-input error (623), not-found error (631), empty state (649-650), summary line (692-693) |
 | Original author + commit | GuaGuaGua88 (Lu), `8548e4f` "firstworkingBeforeValidation" (2026-09-17) |
-| What changed | The wording in contract § 9 ("deidentified student hash/reference" → "Student ID"); the summary shows the first 16 characters as "Student ID:" instead of the full hash as "Reference:". No layout, logic or styling change. |
+| What changed | The wording in contract § 9 ("deidentified student hash/reference" → "Student ID (de-identified)"); the summary shows the first 16 characters as "Student ID (de-identified):" instead of the full hash as "Reference:". No layout, logic or styling change. |
 | Why | Advisors copy the Student ID from the dashboard (View Dashboard) into the app. |
 | Commit that made it | "Let advisors retrieve a student by the dashboard Student ID" on `docs/feature-005-us28-evidence` |
 | Dependent files | `tests/test_ui.py` (TC-7) and the new `tests/test_student_id_lookup.py` assert the new wording. The lookup itself is in Renny's `student_service.py`, `student_repository.py` and `ports.py` (not a teammate change). |
@@ -122,7 +122,7 @@ back to `Reference: {html.escape(prediction.student_deidentified_hash)}`, remove
 |---|---|
 | File + lines | `student_attrition_risk_app/tests/test_ui.py` lines 175, 188, 199 |
 | Original author + commit | Karen (k224.lee / karen-lee1029), `9904ec6` |
-| What changed | Expected label `Deidentified student reference` → `Student ID`; expected empty state `Retrieve a deidentified student record` → `Enter a Student ID from the Student Attrition Risk Overview dashboard`; expected error `Enter a deidentified student reference` → `Enter a Student ID.`. Test names unchanged; line 206 (`No prediction was found`) still matches. |
+| What changed | Expected label `Deidentified student reference` → `Student ID (de-identified)`; expected empty state `Retrieve a deidentified student record` → `Enter a Student ID (de-identified) from the Student Attrition Risk Overview`; expected error `Enter a deidentified student reference` → `Enter a Student ID (de-identified).`. Test names unchanged; line 206 (`No prediction was found`) still matches. |
 | Why | The checks describe the page's new wording (TC-6). |
 | Commit that made it | Same commit as TC-6 |
 
@@ -150,10 +150,11 @@ back to `Reference: {html.escape(prediction.student_deidentified_hash)}`, remove
   backup exported in quickstart § 4 step 3.
 
 **Follow-up (decision 12, FR-026): Student ID length.** Line 25, the `student_id` dimension:
-`LEFT(source.student_deidentified_hash, 8)` → `LEFT(source.student_deidentified_hash, 16)`, made in
+`LEFT(source.student_deidentified_hash, 8)` → `LEFT(source.student_deidentified_hash, 16)`, and (decision 14) the
+`displayName` on lines 26 and 641 `Student ID` → `Student ID (de-identified)`, made in
 the "Show 16 characters of the dashboard Student ID" commit on `docs/feature-005-us28-evidence`.
-To undo only this change, set the `16` back to `8` on that line and revert the matching TC-3
-follow-up, then re-publish the dashboard.
+To undo only this change, set the `16` back to `8` on that line (and the two display names back to
+`Student ID`), revert the matching TC-3 follow-up, then re-publish the dashboard.
 
 ---
 
@@ -184,6 +185,8 @@ follow-up, then re-publish the dashboard.
 - `TestStudentIdTruncation`: `test_truncates_to_8_chars` (expected `"syntheti"`) became
   `test_truncates_to_16_chars` (expected `"synthetic-studen"`); `test_mock_hashes_truncate_correctly`
   checks `<= STUDENT_ID_LENGTH` (was `<= 8`). `test_short_hash_returns_full` is unchanged.
+- New offline check `TestRepositoryDashboardDefinition::test_student_id_is_labelled_de_identified`
+  (decision 14).
 - New live check `TestPredictionDataQuality::test_dashboard_student_ids_are_unique` (skips without a
   SQL warehouse) and new offline check
   `TestRepositoryDashboardDefinition::test_student_id_dimension_shows_16_characters`.

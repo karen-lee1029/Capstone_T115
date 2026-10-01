@@ -100,7 +100,7 @@ def test_summary_shows_student_id_not_full_hash(monkeypatch):
 
     assert not at.exception
     summary = next(el.value for el in at.markdown if "Student summary" in el.value)
-    assert "Student ID:" in summary
+    assert "Student ID (de-identified):" in summary
     assert "synthetic-studen" in summary
     assert "synthetic-student-001" not in summary
     assert "Reference:" not in summary
