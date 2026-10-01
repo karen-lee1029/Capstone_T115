@@ -33,6 +33,7 @@ coverage across features).
 | FR-008 Badge blues with contrast ≥ 4.5:1 | T010 | `test_risk_badge_visualisation.py::test_badge_css_uses_dashboard_blues_and_contract_text_colours`, `::test_badge_text_contrast_is_at_least_4_5` |
 | FR-009 Page-owned badge, no alert widgets | T010 | `test_risk_badge_visualisation.py::test_badge_span_wraps_label_without_alert_widgets` |
 | FR-024 Score circle stays a white ring in the category colours, contrast ≥ 4.5:1 | Decision 10 (`46b4965`) | `test_risk_badge_visualisation.py::test_score_circle_uses_category_class`, `::test_score_circle_is_a_white_ring_in_dashboard_blues`, `::test_score_circle_text_contrast_is_at_least_4_5` |
+| FR-025 Summary card edge in the category colour | Decision 11 (follow-up branch) | `test_summary_card_visualisation.py::test_summary_card_uses_category_class`, `::test_summary_card_edge_uses_dashboard_blues` |
 
 ### Ordering and explanations
 
@@ -55,7 +56,7 @@ coverage across features).
 | FR-019 Scoring, flag, threshold and ranges unchanged | — (met by absence of change) | § 3 diff: no file under `src/` other than `ui.py` styling, and no dataset query change beyond the `risk_level` literals |
 | FR-020 Only the approved files change | T018 | § 3 `git diff 9469edc --stat` |
 | FR-021 Quickstart publish steps | T017 | [quickstart.md](./quickstart.md) § 4; product owner runs it in T019 |
-| FR-022 Every teammate change recorded with a revert route | T016 | [teammate-changes.md](./teammate-changes.md) TC-1–TC-4. The revert routes for TC-1 and TC-4 were dry-run in a throwaway worktree on 2026-10-01. |
+| FR-022 Every teammate change recorded with a revert route | T016 | [teammate-changes.md](./teammate-changes.md) TC-1–TC-5. The revert routes for TC-1 and TC-4 were dry-run in a throwaway worktree on 2026-10-01. |
 | FR-023 Traceability record | T015 | This file |
 
 ## 2. Success criteria
@@ -86,12 +87,15 @@ need a SQL warehouse or the workspace dashboard file, exactly as before Feature-
 
 ## 4. Published evidence (T019, product owner)
 
-To be completed after publishing (quickstart §§ 4–5):
+The product owner published the dashboard and captured these from the **published** view (quickstart §§ 4–5):
 
-| Shot | File name | Date |
+| Shot | Status | Date |
 |---|---|---|
-| 1. Title, guide panel and counters | — | — |
-| 2. Risk Analysis row | — | — |
-| 3. Demographic Breakdown row | — | — |
-| 4. Filter by Risk Level open | — | — |
-| 5. Advisor page, at-risk and not-at-risk students | — | — |
+| 1. Title, guide panel and counters | Captured and checked: guide panel under the title; At Risk 391,388 + Not At Risk 582,382 = Total 973,770 | 2026-10-01 |
+| 2. Risk Analysis row | Captured and checked: At Risk first in every legend; score ranges ascending (46-48% → 52-54%; 0-46% and 54-100% hold no students, so no bar is drawn) | 2026-10-01 |
+| 3. Demographic Breakdown row | Captured and checked: one colour per category, descriptions shown | 2026-10-01 |
+| 4. Filter by Risk Level open | Captured and checked: options All / At Risk / Not At Risk | 2026-10-01 |
+| 5. Advisor page, at-risk and not-at-risk students | Pending: first capture showed the deployed app still running pre-merge code (red/green). Retake after redeploying from `main` with this follow-up merged. | — |
+
+Observation: the stacked demographic charts draw the Not At Risk segment first (left); the legends
+list At Risk first, as the contract requires.

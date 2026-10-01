@@ -134,3 +134,14 @@ size) and takes the category colours. Text contrast is measured against the whit
 Markup: a `circle_class` variable chosen from `attrition_risk_flag` (`"risk-circle"` or
 `"risk-circle not-risk-circle"`) replaces the fixed `class="risk-circle"` on the score `<div>`.
 The badge logic and the score value are unchanged.
+
+### 7b. Student summary card edge (added 2026-10-01, spec decision 11, FR-025)
+
+| Rule | Property | Before | After |
+|---|---|---|---|
+| `.summary-card` | `border-left` | `5px solid #d92d20` | `5px solid #1565C0` |
+| `.summary-card.not-risk-card` (new rule) | `border-left-color` | — | `#42A5F5` |
+
+Markup: a `card_class` variable chosen from `attrition_risk_flag` (`"summary-card"` or
+`"summary-card not-risk-card"`) replaces the fixed `class="summary-card"`. Every other property of
+the card is unchanged. Error notices (for example `.store-error-notice`) stay red.

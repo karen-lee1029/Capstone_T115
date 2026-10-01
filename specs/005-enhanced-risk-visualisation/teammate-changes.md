@@ -79,6 +79,26 @@ branch made from it), then run `uv run pytest -q` from `student_attrition_risk_a
 
 ---
 
+## TC-5 — Advisor page student summary card edge colour
+
+| Field | Value |
+|---|---|
+| File + lines | `student_attrition_risk_app/src/student_attrition_risk/ui.py`: `.summary-card` `border-left` (line 113), new rule `.summary-card.not-risk-card` (lines 120-122), new `card_class` variable (lines 669-673) and the summary `<div>` (line 682) (line numbers as of the follow-up commit on `fix/feature-005-summary-card-colour`) |
+| Original author + commit | GuaGuaGua88 (Lu), `8548e4f` "firstworkingBeforeValidation" (2026-09-17) |
+| What changed | `.summary-card` `border-left: 5px solid #d92d20;` → `5px solid #1565C0;`. Added `.summary-card.not-risk-card { border-left-color: #42A5F5; }`. Added `card_class = ("summary-card" if prediction.attrition_risk_flag else "summary-card not-risk-card")` after `circle_class`, and the summary markup changed from `<div class="summary-card">` to `<div class="{card_class}">`. |
+| Why | US-28 decision 11 (spec FR-025): the red card edge sat beside the blue badge and ring after Feature-005 was deployed. |
+| Commit that made it | The single "Colour the student summary card edge by risk category" commit on `fix/feature-005-summary-card-colour` (`ui.py`, the new test file and these spec documents) |
+| Dependent files | `student_attrition_risk_app/tests/test_summary_card_visualisation.py` (new) asserts the new colours. |
+
+**Revert**
+
+- `git revert <that commit>` undoes the code, the new test file and these document updates together.
+- By hand, restore `border-left: 5px solid #d92d20;` in `.summary-card`, delete the
+  `.summary-card.not-risk-card` rule and the `card_class` assignment, change the markup back to
+  `<div class="summary-card">`, and delete `tests/test_summary_card_visualisation.py`.
+
+---
+
 ## TC-2 — Student Attrition Risk Overview dashboard definition
 
 | Field | Value |

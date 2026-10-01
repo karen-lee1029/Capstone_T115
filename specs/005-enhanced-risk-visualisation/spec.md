@@ -119,6 +119,11 @@ authoritative for this specification and are not re-opened.
   the category colours: an `#1565C0` ring with `#1565C0` text for At Risk, and an `#42A5F5` ring
   with `#172033` text for Not At Risk. This is a further approved change to GuaGuaGua88's styling,
   recorded as TC-4 in `teammate-changes.md`.
+- Q: The student summary card has a red left edge for every student, beside the new blue badge
+  and ring. Does it change? → A: Yes (decision 11, raised after PR #120 merged). The edge follows
+  the category: `#1565C0` for At Risk and `#42A5F5` for Not At Risk (FR-025). This is a further
+  approved change to GuaGuaGua88's styling, recorded as TC-5 and made on a follow-up branch from
+  `main`.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -280,6 +285,8 @@ evidence step.
   a ring on a white fill, with the ring and text in the student's category colour (`#1565C0` ring
   and text for At Risk; `#42A5F5` ring with `#172033` text for Not At Risk). Its text MUST reach a
   contrast ratio of at least 4.5:1 against white.
+- **FR-025** (added 2026-10-01, decision 11): The advisor page's student summary card MUST have a
+  left edge in the student's category colour (`#1565C0` for At Risk; `#42A5F5` for Not At Risk).
 
 #### Ordering
 
@@ -374,6 +381,7 @@ evidence step.
 - Briefing wording or behaviour (briefing provider, instructions, validation, retry, storage).
 - Changing the scoring model, the at-risk flag, the 50% threshold or the score-range boundaries.
 - A third category or a new chart type.
-- Any advisor page styling other than the two badge rules and the score-circle colours (FR-024).
+- Any advisor page styling other than the two badge rules, the score-circle colours (FR-024) and
+  the summary-card edge colour (FR-025). Error notices stay red.
 - Publishing the dashboard by an agent; any change to the workspace other than by the product owner.
 - Editing any merged test file other than the approved dashboard test file.
