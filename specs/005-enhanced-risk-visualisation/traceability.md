@@ -95,7 +95,7 @@ The product owner published the dashboard and captured these from the **publishe
 | 2. Risk Analysis row | Captured and checked: At Risk first in every legend; score ranges ascending (46-48% → 52-54%; 0-46% and 54-100% hold no students, so no bar is drawn) | 2026-10-01 |
 | 3. Demographic Breakdown row | Captured and checked: one colour per category, descriptions shown | 2026-10-01 |
 | 4. Filter by Risk Level open | Captured and checked: options All / At Risk / Not At Risk | 2026-10-01 |
-| 5. Advisor page, at-risk and not-at-risk students | Pending: first capture showed the deployed app still running pre-merge code (red/green). Retake after redeploying from `main` with this follow-up merged. | — |
+| 5. Advisor page, at-risk and not-at-risk students | Captured and checked on the deployed app after redeploying from `main` (PR #121 merged): At Risk (50.5%) shows a dark-blue badge with white text, dark-blue ring and dark-blue card edge; Not At Risk (49.0%) shows a light-blue badge with dark text, light-blue ring and light-blue card edge | 2026-10-01 |
 
 Observation: the stacked demographic charts draw the Not At Risk segment first (left); the legends
 list At Risk first, as the contract requires.
