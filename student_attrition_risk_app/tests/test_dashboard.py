@@ -12,7 +12,10 @@ table and are skipped when no SQL warehouse is configured.
 
 from __future__ import annotations
 
+import json
 import math
+import re
+from pathlib import Path
 
 import pytest
 
@@ -23,7 +26,7 @@ from student_attrition_risk.student_repository import MockStudentRepository
 # ---------------------------------------------------------------------------
 
 PREDICTION_TABLE = "workspace.student_aggregate.student_attrition_risk_prediction"
-RISK_LEVEL_THRESHOLD = 50  # attrition_risk_percentage >= 50 -> 'High'
+RISK_LEVEL_THRESHOLD = 50  # attrition_risk_percentage >= 50 -> 'At Risk'
 
 RISK_SCORE_BUCKETS = (
     (0, 46, "0-46%"),
@@ -38,8 +41,8 @@ RISK_SCORE_BUCKETS = (
 
 EXPECTED_WIDGET_TITLES = {
     "Total Students",
-    "High Risk",
-    "Low Risk",
+    "At Risk",
+    "Not At Risk",
     "Risk Level Distribution",
     "Risk Score Distribution",
     "Student Details",
@@ -57,8 +60,8 @@ EXPECTED_WIDGET_TITLES = {
 # ---------------------------------------------------------------------------
 
 def _risk_level(percentage: float) -> str:
-    """Replicate CASE WHEN attrition_risk_percentage >= 50 THEN 'High' ELSE 'Low' END."""
-    return "High" if percentage >= RISK_LEVEL_THRESHOLD else "Low"
+    """Replicate CASE WHEN attrition_risk_percentage >= 50 THEN 'At Risk' ELSE 'Not At Risk' END."""
+    return "At Risk" if percentage >= RISK_LEVEL_THRESHOLD else "Not At Risk"
 
 
 def _risk_score_bucket(percentage: float) -> str:
@@ -86,24 +89,24 @@ def _risk_pct(percentage: float) -> float:
 class TestRiskLevelClassification:
 
     def test_high_risk(self):
-        assert _risk_level(78.5) == "High"
+        assert _risk_level(78.5) == "At Risk"
 
     def test_low_risk(self):
-        assert _risk_level(18.0) == "Low"
+        assert _risk_level(18.0) == "Not At Risk"
 
     def test_boundary_at_threshold(self):
-        assert _risk_level(50.0) == "High"
+        assert _risk_level(50.0) == "At Risk"
 
     def test_just_below_threshold(self):
-        assert _risk_level(49.9) == "Low"
+        assert _risk_level(49.9) == "Not At Risk"
 
     def test_mock_predictions_classify_correctly(self):
         repo = MockStudentRepository()
         for student_hash, prediction in repo.predictions.items():
             level = _risk_level(prediction.attrition_risk_percentage)
-            if level == "High":
+            if level == "At Risk":
                 assert prediction.attrition_risk_flag, (
-                    f"{student_hash} is High Risk "
+                    f"{student_hash} is At Risk "
                     f"({prediction.attrition_risk_percentage}%) "
                     "but attrition_risk_flag is False"
                 )
@@ -259,34 +262,34 @@ class TestPredictionDataQuality:
         assert rows[0]["inconsistent"] == 0
 
     def test_dashboard_high_risk_count_matches_threshold(self):
-        """Dashboard counts High Risk as percentage >= 50; verify non-zero."""
+        """Dashboard counts At Risk as percentage >= 50; verify non-zero."""
         rows = self._query(
-            f"SELECT COUNT(DISTINCT student_deidentified_hash) AS high_risk_cnt"
+            f"SELECT COUNT(DISTINCT student_deidentified_hash) AS at_risk_cnt"
             f" FROM {PREDICTION_TABLE}"
             f" WHERE attrition_risk_percentage >= {RISK_LEVEL_THRESHOLD}"
         )
-        assert rows[0]["high_risk_cnt"] > 0, "Should have at least one High Risk student"
+        assert rows[0]["at_risk_cnt"] > 0, "Should have at least one At Risk student"
 
     def test_dashboard_low_risk_count_matches_threshold(self):
         rows = self._query(
-            f"SELECT COUNT(DISTINCT student_deidentified_hash) AS low_risk_cnt"
+            f"SELECT COUNT(DISTINCT student_deidentified_hash) AS not_at_risk_cnt"
             f" FROM {PREDICTION_TABLE}"
             f" WHERE attrition_risk_percentage < {RISK_LEVEL_THRESHOLD}"
         )
-        assert rows[0]["low_risk_cnt"] > 0, "Should have at least one Low Risk student"
+        assert rows[0]["not_at_risk_cnt"] > 0, "Should have at least one Not At Risk student"
 
     def test_total_count_equals_high_plus_low(self):
-        """Dashboard Total Students counter should equal High + Low."""
+        """Dashboard Total Students counter should equal At Risk + Not At Risk."""
         rows = self._query(
             f"SELECT"
             f" COUNT(DISTINCT student_deidentified_hash) AS total,"
             f" COUNT(DISTINCT CASE WHEN attrition_risk_percentage >= {RISK_LEVEL_THRESHOLD}"
-            f" THEN student_deidentified_hash END) AS high,"
+            f" THEN student_deidentified_hash END) AS at_risk,"
             f" COUNT(DISTINCT CASE WHEN attrition_risk_percentage < {RISK_LEVEL_THRESHOLD}"
-            f" THEN student_deidentified_hash END) AS low"
+            f" THEN student_deidentified_hash END) AS not_at_risk"
             f" FROM {PREDICTION_TABLE}"
         )
-        assert rows[0]["total"] == rows[0]["high"] + rows[0]["low"]
+        assert rows[0]["total"] == rows[0]["at_risk"] + rows[0]["not_at_risk"]
 
 
 # ---------------------------------------------------------------------------
@@ -351,3 +354,169 @@ class TestDashboardWidgets:
         pages = dash.get("pages", [])
         assert len(pages) == 1
         assert pages[0]["displayName"] == "Overview"
+
+
+# ---------------------------------------------------------------------------
+# Repository dashboard definition -- Feature-005 / US-28 visual contract
+# (specs/005-enhanced-risk-visualisation/contracts/dashboard-visual-contract.md)
+# ---------------------------------------------------------------------------
+
+REPO_DASHBOARD_PATH = (
+    Path(__file__).resolve().parent.parent
+    / "dashboard"
+    / "Student Attrition Risk Overview.lvdash.json"
+)
+
+RISK_COLOUR_MAPPINGS = [
+    {"color": "#1565C0", "value": "At Risk"},
+    {"color": "#42A5F5", "value": "Not At Risk"},
+]
+
+CHART_DESCRIPTIONS = {
+    "chart_risk_donut": (
+        "Number of students in each risk category: At Risk (50% or higher) "
+        "and Not At Risk (below 50%)"
+    ),
+    "chart_risk_by_faculty": (
+        "Number of students in each attrition risk score range, lowest to highest; "
+        "ranges from 50% are At Risk"
+    ),
+    "chart_risk_study_mode": "At Risk and Not At Risk student counts for each age band",
+    "chart_risk_gender": "At Risk and Not At Risk student counts for each gender",
+    "chart_risk_intl": (
+        "At Risk and Not At Risk student counts for domestic and international students"
+    ),
+}
+
+# Chart widget name -> categorical axis that carries the natural-order sort.
+CHART_CATEGORICAL_AXIS = {
+    "chart_risk_donut": "y",
+    "chart_risk_by_faculty": "x",
+    "chart_risk_study_mode": "y",
+    "chart_risk_gender": "y",
+    "chart_risk_intl": "y",
+}
+
+COUNTER_CONTRACT = {
+    "counter_high": ("At Risk", "#1565C0"),
+    "counter_low": ("Not At Risk", "#42A5F5"),
+}
+
+LEGACY_CATEGORY_PATTERN = re.compile(r"\b(?:High|Low|Medium)\b")
+
+
+def _load_repo_dashboard() -> dict:
+    return json.loads(REPO_DASHBOARD_PATH.read_text(encoding="utf-8"))
+
+
+def _layout_items(dash: dict) -> list[dict]:
+    return [item for page in dash.get("pages", []) for item in page.get("layout", [])]
+
+
+def _widget(dash: dict, name: str) -> dict:
+    for item in _layout_items(dash):
+        if item["widget"]["name"] == name:
+            return item["widget"]
+    raise AssertionError(f"Widget {name!r} not found in the dashboard definition")
+
+
+def _dimension_expr(dash: dict, name: str) -> str:
+    for dataset in dash["datasets"]:
+        for dim in dataset["config"].get("dimensions", []):
+            if dim.get("name") == name:
+                return dim["expr"]
+    raise AssertionError(f"Dimension {name!r} not found in the dashboard definition")
+
+
+def _widget_title(widget: dict) -> str | None:
+    title = widget.get("spec", {}).get("frame", {}).get("title")
+    if isinstance(title, dict):
+        return title.get("value")
+    return title
+
+
+class TestRepositoryDashboardDefinition:
+    """Offline checks of the committed dashboard JSON against the US-28 contract."""
+
+    def test_risk_level_dimension_uses_new_categories(self):
+        expr = _dimension_expr(_load_repo_dashboard(), "risk_level")
+        assert f">= {RISK_LEVEL_THRESHOLD}" in expr
+        assert "THEN 'At Risk'" in expr
+        assert "ELSE 'Not At Risk'" in expr
+
+    def test_no_legacy_category_text(self):
+        raw = REPO_DASHBOARD_PATH.read_text(encoding="utf-8")
+        found = LEGACY_CATEGORY_PATTERN.findall(raw)
+        assert not found, f"Legacy risk category text found: {found}"
+
+    @pytest.mark.parametrize("name", sorted(COUNTER_CONTRACT))
+    def test_counter_title_filter_and_colour(self, name):
+        label, colour = COUNTER_CONTRACT[name]
+        widget = _widget(_load_repo_dashboard(), name)
+        assert _widget_title(widget) == label
+        filters = [f["expression"] for q in widget["queries"] for f in q["query"]["filters"]]
+        assert filters == [f"`student_attrition_risk_prediction`.`risk_level` IN ('{label}')"]
+        assert widget["spec"]["style"]["fontColor"] == {"dark": colour, "light": colour}
+
+    @pytest.mark.parametrize("name", sorted(CHART_CATEGORICAL_AXIS))
+    def test_chart_colour_map_matches_contract(self, name):
+        widget = _widget(_load_repo_dashboard(), name)
+        assert widget["spec"]["widgetType"] == "bar"
+        assert widget["spec"]["encodings"]["color"]["scale"]["mappings"] == RISK_COLOUR_MAPPINGS
+
+    def test_every_bar_chart_is_in_contract(self):
+        bars = {
+            item["widget"]["name"]
+            for item in _layout_items(_load_repo_dashboard())
+            if item["widget"].get("spec", {}).get("widgetType") == "bar"
+        }
+        assert bars == set(CHART_CATEGORICAL_AXIS)
+
+    @pytest.mark.parametrize("name", sorted(CHART_CATEGORICAL_AXIS))
+    def test_chart_categorical_axis_natural_order(self, name):
+        axis = CHART_CATEGORICAL_AXIS[name]
+        scale = _widget(_load_repo_dashboard(), name)["spec"]["encodings"][axis]["scale"]
+        assert scale["type"] == "categorical"
+        assert scale.get("sort") == {"by": "natural-order"}
+
+    def test_score_buckets_ascending_with_percent_labels(self):
+        expr = _dimension_expr(_load_repo_dashboard(), "risk_score_bucket")
+        labels = re.findall(r"'([^']+)'", expr)
+        expected = [b[2] for b in RISK_SCORE_BUCKETS]
+        assert labels == expected
+        assert sorted(labels) == expected
+        assert all(label.endswith("%") for label in labels)
+
+    @pytest.mark.parametrize("name", sorted(CHART_DESCRIPTIONS))
+    def test_chart_description_shown(self, name):
+        frame = _widget(_load_repo_dashboard(), name)["spec"]["frame"]
+        assert frame["showDescription"] is True
+        assert frame["description"] == {"value": CHART_DESCRIPTIONS[name], "fields": []}
+
+    def test_how_to_read_widget_content(self):
+        widget = _widget(_load_repo_dashboard(), "how_to_read")
+        text = "".join(widget["multilineTextboxSpec"]["lines"])
+        for required in (
+            "How to read this dashboard", "At Risk", "Not At Risk", "50%", "#1565C0", "#42A5F5",
+        ):
+            assert required in text, f"how_to_read is missing {required!r}"
+
+    def test_how_to_read_position(self):
+        dash = _load_repo_dashboard()
+        item = next(i for i in _layout_items(dash) if i["widget"]["name"] == "how_to_read")
+        assert item["position"] == {"x": 0, "y": 2, "width": 12, "height": 3}
+
+    def test_all_expected_widget_titles_present(self):
+        titles = {_widget_title(item["widget"]) for item in _layout_items(_load_repo_dashboard())}
+        missing = EXPECTED_WIDGET_TITLES - titles
+        assert not missing, f"Missing expected widget titles: {missing}"
+
+    def test_layout_has_no_overlapping_widgets(self):
+        items = _layout_items(_load_repo_dashboard())
+        cells: dict[tuple[int, int], str] = {}
+        for item in items:
+            pos, name = item["position"], item["widget"]["name"]
+            for x in range(pos["x"], pos["x"] + pos["width"]):
+                for y in range(pos["y"], pos["y"] + pos["height"]):
+                    assert (x, y) not in cells, f"{name} overlaps {cells[(x, y)]} at {(x, y)}"
+                    cells[(x, y)] = name

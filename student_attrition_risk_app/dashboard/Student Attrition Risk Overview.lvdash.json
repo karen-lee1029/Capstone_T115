@@ -12,7 +12,7 @@
           },
           {
             "name": "risk_level",
-            "expr": "CASE\n  WHEN source.attrition_risk_percentage >= 50 THEN 'High'\n  ELSE 'Low'\nEND",
+            "expr": "CASE\n  WHEN source.attrition_risk_percentage >= 50 THEN 'At Risk'\n  ELSE 'Not At Risk'\nEND",
             "displayName": "Risk Level"
           },
           {
@@ -188,7 +188,7 @@
           },
           "position": {
             "x": 0,
-            "y": 27,
+            "y": 30,
             "width": 12,
             "height": 2
           }
@@ -206,7 +206,7 @@
           },
           "position": {
             "x": 0,
-            "y": 48,
+            "y": 51,
             "width": 12,
             "height": 1
           }
@@ -224,7 +224,7 @@
           },
           "position": {
             "x": 0,
-            "y": 49,
+            "y": 52,
             "width": 12,
             "height": 1
           }
@@ -279,7 +279,7 @@
           },
           "position": {
             "x": 0,
-            "y": 2,
+            "y": 5,
             "width": 4,
             "height": 4
           }
@@ -299,7 +299,7 @@
                   ],
                   "filters": [
                     {
-                      "expression": "`student_attrition_risk_prediction`.`risk_level` IN ('High')"
+                      "expression": "`student_attrition_risk_prediction`.`risk_level` IN ('At Risk')"
                     }
                   ],
                   "disaggregated": false
@@ -311,7 +311,7 @@
                 "showDescription": false,
                 "showTitle": true,
                 "title": {
-                  "value": "High Risk",
+                  "value": "At Risk",
                   "fields": []
                 }
               },
@@ -339,7 +339,7 @@
           },
           "position": {
             "x": 4,
-            "y": 2,
+            "y": 5,
             "width": 4,
             "height": 4
           }
@@ -359,7 +359,7 @@
                   ],
                   "filters": [
                     {
-                      "expression": "`student_attrition_risk_prediction`.`risk_level` IN ('Low')"
+                      "expression": "`student_attrition_risk_prediction`.`risk_level` IN ('Not At Risk')"
                     }
                   ],
                   "disaggregated": false
@@ -371,7 +371,7 @@
                 "showDescription": false,
                 "showTitle": true,
                 "title": {
-                  "value": "Low Risk",
+                  "value": "Not At Risk",
                   "fields": []
                 }
               },
@@ -399,7 +399,7 @@
           },
           "position": {
             "x": 8,
-            "y": 2,
+            "y": 5,
             "width": 4,
             "height": 4
           }
@@ -434,7 +434,7 @@
                   "fields": []
                 },
                 "description": {
-                  "value": "Student count by risk category",
+                  "value": "Number of students in each risk category: At Risk (50% or higher) and Not At Risk (below 50%)",
                   "fields": []
                 }
               },
@@ -450,7 +450,10 @@
                 "y": {
                   "fieldName": "student_attrition_risk_prediction__risk_level",
                   "scale": {
-                    "type": "categorical"
+                    "type": "categorical",
+                    "sort": {
+                      "by": "natural-order"
+                    }
                   }
                 },
                 "color": {
@@ -459,11 +462,11 @@
                     "mappings": [
                       {
                         "color": "#1565C0",
-                        "value": "High"
+                        "value": "At Risk"
                       },
                       {
                         "color": "#42A5F5",
-                        "value": "Low"
+                        "value": "Not At Risk"
                       }
                     ],
                     "type": "categorical"
@@ -477,7 +480,7 @@
           },
           "position": {
             "x": 0,
-            "y": 8,
+            "y": 11,
             "width": 6,
             "height": 9
           }
@@ -516,7 +519,7 @@
                   "fields": []
                 },
                 "description": {
-                  "value": "Student count by risk score range",
+                  "value": "Number of students in each attrition risk score range, lowest to highest; ranges from 50% are At Risk",
                   "fields": []
                 }
               },
@@ -529,7 +532,10 @@
                 "x": {
                   "fieldName": "student_attrition_risk_prediction__risk_score_bucket",
                   "scale": {
-                    "type": "categorical"
+                    "type": "categorical",
+                    "sort": {
+                      "by": "natural-order"
+                    }
                   }
                 },
                 "y": {
@@ -548,11 +554,11 @@
                     "mappings": [
                       {
                         "color": "#1565C0",
-                        "value": "High"
+                        "value": "At Risk"
                       },
                       {
                         "color": "#42A5F5",
-                        "value": "Low"
+                        "value": "Not At Risk"
                       }
                     ],
                     "type": "categorical"
@@ -566,7 +572,7 @@
           },
           "position": {
             "x": 6,
-            "y": 8,
+            "y": 11,
             "width": 6,
             "height": 9
           }
@@ -667,7 +673,7 @@
           },
           "position": {
             "x": 0,
-            "y": 32,
+            "y": 35,
             "width": 12,
             "height": 16
           }
@@ -699,10 +705,14 @@
             ],
             "spec": {
               "frame": {
-                "showDescription": false,
+                "showDescription": true,
                 "showTitle": true,
                 "title": {
                   "value": "Risk by Age Band",
+                  "fields": []
+                },
+                "description": {
+                  "value": "At Risk and Not At Risk student counts for each age band",
                   "fields": []
                 }
               },
@@ -722,7 +732,10 @@
                 "y": {
                   "fieldName": "Student_Enrolment_Details__age_band",
                   "scale": {
-                    "type": "categorical"
+                    "type": "categorical",
+                    "sort": {
+                      "by": "natural-order"
+                    }
                   }
                 },
                 "color": {
@@ -731,11 +744,11 @@
                     "mappings": [
                       {
                         "color": "#1565C0",
-                        "value": "High"
+                        "value": "At Risk"
                       },
                       {
                         "color": "#42A5F5",
-                        "value": "Low"
+                        "value": "Not At Risk"
                       }
                     ],
                     "type": "categorical"
@@ -749,7 +762,7 @@
           },
           "position": {
             "x": 0,
-            "y": 19,
+            "y": 22,
             "width": 4,
             "height": 8
           }
@@ -781,10 +794,14 @@
             ],
             "spec": {
               "frame": {
-                "showDescription": false,
+                "showDescription": true,
                 "showTitle": true,
                 "title": {
                   "value": "Risk by Gender",
+                  "fields": []
+                },
+                "description": {
+                  "value": "At Risk and Not At Risk student counts for each gender",
                   "fields": []
                 }
               },
@@ -804,7 +821,10 @@
                 "y": {
                   "fieldName": "Student_Enrolment_Details__gender",
                   "scale": {
-                    "type": "categorical"
+                    "type": "categorical",
+                    "sort": {
+                      "by": "natural-order"
+                    }
                   }
                 },
                 "color": {
@@ -813,11 +833,11 @@
                     "mappings": [
                       {
                         "color": "#1565C0",
-                        "value": "High"
+                        "value": "At Risk"
                       },
                       {
                         "color": "#42A5F5",
-                        "value": "Low"
+                        "value": "Not At Risk"
                       }
                     ],
                     "type": "categorical"
@@ -831,7 +851,7 @@
           },
           "position": {
             "x": 4,
-            "y": 19,
+            "y": 22,
             "width": 4,
             "height": 8
           }
@@ -863,10 +883,14 @@
             ],
             "spec": {
               "frame": {
-                "showDescription": false,
+                "showDescription": true,
                 "showTitle": true,
                 "title": {
                   "value": "Risk by Origin",
+                  "fields": []
+                },
+                "description": {
+                  "value": "At Risk and Not At Risk student counts for domestic and international students",
                   "fields": []
                 }
               },
@@ -886,7 +910,10 @@
                 "y": {
                   "fieldName": "Student_Enrolment_Details__international_domestic",
                   "scale": {
-                    "type": "categorical"
+                    "type": "categorical",
+                    "sort": {
+                      "by": "natural-order"
+                    }
                   }
                 },
                 "color": {
@@ -895,11 +922,11 @@
                     "mappings": [
                       {
                         "color": "#1565C0",
-                        "value": "High"
+                        "value": "At Risk"
                       },
                       {
                         "color": "#42A5F5",
-                        "value": "Low"
+                        "value": "Not At Risk"
                       }
                     ],
                     "type": "categorical"
@@ -913,7 +940,7 @@
           },
           "position": {
             "x": 8,
-            "y": 19,
+            "y": 22,
             "width": 4,
             "height": 8
           }
@@ -932,7 +959,7 @@
           },
           "position": {
             "x": 0,
-            "y": 6,
+            "y": 9,
             "width": 12,
             "height": 2
           }
@@ -951,7 +978,7 @@
           },
           "position": {
             "x": 0,
-            "y": 17,
+            "y": 20,
             "width": 12,
             "height": 2
           }
@@ -1000,7 +1027,7 @@
           },
           "position": {
             "x": 4,
-            "y": 29,
+            "y": 32,
             "width": 4,
             "height": 3
           }
@@ -1046,7 +1073,7 @@
           },
           "position": {
             "x": 8,
-            "y": 29,
+            "y": 32,
             "width": 4,
             "height": 3
           }
@@ -1095,7 +1122,7 @@
           },
           "position": {
             "x": 0,
-            "y": 29,
+            "y": 32,
             "width": 4,
             "height": 3
           }
@@ -1122,6 +1149,28 @@
             "y": 0,
             "width": 12,
             "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "how_to_read",
+            "multilineTextboxSpec": {
+              "lines": [
+                "<div style=\"background-color: #F5F7FA; border-left: 3px solid #1565C0; border-radius: 4px; padding: 10px 16px; color: #374151; font-size: 12px; line-height: 1.5;\">\n",
+                "<div style=\"color: #00407A; font-size: 14px; font-weight: 700; margin-bottom: 4px;\">How to read this dashboard</div>\n",
+                "Each student is placed in one of two risk categories by their attrition risk percentage. ",
+                "<span style=\"display: inline-block; width: 10px; height: 10px; background-color: #1565C0; border-radius: 2px;\"></span> <strong>At Risk</strong> (dark blue, #1565C0): 50% or higher. ",
+                "<span style=\"display: inline-block; width: 10px; height: 10px; background-color: #42A5F5; border-radius: 2px;\"></span> <strong>Not At Risk</strong> (light blue, #42A5F5): below 50%.<br>\n",
+                "The same colours and order (At Risk, then Not At Risk) are used on every chart. Score ranges run from lowest to highest.\n",
+                "</div>"
+              ]
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 2,
+            "width": 12,
+            "height": 3
           }
         }
       ],
