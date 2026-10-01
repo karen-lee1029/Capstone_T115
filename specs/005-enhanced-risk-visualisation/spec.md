@@ -109,8 +109,8 @@ authoritative for this specification and are not re-opened.
   workspace, following step-by-step instructions in the quickstart, and captures screenshots as
   evidence in a light, professional style.
 - Q: Which teammate contributions may change, and how is that recorded? → A: Three, each approved:
-  GuaGuaGua88's badge styling on the advisor page; the dashboard definition (committed by Renny,
-  design possibly Nicole and Bilal — ownership to be confirmed); and Karen's dashboard test file.
+  GuaGuaGua88's badge styling on the advisor page; the dashboard definition (Owner: Renny (the
+  user), confirmed 2026-10-01; recorded for revert purposes only); and Karen's dashboard test file.
   Every change to them is recorded in `teammate-changes.md` with file and lines, original author
   and commit, what changed and why, the commit that made it, and exact revert instructions, so the
   product owner can revert quickly if a teammate is unhappy.
@@ -355,8 +355,8 @@ evidence step.
 - **Feature-001 (US-08)** — supplies the at-risk flag and percentage. Unchanged.
 - **Karen's dashboard tests (US-17)** — updated with team approval.
 - **GuaGuaGua88's advisor page styling** — the badge rules are recoloured with approval.
-- **The dashboard definition** — committed by Renny in `9469edc`; design ownership to be confirmed
-  (possibly Nicole and Bilal).
+- **The dashboard definition** — committed by Renny in `9469edc`. Owner: Renny (the user),
+  confirmed 2026-10-01.
 - **The product owner** — publishes the dashboard in the workspace and captures evidence.
 
 ## Out of Scope

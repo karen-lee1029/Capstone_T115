@@ -2,8 +2,10 @@
 
 **Spec**: [spec.md](./spec.md) (Clarifications, decision 9) | **Plan**: [plan.md](./plan.md) | **Contract**: [contracts/dashboard-visual-contract.md](./contracts/dashboard-visual-contract.md)
 
-Feature-005 changes three contributions that other team members wrote or may own. The team
-approved each change for US-28 (constitution Principle XVI). This record exists so that, if a
+Feature-005 changes two contributions that other team members wrote (TC-1, TC-3) and the
+dashboard definition owned by Renny (the user) (TC-2). The team approved each change for US-28
+(constitution Principle XVI). TC-2 is kept as a change log for revert purposes, not as a teammate
+contribution. This record exists so that, if a
 teammate is unhappy with a change, the product owner can revert that change quickly and on its
 own. Every entry gives the original content and an exact revert route.
 
@@ -47,7 +49,7 @@ branch made from it), then run `uv run pytest -q` from `student_attrition_risk_a
 | Field | Value |
 |---|---|
 | File + lines | `student_attrition_risk_app/dashboard/Student Attrition Risk Overview.lvdash.json` — line 15 (`risk_level` dimension), 302 / 314 (`counter_high` filter / title), 362 / 374 (`counter_low` filter / title), colour maps 459-468, 548-557, 731-740, 813-822, 895-904, chart frames, every layout `position.y` at or below the title, and the new `how_to_read` widget (line numbers as of `9469edc`) |
-| Original author + commit | Committed by Renny (RennyMatis2000) in `9469edc` "Add dashboard file" (2026-09-30). Design ownership **to confirm** — possibly Nicole and Bilal. |
+| Original author + commit | Committed by Renny (RennyMatis2000) in `9469edc` "Add dashboard file" (2026-09-30). Owner: Renny (the user), confirmed 2026-10-01. This entry is kept as a change log for revert purposes rather than as a teammate contribution. |
 | What changed | Categories `High` / `Low` → `At Risk` / `Not At Risk` in the dimension, counter filters, counter titles and all five colour maps; At Risk listed first in each colour map; `"sort": {"by": "natural-order"}` on each chart's categorical axis; a description on every chart; new "How to read this dashboard" text widget at `y = 2` with all lower widgets moved down by 3. Full target state: contract §§ 1-6. |
 | Why | US-28 decisions 2, 4 and 5: one vocabulary matching the advisor application, one documented order, and on-page explanations (spec FR-001–FR-014). |
 | Commit that made it | `e4a253e` "Rename dashboard risk categories to At Risk / Not At Risk and add explanations" (branch `kickoff/005-dashboard`; dashboard JSON only, so `git revert e4a253e` also works if no later commit touches the file) |
@@ -67,16 +69,18 @@ branch made from it), then run `uv run pytest -q` from `student_attrition_risk_a
 
 | Field | Value |
 |---|---|
-| File + lines | `student_attrition_risk_app/tests/test_dashboard.py` — line 26 (`RISK_LEVEL_THRESHOLD` comment), 39-52 (`EXPECTED_WIDGET_TITLES`), 59-61 (`_risk_level`), 86-108 (`TestRiskLevelClassification`), 262-279 (live data-quality docstrings and messages), and a new `TestRepositoryDashboardDefinition` class appended after line 353 |
+| File + lines | `student_attrition_risk_app/tests/test_dashboard.py` — lines 15-18 (new `json`, `re`, `pathlib.Path` imports), line 29 (`RISK_LEVEL_THRESHOLD` comment), 42-55 (`EXPECTED_WIDGET_TITLES`), 62-64 (`_risk_level`), 89-112 (`TestRiskLevelClassification`), 264-292 (live data-quality docstrings, column aliases and messages), and a new offline section (constants, helpers and `TestRepositoryDashboardDefinition`) appended after line 356 (line numbers as of the Track D commit) |
 | Original author + commit | Karen (k224.lee / karen-lee1029), `0bff653` "Added test code for dashboard" and `049a3be` "Fixed test_dashboard.py code" (2026-09-24) |
-| What changed | `High Risk` / `Low Risk` → `At Risk` / `Not At Risk` in the expected titles; `_risk_level` returns `At Risk` / `Not At Risk` and the classification assertions follow; wording of live-check docstrings and messages; new offline checks of the repository dashboard JSON (research R4). Test names and the live `TestDashboardWidgets` class unchanged. |
+| What changed | `High Risk` / `Low Risk` → `At Risk` / `Not At Risk` in `EXPECTED_WIDGET_TITLES`; `_risk_level` docstring and return values → `At Risk` / `Not At Risk`, and the four `TestRiskLevelClassification` assertions plus the mock-prediction check and its message follow; in the live `TestPredictionDataQuality` checks, docstrings, messages and SQL column aliases (`high_risk_cnt` → `at_risk_cnt`, `low_risk_cnt` → `not_at_risk_cnt`, `high` / `low` → `at_risk` / `not_at_risk`) use the new categories, with skip behaviour unchanged. New offline class `TestRepositoryDashboardDefinition` (25 test cases) reads the repository JSON relative to the test file and checks contract §§ 1-6: `risk_level` expression, no `High` / `Low` / `Medium` text anywhere, counter titles, filters and colours, every bar chart's colour map, natural-order sort, ascending `%` score buckets, chart descriptions, the `how_to_read` widget content and position, expected titles and no overlapping layout positions. Every original test name and the live `TestDashboardWidgets` class are unchanged. |
 | Why | US-28 decision 6: the team approved updating this file so the dashboard checks describe the renamed categories and run offline in every suite run (spec FR-015). |
-| Commit that made it | pending (Track D) |
+| Commit that made it | `e4fb15c` "Update dashboard tests for At Risk / Not At Risk and add offline contract checks" (`tests/test_dashboard.py` only) |
 | Dependent files | Depends on TC-2. Reverting TC-3 alone while TC-2 stays would leave the old label replicas out of step with the dashboard. |
 
 **Revert**
 
 - Restore Karen's version exactly:
-  `git checkout 049a3be -- student_attrition_risk_app/tests/test_dashboard.py`.
+  `git checkout 439bc33 -- student_attrition_risk_app/tests/test_dashboard.py`
+  (`439bc33` holds Karen's `049a3be` content unchanged; `git revert e4fb15c` also works if no
+  later commit touches the file).
 - Revert TC-2 at the same time (see above), or the restored tests will describe `High` / `Low`
   while the dashboard says `At Risk` / `Not At Risk`.
