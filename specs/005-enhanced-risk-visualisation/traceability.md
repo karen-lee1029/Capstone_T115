@@ -2,7 +2,7 @@
 
 **Created**: 2026-10-01 | **Spec**: [spec.md](./spec.md) | **Contract**: [contracts/dashboard-visual-contract.md](./contracts/dashboard-visual-contract.md) | **Teammate changes**: [teammate-changes.md](./teammate-changes.md)
 
-Maps every functional requirement (FR-001–FR-024) and success criterion (SC-001–SC-009) to the
+Maps every functional requirement (FR-001–FR-027) and success criterion (SC-001–SC-009) to the
 task that delivered it and the automated check or manual evidence that verifies it (spec FR-023).
 
 Verification names are in `student_attrition_risk_app/tests/` and are written as
@@ -22,6 +22,8 @@ coverage across features).
 | FR-002 No High / Low / Medium anywhere | T002–T004 | `test_dashboard.py::TestRepositoryDashboardDefinition::test_no_legacy_category_text` |
 | FR-003 Counters titled and filtered by category; total unchanged | T003 | `test_dashboard.py::TestRepositoryDashboardDefinition::test_counter_title_filter_and_colour`; `::test_all_expected_widget_titles_present` |
 | FR-004 Filter and table column show the new values | T002 | Both read the `risk_level` dimension: `test_dashboard.py::TestRepositoryDashboardDefinition::test_risk_level_dimension_uses_new_categories`, `::test_no_legacy_category_text`; visual check in quickstart § 4 step 6 and § 5 shot 4 |
+| FR-026 Student ID shows 16 characters, so each ID is one student | T020 (decision 12) | `test_dashboard.py::TestRepositoryDashboardDefinition::test_student_id_dimension_shows_16_characters`, `test_dashboard.py::TestStudentIdTruncation::test_truncates_to_16_chars`, `::TestRepositoryDashboardDefinition::test_student_id_is_labelled_de_identified`; live `test_dashboard.py::TestPredictionDataQuality::test_dashboard_student_ids_are_unique` (needs the SQL warehouse) |
+| FR-027 Advisor app takes the dashboard Student ID; wording says "Student ID (de-identified)" | T022 (decision 13) | `test_student_id_lookup.py::test_profile_found_by_dashboard_student_id`, `::test_profile_still_found_by_full_hash`, `::test_student_id_shared_by_two_students_is_not_found`, `::test_unknown_student_id_is_not_found`, `::test_student_id_matches_dashboard_length`, `::test_summary_shows_student_id_not_full_hash`; `test_ui.py::test_initial_load_shows_search_retrieve_and_dashboard_link`, `::test_initial_load_shows_empty_state`, `::test_retrieve_empty_input_shows_error` (updated, TC-7) |
 | FR-005 Badge wording and choice unchanged | T010 (no logic change) | `test_risk_badge_visualisation.py::test_badge_span_wraps_label_without_alert_widgets`; `test_ui.py` *(existing, unchanged)* |
 
 ### Colours
@@ -56,7 +58,7 @@ coverage across features).
 | FR-019 Scoring, flag, threshold and ranges unchanged | — (met by absence of change) | § 3 diff: no file under `src/` other than `ui.py` styling, and no dataset query change beyond the `risk_level` literals |
 | FR-020 Only the approved files change | T018 | § 3 `git diff 9469edc --stat` |
 | FR-021 Quickstart publish steps | T017 | [quickstart.md](./quickstart.md) § 4; product owner runs it in T019 |
-| FR-022 Every teammate change recorded with a revert route | T016 | [teammate-changes.md](./teammate-changes.md) TC-1–TC-5. The revert routes for TC-1 and TC-4 were dry-run in a throwaway worktree on 2026-10-01. |
+| FR-022 Every teammate change recorded with a revert route | T016 | [teammate-changes.md](./teammate-changes.md) TC-1–TC-7. The revert routes for TC-1 and TC-4 were dry-run in a throwaway worktree on 2026-10-01. |
 | FR-023 Traceability record | T015 | This file |
 
 ## 2. Success criteria
@@ -84,6 +86,13 @@ coverage across features).
 
 The 13 skips are the live `TestPredictionDataQuality` and `TestDashboardWidgets` checks, which
 need a SQL warehouse or the workspace dashboard file, exactly as before Feature-005.
+
+**Re-run after the Student ID change (T020), 2026-10-01:** `uv run pytest -q` 300 passed, 14
+skipped, 0 failed (the extra skip is the new live `test_dashboard_student_ids_are_unique`);
+`uv run ruff check .` the same 4 findings from before Feature-005.
+
+**Re-run after the Student ID lookup and the "Student ID (de-identified)" label (T022), 2026-10-01:** `uv run pytest -q` 307 passed, 14
+skipped, 0 failed; `uv run ruff check .` the same 4 findings from before Feature-005.
 
 ## 4. Published evidence (T019, product owner)
 
