@@ -1,9 +1,10 @@
-"""Feature-005 (US-28) — advisor page risk badge matches the dashboard visual language.
+"""Feature-005 (US-28) — advisor page risk badge and score circle match the dashboard.
 
 Checks the Track C change described in
 ``specs/005-enhanced-risk-visualisation/contracts/dashboard-visual-contract.md`` § 7: the
-``.risk-badge`` / ``.not-risk-badge`` rules use the dashboard's category blues, keep text contrast
-of at least 4.5:1 (WCAG 2.x), and keep the page-owned ``<span>`` markup with no Streamlit alert
+``.risk-badge`` / ``.not-risk-badge`` rules and the relative-risk score circle
+(``.risk-circle`` / ``.risk-circle.not-risk-circle``) use the dashboard's category blues, keep
+text contrast of at least 4.5:1 (WCAG 2.x), and stay page-owned markup with no Streamlit alert
 widget. A last check compares the badge colours with the repository dashboard's colour maps,
 accepting either the original ``High`` / ``Low`` labels or the renamed ``At Risk`` /
 ``Not At Risk`` labels, so it holds before and after the dashboard rename (Track B).
@@ -39,6 +40,13 @@ NOT_AT_RISK_TEXT = "#172033"
 EXPECTED_BADGE_COLOURS = {
     "risk-badge": (AT_RISK_BACKGROUND, AT_RISK_TEXT),
     "not-risk-badge": (NOT_AT_RISK_BACKGROUND, NOT_AT_RISK_TEXT),
+}
+
+# Score circle stays a ring on a white fill: selector -> (ring border colour, text colour).
+CIRCLE_FILL = "WHITE"
+EXPECTED_CIRCLE_COLOURS = {
+    "risk-circle": (AT_RISK_BACKGROUND, AT_RISK_BACKGROUND),
+    "risk-circle.not-risk-circle": (NOT_AT_RISK_BACKGROUND, NOT_AT_RISK_TEXT),
 }
 
 MIN_CONTRAST = 4.5
@@ -90,7 +98,8 @@ def loaded_page(monkeypatch):
 
 
 def _css_rule(css: str, class_name: str) -> dict[str, str]:
-    match = re.search(rf"(?<![\w-])\.{re.escape(class_name)}\s*\{{([^}}]*)\}}", css)
+    """Declarations of the first top-level-looking ``.<class_name> { ... }`` rule in ``css``."""
+    match = re.search(rf"(?<![\w.-])\.{re.escape(class_name)}\s*\{{([^}}]*)\}}", css)
     assert match, f"No .{class_name} rule in the page style"
     declarations = {}
     for declaration in match.group(1).split(";"):
@@ -182,3 +191,39 @@ def test_badge_backgrounds_match_dashboard_colour_maps():
             f"Dashboard colour for {mapping['value']!r} is {mapping['color']}, "
             f"badge background is {expected_background}"
         )
+
+
+@pytest.mark.parametrize(
+    ("student_hash", "circle_class"),
+    [
+        (HASH_AT_RISK, "risk-circle"),
+        (HASH_NOT_AT_RISK, "risk-circle not-risk-circle"),
+    ],
+)
+def test_score_circle_uses_category_class(loaded_page, student_hash, circle_class):
+    at = loaded_page(student_hash)
+
+    pattern = re.compile(rf'<div class="{circle_class}">\s*[\d.]+%\s*</div>')
+    assert any(pattern.search(el.value) for el in at.markdown), (
+        f'No <div class="{circle_class}"> holding the relative risk score'
+    )
+
+
+def test_score_circle_is_a_white_ring_in_dashboard_blues(loaded_page):
+    css = _page_css(loaded_page(HASH_AT_RISK))
+
+    assert _css_rule(css, "risk-circle").get("background", "").upper() == CIRCLE_FILL
+    for selector, (border_colour, text) in EXPECTED_CIRCLE_COLOURS.items():
+        rule = _css_rule(css, selector)
+        border = rule.get("border-color") or rule.get("border", "").split()[-1]
+        assert "background" not in rule or rule["background"].upper() == CIRCLE_FILL, selector
+        assert border.upper() == border_colour, selector
+        assert rule.get("color", "").upper() == text, selector
+
+
+@pytest.mark.parametrize("selector", sorted(EXPECTED_CIRCLE_COLOURS))
+def test_score_circle_text_contrast_is_at_least_4_5(loaded_page, selector):
+    rule = _css_rule(_page_css(loaded_page(HASH_AT_RISK)), selector)
+
+    ratio = _contrast_ratio(rule["color"], "#FFFFFF")
+    assert ratio >= MIN_CONTRAST, f".{selector} contrast {ratio:.2f}:1 is below {MIN_CONTRAST}:1"

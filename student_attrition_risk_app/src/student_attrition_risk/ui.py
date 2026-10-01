@@ -178,16 +178,21 @@ st.markdown(
         .risk-circle {
             width: 92px;
             height: 92px;
-            border: 8px solid #d92d20;
+            border: 8px solid #1565C0;
             border-radius: 50%;
             margin: auto;
             display: flex;
             align-items: center;
             justify-content: center;
-            color: #d92d20;
+            color: #1565C0;
             font-size: 1.25rem;
             font-weight: 800;
             background: white;
+        }
+
+        .risk-circle.not-risk-circle {
+            border-color: #42A5F5;
+            color: #172033;
         }
 
         .section-card {
@@ -652,6 +657,11 @@ badge_class = (
     if prediction.attrition_risk_flag
     else "not-risk-badge"
 )
+circle_class = (
+    "risk-circle"
+    if prediction.attrition_risk_flag
+    else "risk-circle not-risk-circle"
+)
 risk_score = prediction.attrition_risk_percentage
 threshold_percentage = prediction.prediction_threshold * 100
 
@@ -689,7 +699,7 @@ with summary_right:
         f"""
         <div class="section-card risk-panel">
             <div class="risk-label">Relative risk score</div>
-            <div class="risk-circle">{risk_score:.1f}%</div>
+            <div class="{circle_class}">{risk_score:.1f}%</div>
         </div>
         """,
         unsafe_allow_html=True,
