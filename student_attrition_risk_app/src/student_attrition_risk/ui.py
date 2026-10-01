@@ -14,6 +14,7 @@ from student_attrition_risk.briefing_messages import (
     storage_confirmation_message,
 )
 from student_attrition_risk.main import build_service
+from student_attrition_risk.student_repository import STUDENT_ID_LENGTH
 from student_attrition_risk.student_service import (
     BriefingNotProducedError,
     BriefingStorageError,
@@ -604,9 +605,9 @@ with st.container(border=True):
 
     with search_column:
         student_hash = st.text_input(
-            "Deidentified student reference",
+            "Student ID",
             value=default_hash,
-            placeholder="Enter a deidentified student hash",
+            placeholder="Enter a Student ID from the dashboard (View Dashboard)",
             label_visibility="collapsed",
         )
 
@@ -619,7 +620,7 @@ with st.container(border=True):
 
 if retrieve_student:
     if not student_hash.strip():
-        st.error("Enter a deidentified student reference.")
+        st.error("Enter a Student ID.")
     else:
         clear_selected_student()
 
@@ -627,7 +628,7 @@ if retrieve_student:
             load_student(student_hash.strip())
             st.rerun()
         except StudentNotFoundError:
-            st.error("No prediction was found for that student reference.")
+            st.error("No prediction was found for that Student ID.")
         except Exception:
             st.error(
                 "Student information is currently unavailable. "
@@ -645,8 +646,8 @@ if profile is None:
     st.markdown(
         """
         <div class="empty-state">
-            Retrieve a deidentified student record to view the risk snapshot
-            and advisor briefing.
+            Enter a Student ID from the Student Attrition Risk Overview dashboard
+            (View Dashboard) to view the risk snapshot and advisor briefing.
         </div>
         """,
         unsafe_allow_html=True,
@@ -688,8 +689,8 @@ with summary_left:
                 </span>
             </div>
             <div class="student-meta">
-                Reference:
-                {html.escape(prediction.student_deidentified_hash)}
+                Student ID:
+                {html.escape(prediction.student_deidentified_hash[:STUDENT_ID_LENGTH])}
             </div>
             <div class="student-meta">
                 Decision threshold:

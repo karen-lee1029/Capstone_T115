@@ -71,7 +71,7 @@ every teammate edit recorded in [teammate-changes.md](./teammate-changes.md) (FR
 | **XII Proportionate testing** | One offline check per visual rule (labels, colours, order, explanations) in the dashboard file; three badge tests. Nothing `test_ui.py` already covers (badge wording present) or the existing derived-column tests cover is re-tested. |
 | XIII Human review | The product owner reviews the JSON diff, publishes the dashboard and inspects the screenshots before merge. |
 | XIV Traceability | FR → task → check recorded in `traceability.md` (Track E); teammate edits in `teammate-changes.md`. |
-| XV Completion = spec | Done when FR-001–FR-026 hold and the dashboard is published; nothing extra. |
+| XV Completion = spec | Done when FR-001–FR-027 hold and the dashboard is published; nothing extra. |
 | **XVI Preserve team contributions** | Two teammate contributions change (plus the dashboard definition, owned by Renny (the user), confirmed 2026-10-01), each explicitly approved by the team for US-28 (spec Clarifications) and each recorded in `teammate-changes.md` with exact revert instructions. Karen's `test_ui.py` is untouched; badge tests go in a new file rather than hers. |
 | **XVII Human-controlled version control** | Agents commit only to `feat/feature-005-enhanced-risk-visualisation`, as instructed; no push, merge, PR or change to `main`. Publishing to the workspace is the product owner's action. |
 

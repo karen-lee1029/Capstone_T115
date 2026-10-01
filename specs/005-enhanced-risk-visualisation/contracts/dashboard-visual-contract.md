@@ -156,3 +156,19 @@ With about 974,000 students, 8 hex characters (about 4.3 billion values) leave r
 sharing an ID; 16 characters (about 1.8 × 10^19 values) make a shared ID effectively impossible
 (expected pairs ≈ 0.00000003). The display name "Student ID", the table column and the Search
 Student filter are unchanged and pick up the longer value.
+
+## 9. Advisor page Student ID wording and lookup (added 2026-10-01, spec decision 13, FR-027)
+
+| Element | Before | After |
+|---|---|---|
+| Input label | `Deidentified student reference` | `Student ID` |
+| Input placeholder | `Enter a deidentified student hash` | `Enter a Student ID from the dashboard (View Dashboard)` |
+| Empty input error | `Enter a deidentified student reference.` | `Enter a Student ID.` |
+| Not found error | `No prediction was found for that student reference.` | `No prediction was found for that Student ID.` |
+| Empty state | `Retrieve a deidentified student record to view the risk snapshot and advisor briefing.` | `Enter a Student ID from the Student Attrition Risk Overview dashboard (View Dashboard) to view the risk snapshot and advisor briefing.` |
+| Summary line | `Reference: <full 64-character hash>` | `Student ID: <first 16 characters>` |
+
+Lookup: `StudentService.get_student_profile` first tries the input as a full hash; if nothing is
+found and the input is 16 characters long, it matches `LEFT(student_deidentified_hash, 16)` and
+accepts exactly one match (`STUDENT_ID_LENGTH = 16` in `student_repository.py`, shared with the
+dashboard's `student_id` dimension). The heading "Deidentified student" is unchanged.

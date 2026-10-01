@@ -128,6 +128,12 @@ authoritative for this specification and are not re-opened.
   110 pairs of the ~974,000 students share an 8-character ID. Does US-28 fix this? → A: Yes
   (decision 12). The Student ID shows the first 16 characters, so IDs in the table and in Search
   Student identify one student (FR-026). Recorded under TC-2 (dashboard) and TC-3 (Karen's tests).
+- Q: Advisors find a student on the dashboard but the app asks for the full 64-character hash. What
+  should the app take? → A: The 16-character Student ID shown on the dashboard (decision 13,
+  FR-027). The full hash is still accepted. The advisor page's wording says "Student ID" instead of
+  "deidentified student hash/reference", and the student summary shows the Student ID instead of
+  the full hash. Privacy is unchanged: the Student ID is a prefix of the same pseudonymous hash and
+  reveals no more than it.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -274,6 +280,10 @@ evidence step.
   and "Not At Risk".
 - **FR-026** (added 2026-10-01, decision 12): The dashboard's Student ID MUST show the first 16
   characters of the de-identified student hash, so each Student ID identifies one student.
+- **FR-027** (added 2026-10-01, decision 13): The advisor page MUST retrieve a student by the
+  16-character Student ID shown on the dashboard, and MUST still accept the full de-identified hash.
+  A Student ID shared by more than one student MUST be treated as not found. The page's input
+  label, placeholder, empty state, error messages and student summary MUST say "Student ID".
 - **FR-005**: The advisor page badge MUST keep its wording ("At Risk" / "Not At Risk") and MUST
   decide which badge to show exactly as it does today.
 

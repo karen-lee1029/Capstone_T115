@@ -25,7 +25,7 @@ from .ports import (
     RetryWorkflow,
     StudentRepository,
 )
-from .student_repository import MODEL_FEATURE_COLUMNS
+from .student_repository import MODEL_FEATURE_COLUMNS, STUDENT_ID_LENGTH
 
 logger = logging.getLogger(__name__)
 
@@ -100,10 +100,16 @@ class StudentService:
         self.retry_workflow = retry_workflow
         self.store = store
 
-    def get_student_profile(self, student_hash: str) -> StudentRiskProfile:
-        prediction = self.repository.get_prediction(student_hash)
+    def get_student_profile(self, student_reference: str) -> StudentRiskProfile:
+        """Look a student up by full de-identified hash or by the dashboard's 16-character Student ID."""
+        prediction = self.repository.get_prediction(student_reference)
+        if prediction is None and len(student_reference) == STUDENT_ID_LENGTH:
+            matches = self.repository.find_predictions_by_student_id(student_reference)
+            # An ID shared by two students identifies neither, so it is treated as not found.
+            prediction = matches[0] if len(matches) == 1 else None
         if prediction is None:
-            raise StudentNotFoundError(student_hash)
+            raise StudentNotFoundError(student_reference)
+        student_hash = prediction.student_deidentified_hash
         return StudentRiskProfile(prediction=prediction, snapshot=self.repository.get_snapshot(student_hash))
 
     def get_high_risk_students(self, limit: int = 20) -> list[StudentPrediction]:

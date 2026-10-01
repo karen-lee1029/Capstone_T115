@@ -6,6 +6,10 @@ from .config import Settings
 from .databricks_client import create_sql_connection
 from .models import SUPPRESSED, UNAVAILABLE, ApprovedModelFeatureValues, StudentPrediction, StudentSnapshot
 
+# Length of the Student ID shown on the Student Attrition Risk Overview dashboard:
+# LEFT(student_deidentified_hash, 16) (Feature-005 / US-28, FR-026). Advisors copy this ID into the app.
+STUDENT_ID_LENGTH = 16
+
 SNAPSHOT_COLUMNS = (
     "eftsl",
     "enrolment_year",
@@ -183,6 +187,18 @@ class DatabricksStudentRepository:
         """
         rows = self._query(statement, (student_hash,))
         return StudentPrediction.model_validate(rows[0]) if rows else None
+
+    def find_predictions_by_student_id(self, student_id: str) -> list[StudentPrediction]:
+        # LIMIT 2 is enough to tell one match from an ambiguous Student ID.
+        statement = f"""
+            SELECT student_deidentified_hash, attrition_risk_percentage,
+                   attrition_risk_flag, prediction_threshold, mlflow_run_id, scored_at
+            FROM {self.settings.prediction_table}
+            WHERE LEFT(student_deidentified_hash, {STUDENT_ID_LENGTH}) = ?
+            LIMIT 2
+        """
+        rows = self._query(statement, (student_id,))
+        return [StudentPrediction.model_validate(row) for row in rows]
 
     # def get_snapshot(self, student_hash: str) -> StudentSnapshot | None:
     #     if not self.settings.fact_table:
@@ -408,6 +424,10 @@ class MockStudentRepository:
 
     def get_prediction(self, student_hash: str) -> StudentPrediction | None:
         return self.predictions.get(student_hash)
+
+    def find_predictions_by_student_id(self, student_id: str) -> list[StudentPrediction]:
+        matches = [p for h, p in self.predictions.items() if h[:STUDENT_ID_LENGTH] == student_id]
+        return matches[:2]
 
     def get_snapshot(self, student_hash: str) -> StudentSnapshot | None:
         if student_hash not in self.predictions:

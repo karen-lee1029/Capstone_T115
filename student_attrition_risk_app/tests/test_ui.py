@@ -172,7 +172,7 @@ def _button_labels(at):
 
 def test_initial_load_shows_search_retrieve_and_dashboard_link(app):
     at = app(FakeService())
-    assert at.text_input[0].label == "Deidentified student reference"
+    assert at.text_input[0].label == "Student ID"
     assert "Retrieve" in _button_labels(at)
     # st.link_button is not a queryable AppTest attribute in streamlit 1.64;
     # the LinkButton proto lives in a column as an UnknownElement.
@@ -185,7 +185,7 @@ def test_initial_load_shows_search_retrieve_and_dashboard_link(app):
 
 def test_initial_load_shows_empty_state(app):
     at = app(FakeService())
-    assert _has_text(at, "Retrieve a deidentified student record")
+    assert _has_text(at, "Enter a Student ID from the Student Attrition Risk Overview dashboard")
     assert len(at.error) == 0
 
 
@@ -196,7 +196,7 @@ def test_initial_load_shows_empty_state(app):
 def test_retrieve_empty_input_shows_error(app):
     at = app(FakeService())
     _click(at, "Retrieve")
-    assert _has_text(at, "Enter a deidentified student reference", attr="error")
+    assert _has_text(at, "Enter a Student ID.", attr="error")
 
 
 def test_retrieve_unknown_student_shows_not_found_error(app):
