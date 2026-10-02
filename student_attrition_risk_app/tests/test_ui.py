@@ -245,6 +245,21 @@ def test_not_at_risk_student_shows_info_and_no_briefing_actions(app):
     assert "Generate Advisor Briefing" not in _button_labels(at)
 
 
+def test_low_risk_boundary_score_displays_below_threshold(app):
+    repository = MockStudentRepository()
+
+    repository.predictions[HASH_NOT_AT_RISK] = (
+        repository.predictions[HASH_NOT_AT_RISK].model_copy(
+            update={"attrition_risk_percentage": 49.99999978}
+        )
+    )
+
+    at = app(FakeService(repository=repository))
+    _load_student(at, HASH_NOT_AT_RISK)
+
+    assert _has_text(at, "Not At Risk")
+    assert _has_text(at, "49.9%")
+
 # ---------------------------------------------------------------------------
 # Generate Advisor Briefing
 # ---------------------------------------------------------------------------

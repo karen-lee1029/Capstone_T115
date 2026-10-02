@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import html
-from decimal import Decimal
 from typing import Any
 
 import streamlit as st
@@ -13,19 +12,18 @@ from student_attrition_risk.briefing_messages import (
     retrieved_briefing_message,
     storage_confirmation_message,
 )
+from student_attrition_risk.briefing_pdf import create_briefing_pdf
 from student_attrition_risk.main import build_service
+from student_attrition_risk.models import (
+    SUPPRESSED,
+    UNAVAILABLE,
+)
 from student_attrition_risk.student_repository import STUDENT_ID_LENGTH
 from student_attrition_risk.student_service import (
     BriefingNotProducedError,
     BriefingStorageError,
     BriefingStoreUnavailableError,
-    StudentNotAtRiskError,
     StudentNotFoundError,
-)
-
-from student_attrition_risk.models import (
-    SUPPRESSED,
-    UNAVAILABLE,
 )
 
 # ---------------------------------------------------------------------------
@@ -675,6 +673,17 @@ card_class = (
 risk_score = prediction.attrition_risk_percentage
 threshold_percentage = prediction.prediction_threshold * 100
 
+rounded_score = round(risk_score, 1)
+
+if (
+    not prediction.attrition_risk_flag
+    and risk_score < threshold_percentage
+    and rounded_score >= threshold_percentage
+):
+    risk_score_display = threshold_percentage - 0.1
+else:
+    risk_score_display = rounded_score
+
 summary_left, summary_right = st.columns([5, 1.25])
 
 with summary_left:
@@ -709,7 +718,7 @@ with summary_right:
         f"""
         <div class="section-card risk-panel">
             <div class="risk-label">Relative risk score</div>
-            <div class="{circle_class}">{risk_score:.1f}%</div>
+            <div class="{circle_class}">{risk_score_display:.1f}%</div>
         </div>
         """,
         unsafe_allow_html=True,
@@ -780,43 +789,43 @@ with left_column:
                         "The briefing workflow is currently unavailable."
                     )
 
-        retrieve_column, regenerate_column = st.columns(2)
+        # retrieve_column, regenerate_column = st.columns(2)
 
-        with retrieve_column:
-            if st.button(
-                "Retrieve Saved",
-                use_container_width=True,
-            ):
+        # with retrieve_column:
+        #     if st.button(
+        #         "Retrieve Saved",
+        #         use_container_width=True,
+        #     ):
+        #         try:
+        #             retrieve_stored_briefing()
+        #             st.rerun()
+        #         except Exception:
+        #             st.error(
+        #                 "The saved briefing is currently unavailable."
+        #             )
+
+        # with regenerate_column:
+        if st.button(
+            "Regenerate",
+            use_container_width=True,
+        ):
+            with st.spinner("Regenerating advisor briefing..."):
                 try:
-                    retrieve_stored_briefing()
+                    request_briefing(regenerate=True)
                     st.rerun()
+                except BriefingNotProducedError as exc:
+                    st.error(
+                        "A new briefing could not be produced "
+                        f"({exc.category})."
+                    )
+                except BriefingStorageError:
+                    st.error(
+                        "The briefing was generated but could not be stored."
+                    )
                 except Exception:
                     st.error(
-                        "The saved briefing is currently unavailable."
+                        "The briefing workflow is currently unavailable."
                     )
-
-        with regenerate_column:
-            if st.button(
-                "Regenerate",
-                use_container_width=True,
-            ):
-                with st.spinner("Regenerating advisor briefing..."):
-                    try:
-                        request_briefing(regenerate=True)
-                        st.rerun()
-                    except BriefingNotProducedError as exc:
-                        st.error(
-                            "A new briefing could not be produced "
-                            f"({exc.category})."
-                        )
-                    except BriefingStorageError:
-                        st.error(
-                            "The briefing was generated but could not be stored."
-                        )
-                    except Exception:
-                        st.error(
-                            "The briefing workflow is currently unavailable."
-                        )
     else:
         render_notice(
             "Not at risk",
@@ -868,24 +877,38 @@ with right_column:
             unsafe_allow_html=True,
         )
 
-        st.checkbox(
-            "I have reviewed this AI-generated briefing",
-            key="reviewed",
-            help=(
-                "This local review state is not yet persisted by the backend."
-            ),
-        )
+        # st.checkbox(
+        #     "I have reviewed this AI-generated briefing",
+        #     key="reviewed",
+        #     help=(
+        #         "This local review state is not yet persisted by the backend."
+        #     ),
+        # )
+
+        pdf_data = create_briefing_pdf(profile, briefing)
 
         st.download_button(
             "Download Briefing",
-            data=briefing.model_dump_json(indent=2),
+            data=pdf_data,
             file_name=(
                 f"advisor-briefing-"
-                f"{briefing.student_deidentified_hash[:12]}.json"
+                f"{briefing.student_deidentified_hash[:12]}.pdf"
             ),
-            mime="application/json",
+            mime="application/pdf",
             use_container_width=True,
-        )
+)
+
+        # st.download_button(
+        #     "Download Briefing",
+        #     data=briefing.model_dump_json(indent=2),
+        #     file_name=(
+        #         f"advisor-briefing-"
+        #         f"{briefing.student_deidentified_hash[:12]}.json"
+        #     ),
+        #     mime="application/json",
+        #     use_container_width=True,
+        # )
+
     else:
         st.markdown(
             """
