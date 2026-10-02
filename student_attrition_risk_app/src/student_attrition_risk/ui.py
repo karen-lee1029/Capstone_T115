@@ -789,43 +789,43 @@ with left_column:
                         "The briefing workflow is currently unavailable."
                     )
 
-        retrieve_column, regenerate_column = st.columns(2)
+        # retrieve_column, regenerate_column = st.columns(2)
 
-        with retrieve_column:
-            if st.button(
-                "Retrieve Saved",
-                use_container_width=True,
-            ):
+        # with retrieve_column:
+        #     if st.button(
+        #         "Retrieve Saved",
+        #         use_container_width=True,
+        #     ):
+        #         try:
+        #             retrieve_stored_briefing()
+        #             st.rerun()
+        #         except Exception:
+        #             st.error(
+        #                 "The saved briefing is currently unavailable."
+        #             )
+
+        # with regenerate_column:
+        if st.button(
+            "Regenerate",
+            use_container_width=True,
+        ):
+            with st.spinner("Regenerating advisor briefing..."):
                 try:
-                    retrieve_stored_briefing()
+                    request_briefing(regenerate=True)
                     st.rerun()
+                except BriefingNotProducedError as exc:
+                    st.error(
+                        "A new briefing could not be produced "
+                        f"({exc.category})."
+                    )
+                except BriefingStorageError:
+                    st.error(
+                        "The briefing was generated but could not be stored."
+                    )
                 except Exception:
                     st.error(
-                        "The saved briefing is currently unavailable."
+                        "The briefing workflow is currently unavailable."
                     )
-
-        with regenerate_column:
-            if st.button(
-                "Regenerate",
-                use_container_width=True,
-            ):
-                with st.spinner("Regenerating advisor briefing..."):
-                    try:
-                        request_briefing(regenerate=True)
-                        st.rerun()
-                    except BriefingNotProducedError as exc:
-                        st.error(
-                            "A new briefing could not be produced "
-                            f"({exc.category})."
-                        )
-                    except BriefingStorageError:
-                        st.error(
-                            "The briefing was generated but could not be stored."
-                        )
-                    except Exception:
-                        st.error(
-                            "The briefing workflow is currently unavailable."
-                        )
     else:
         render_notice(
             "Not at risk",
@@ -877,13 +877,13 @@ with right_column:
             unsafe_allow_html=True,
         )
 
-        st.checkbox(
-            "I have reviewed this AI-generated briefing",
-            key="reviewed",
-            help=(
-                "This local review state is not yet persisted by the backend."
-            ),
-        )
+        # st.checkbox(
+        #     "I have reviewed this AI-generated briefing",
+        #     key="reviewed",
+        #     help=(
+        #         "This local review state is not yet persisted by the backend."
+        #     ),
+        # )
 
         pdf_data = create_briefing_pdf(profile, briefing)
 
