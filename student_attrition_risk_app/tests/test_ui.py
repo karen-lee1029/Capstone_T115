@@ -14,8 +14,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import streamlit as st
 import pytest
+import streamlit as st
 from streamlit.testing.v1 import AppTest
 
 from student_attrition_risk.models import (
@@ -115,6 +115,10 @@ class FakeService:
             raise self._retrieve_error
         return self._stored_briefing
 
+    def has_stored_briefing(self, student_hash):
+        # Called by the UI before a Regenerate to decide whether a save supersedes one (FR-039).
+        return self._stored_briefing is not None
+
 
 @pytest.fixture
 def app(monkeypatch):
@@ -168,7 +172,7 @@ def _button_labels(at):
 
 def test_initial_load_shows_search_retrieve_and_dashboard_link(app):
     at = app(FakeService())
-    assert at.text_input[0].label == "Deidentified student reference"
+    assert at.text_input[0].label == "Student ID (de-identified)"
     assert "Retrieve" in _button_labels(at)
     # st.link_button is not a queryable AppTest attribute in streamlit 1.64;
     # the LinkButton proto lives in a column as an UnknownElement.
@@ -181,7 +185,7 @@ def test_initial_load_shows_search_retrieve_and_dashboard_link(app):
 
 def test_initial_load_shows_empty_state(app):
     at = app(FakeService())
-    assert _has_text(at, "Retrieve a deidentified student record")
+    assert _has_text(at, "Enter a Student ID (de-identified) from the Student Attrition Risk Overview")
     assert len(at.error) == 0
 
 
@@ -192,7 +196,7 @@ def test_initial_load_shows_empty_state(app):
 def test_retrieve_empty_input_shows_error(app):
     at = app(FakeService())
     _click(at, "Retrieve")
-    assert _has_text(at, "Enter a deidentified student reference", attr="error")
+    assert _has_text(at, "Enter a Student ID (de-identified).", attr="error")
 
 
 def test_retrieve_unknown_student_shows_not_found_error(app):
@@ -236,9 +240,25 @@ def test_not_at_risk_student_shows_info_and_no_briefing_actions(app):
     at = app(FakeService())
     _load_student(at, HASH_NOT_AT_RISK)
     assert _has_text(at, "Not At Risk")
-    assert _has_text(at, "not currently classified as at risk", attr="info")
+    # Rendered as a page-owned notice, not st.info, so it follows the page palette.
+    assert _has_text(at, "not currently classified as at risk")
     assert "Generate Advisor Briefing" not in _button_labels(at)
 
+
+def test_low_risk_boundary_score_displays_below_threshold(app):
+    repository = MockStudentRepository()
+
+    repository.predictions[HASH_NOT_AT_RISK] = (
+        repository.predictions[HASH_NOT_AT_RISK].model_copy(
+            update={"attrition_risk_percentage": 49.99999978}
+        )
+    )
+
+    at = app(FakeService(repository=repository))
+    _load_student(at, HASH_NOT_AT_RISK)
+
+    assert _has_text(at, "Not At Risk")
+    assert _has_text(at, "49.9%")
 
 # ---------------------------------------------------------------------------
 # Generate Advisor Briefing
@@ -250,10 +270,10 @@ def test_generate_briefing_displays_text_metadata_checkbox_and_download(app):
     _click(at, "Generate Advisor Briefing")
     # Briefing text
     assert _has_text(at, "The student is at risk.")
-    # Metadata (source, validation, attempt)
+    # Metadata (source, validation). The attempt count is not shown (Feature-002 FR-032).
     assert _has_text(at, "Source:")
     assert _has_text(at, "Validation:")
-    assert _has_text(at, "Attempt:")
+    assert not _has_text(at, "Attempt:")
     # Review checkbox
     assert any(
         cb.label == "I have reviewed this AI-generated briefing"
@@ -304,9 +324,8 @@ def test_retrieve_saved_no_briefing_shows_info(app):
     at = app(FakeService())  # stored_briefing defaults to None
     _load_student(at, HASH_AT_RISK)
     _click(at, "Retrieve Saved")
-    assert _has_text(
-        at, "No previously validated briefing is available", attr="info"
-    )
+    # Rendered as a page-owned notice, not st.info, so it follows the page palette.
+    assert _has_text(at, "No previously validated briefing is available")
 
 
 def test_retrieve_saved_error_shows_error(app):

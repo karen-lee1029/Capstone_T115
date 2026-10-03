@@ -10,18 +10,23 @@ description: "Task list for Feature-002 — Briefing Retry and Validated Briefin
 **Tests**: Included — the feature input explicitly requires implementation tasks paired with
 proportionate tests. Test files match `plan.md` § Test plan.
 
-**Organization**: Tasks are grouped by the three user stories in `spec.md`. US1 (P1) is the MVP.
+**Organization**: Tasks are grouped by the four user stories in `spec.md`. US1 (P1) is the MVP.
+US4 and Phase 6 were added by the 2026-09-22 persistence-confirmation amendment, after Phases
+1–5 were implemented and merged.
 
 ## Format: `[ID] [P?] [Story?] Description`
 
 - **[P]**: Can run in parallel (different files, no dependency on an incomplete task)
-- **[Story]**: `[US1]` / `[US2]` / `[US3]` for user-story phases only
+- **[Story]**: `[US1]` / `[US2]` / `[US3]` / `[US4]` for user-story phases only
 
 ## Scope guardrails (from the approved plan — do not exceed)
 
 - Reuse the Feature-001 seams and orchestration verbatim; no parallel implementations.
 - **No** tasks for US-13 (OpenAI), US-14 (validation rules), legacy-provider cleanup,
-  dashboard/frontend, unrelated refactoring, or ML/data-generation notebooks.
+  dashboard/frontend, unrelated refactoring, or ML/data-generation notebooks. *(Amended
+  2026-09-22: Phase 6 edits the existing Streamlit briefing panel to report this feature's own
+  persistence outcome and to correct the FR-032 breach. That is not dashboard/frontend work —
+  the US-09/10/11 advisor dashboard remains out of scope and untouched.)*
 - Preserve the five approved planning decisions: configurable `BRIEFING_VOLUME`;
   unconditional `SingleRetryWorkflow` wiring; minimal Feature-002 retry-feedback wrapper;
   append-only briefing history with no pruning; one JSON file per validated briefing.
@@ -40,8 +45,10 @@ proportionate tests. Test files match `plan.md` § Test plan.
 | MODIFY | `student_attrition_risk_app/.env.example`, `student_attrition_risk_app/app.yaml` (blank `BRIEFING_VOLUME`) |
 | MODIFY | `student_attrition_risk_app/README.md` |
 | NEW | `student_attrition_risk_app/tests/doubles.py`, `tests/test_retry_workflow.py`, `tests/test_briefing_retry_integration.py`, `tests/test_volume_briefing_store.py` |
+| NEW (2026-09-22) | `student_attrition_risk_app/src/student_attrition_risk/briefing_messages.py`, `tests/test_briefing_storage_confirmation.py` |
+| MODIFY (2026-09-22) | `student_attrition_risk_app/src/student_attrition_risk/ui.py` — confirmation banner + removal of the attempt-count rendering (supersedes its READ-ONLY listing below) |
 | MODIFY | `student_attrition_risk_app/tests/test_config.py` |
-| READ-ONLY | `ports.py`, `api.py`, `mcp_server.py`, `briefing_provider.py`, `briefing_instructions.py`, `briefing_validation.py`, `student_repository.py`, `databricks_client.py`, `ui.py`, and every existing Feature-001 test file |
+| READ-ONLY | `ports.py`, `api.py`, `mcp_server.py`, `briefing_provider.py`, `briefing_instructions.py`, `briefing_validation.py`, `student_repository.py`, `databricks_client.py`, and every existing Feature-001 test file. Until the 2026-09-22 amendment this row also listed `ui.py`; Phase 6 supersedes that for the two edits it names. |
 
 ---
 
@@ -142,8 +149,41 @@ with no retry workflow involved and no change to `StudentService`.
 
 ---
 
-## Phase 6: Polish & Cross-Cutting Concerns
+## Phase 6: Persistence confirmation (amendment, 2026-09-22) — User Story 4 (Priority: P2)
 
+**Goal**: A successful briefing result reports explicitly that it was saved because it passed
+validation, and the advisor-facing surface shows it. No generation, validation, retry or storage
+behaviour changes. The same phase corrects the FR-032 breach in the briefing metadata line.
+
+**Independent Test**: With the scripted doubles and the in-memory store, a successful request
+returns a briefing with `storage_confirmed is True`; a run whose `save_validated` raises
+surfaces the existing storage error and returns no confirmed briefing; a briefing read back from
+the store also reports confirmed.
+
+**Scope guardrails**: new test file **only** — no Feature-001, Feature-002 or Feature-003 test
+file is edited, and nothing those suites already prove is re-tested. No new endpoint, response
+type or dependency. `ui.py` is touched only on the briefing panel that displays this feature's
+own result.
+
+### Tests for User Story 4
+
+- [X] T024 [P] [US4] Write `student_attrition_risk_app/tests/test_briefing_storage_confirmation.py` per `plan.md` § Test plan and `contracts/persistence-confirmation.md`: first-attempt success ⇒ `storage_confirmed is True` (FR-035); Attempt 2 success ⇒ `storage_confirmed is True` and identical to the Attempt 1 case (FR-040); `save_validated` raising ⇒ `BriefingStorageError` propagates and no confirmed briefing is returned (FR-036); `get_stored_briefing` and the `returned_existing` branch ⇒ `storage_confirmed is True` with `source == "stored"` (FR-037); the body handed to `save_validated` carries `storage_confirmed=False`, proving the flag is stamped on confirmation rather than optimistically; `storage_confirmation_message` first-save and replacement wording, both store-neutral and free of attempt/retry language (FR-038/FR-039/FR-041); and an FR-032 guard asserting `ui.py` renders no `attempt_count` while the model and API response still carry it (SC-016). Import the existing doubles from `tests/doubles.py` without modifying them. (fails until T025–T028)
+
+### Implementation for User Story 4
+
+- [X] T025 [US4] Add `storage_confirmed: bool = False` to `ValidatedBriefing` in `student_attrition_risk_app/src/student_attrition_risk/models.py` — additive, defaulted, documented as "the validated-briefing store has confirmed it holds this briefing". Do **not** set it in `make_validated_briefing`: a producer cannot confirm its own persistence (`contracts/persistence-confirmation.md` § Who may set it).
+- [X] T026 [US4] In `student_attrition_risk_app/src/student_attrition_risk/student_service.py`: `_persist` returns `briefing.model_copy(update={"storage_confirmed": True})` after `store.save_validated` returns, and both success paths (first-attempt in `request_briefing`, `Produced` in `_hand_off_to_retry`) return that value; the two retrieval paths (`get_stored_briefing`, and the `returned_existing` branch of `request_briefing`) extend their existing `model_copy(update={"source": "stored"})` to also set `storage_confirmed=True`; add the one-line public `has_stored_briefing(student_hash) -> bool` delegating to `store.has_validated`; add an optional boolean `stored` field to the `_log_outcome` metadata-only line. No orchestration or call-order change. (depends on T025)
+- [X] T027 [P] [US4] Create `student_attrition_risk_app/src/student_attrition_risk/briefing_messages.py` with `storage_confirmation_message(*, replaced: bool) -> str`. No Streamlit import, no service import — copy only, so it is unit-testable (`ui.py` executes Streamlit at import). Wording must state that the briefing passed validation and has been saved, must add the replacement clause when `replaced` is `True`, must stay store-neutral (no "Volume", "Unity Catalog" or "in-memory" — FR-041), and must not mention attempts or retries (FR-032, FR-040).
+- [X] T028 [US4] In `student_attrition_risk_app/src/student_attrition_risk/ui.py`: (a) `request_briefing` records the confirmation in a `ui_success` session-state key, deriving `replaced` per `contracts/persistence-confirmation.md` — `source == "stored"` ⇒ already saved, `regenerate=False` + `source == "generated"` ⇒ first save, `regenerate=True` ⇒ one `service.has_stored_briefing(hash)` call **before** regenerating; render it with `st.success` beside the existing `st.info` for `ui_message`, and record nothing when the request raised; (b) **remove** the `Attempt: {briefing.attempt_count}` fragment from the briefing metadata line (FR-032 correction). No other UI change. (depends on T026, T027)
+- [X] T029 [US4] Run `uv run ruff check .` and `uv run pytest tests/test_briefing_storage_confirmation.py`; then `uv run pytest` for the full suite, confirming every Feature-001, Feature-002 and Feature-003 suite is still green and unmodified.
+
+**Checkpoint**: The advisor is told the briefing was saved; the internal retry is invisible.
+
+---
+
+## Phase 7: Polish & Cross-Cutting Concerns
+
+- [X] T030 [P] Update `student_attrition_risk_app/README.md` to document the persistence confirmation (`storage_confirmed`, set only after the store confirms the save; reported on the advisor panel; store-neutral wording) and the FR-032 correction (attempt count is workflow metadata, not advisor-facing).
 - [X] T021 [P] Update `student_attrition_risk_app/README.md` to document the single-retry workflow (`SingleRetryWorkflow`, exactly one retry, `attempt_count = 2`), the governed `VolumeBriefingStore` (append-only, one JSON file per validated briefing, most-recent retrieval), and the `BRIEFING_VOLUME` setting (blank ⇒ in-memory store).
 - [X] T022 From `student_attrition_risk_app/`, run the full merge gate: `uv run ruff check .` and `uv run pytest` — all Feature-001 and Feature-002 suites green.
 - [X] T023 Walk the offline sections of `specs/002-briefing-retry-and-storage/quickstart.md` (retry-workflow table, governed-store table, store-selection) and confirm each stated expectation holds.
@@ -154,7 +194,10 @@ with no retry workflow involved and no change to `StudentService`.
 
 ### Phase order
 
-- **Phase 1 (Setup)** → **Phase 2 (Foundational)** → **Phase 3 (US1)** → **Phase 4 (US2)** → **Phase 5 (US3)** → **Phase 6 (Polish)**.
+- **Phase 1 (Setup)** → **Phase 2 (Foundational)** → **Phase 3 (US1)** → **Phase 4 (US2)** → **Phase 5 (US3)** → **Phase 6 (US4, 2026-09-22 amendment)** → **Phase 7 (Polish)**.
+- Phase 6 was added by the 2026-09-22 amendment, after Phases 1–5 had been implemented and
+  merged. It depends on the store and retry behaviour already being in place, since it reports
+  their outcome; it changes neither.
 - US2 depends on US1 implementation (T007–T008) being in place — it is the terminal half of the same `run` method plus the existing service mapping; US2 adds only tests + verification.
 - US3 is functionally independent of US1/US2 and could be built in parallel after Phase 2 by a second contributor, **except** T018 shares `main.py` with T009 and must follow it.
 
@@ -166,6 +209,7 @@ with no retry workflow involved and no change to `StudentService`.
 - T009 → T018 (same file)
 - T015 → T016 (test expectations), T017, T018
 - T017 → T018, T020
+- T025 → T026; T026 + T027 → T028; T024 fails until T025–T028; T028 → T029
 
 ### Parallel opportunities
 
@@ -197,13 +241,18 @@ Task: "Write tests/test_briefing_retry_integration.py US1 case (T006)"
 2. US1 → single-retry recovery (MVP).
 3. US2 → bounded, safe terminal failure (tests + verification).
 4. US3 → governed Unity Catalog Volume storage, selected by `BRIEFING_VOLUME`.
-5. Polish → docs + full gate + quickstart walk.
+5. US4 *(2026-09-22 amendment)* → the advisor is told the briefing was saved because it passed
+   validation, and the attempt count stops being advisor-facing.
+6. Polish → docs + full gate + quickstart walk.
 
 ## Notes
 
 - `[P]` = different files, no dependency on an incomplete task.
 - No change to `ports.py`, `api.py`, `mcp_server.py`, `briefing_provider.py`, the repository,
-  or any notebook. `student_service.py` change is limited to the T003 delegation.
+  or any notebook — including in the 2026-09-22 amendment, which needs none: `ValidatedBriefing`
+  is already the REST `response_model` and the MCP `model_dump`, so the new field reaches both
+  surfaces with no contract change. In Phases 1–5 the `student_service.py` change is limited to
+  the T003 delegation; T026 adds the confirmation stamping without altering orchestration.
 - No new runtime dependency — `databricks-sdk` already provides the Volume Files API.
 - Verify each new test fails before its implementation task, then passes after.
 - No Git/GitHub operations.

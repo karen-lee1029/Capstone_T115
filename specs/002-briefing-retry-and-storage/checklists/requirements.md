@@ -40,3 +40,10 @@
   module, and class names are intentionally deferred to `/speckit-plan` per the constitution
   (Principle VII) and the feature input.
 - Validation performed 2026-09-03: all items pass on the first iteration.
+- Re-validated 2026-09-22 after the persistence-confirmation amendment (User Story 4,
+  FR-035–FR-041, SC-013–SC-016, and the FR-032 correction). All items above still pass:
+  the new requirements state observable outcomes without naming a technology, User Story 4
+  carries its own independent test and six acceptance scenarios, three new edge cases are
+  recorded, and the amended Out of Scope section states the boundary against the US-09/10/11
+  advisor dashboard. FR-041 deliberately constrains wording rather than implementation, so it
+  introduces no implementation detail.

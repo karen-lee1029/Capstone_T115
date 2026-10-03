@@ -24,7 +24,7 @@ to be set (a validated `/Volumes/…` root); `main.build_service` only construct
 |---|---|
 | Directory | `${settings.briefing_volume}/<student_deidentified_hash>/` |
 | File name | `<generated_at:%Y%m%dT%H%M%S%fZ>-attempt<attempt_count>-<6-char token>.json` |
-| Body | `briefing.model_dump_json()` — only `ValidatedBriefing` fields; no prompt, no secret (FR-026) |
+| Body | `briefing.model_dump_json()` — only `ValidatedBriefing` fields; no prompt, no secret (FR-026). Since 2026-09-22 this includes `storage_confirmed`, always `False` in the document — the save is not yet confirmed at serialisation time — and restamped `True` by the service on read. See [persistence-confirmation.md](./persistence-confirmation.md). |
 
 ## Method behaviour
 

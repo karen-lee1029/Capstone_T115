@@ -5,3 +5,12 @@
 **Selected use-case:** Student Attrition Risk & Intervention Briefing (selected 24/04/26)
 
 Train an ML classifier on cumulative credit point ratios, enrolment load, and demographic flags to score each student's attrition risk. An agent calls a Genie or UC-function MCP tool to retrieve at-risk cohorts, then generates a structured briefing for academic advisors - delivered via a Databricks App.
+
+**Docs folder:** contains documentation on:
+
+- AI Agent Software Development documentation (Spec Driven Development & AI Agent worklog summarised conversations and prompts)
+- Wireframe designs
+- Machine Learning Model Documentation
+- Solution Design documentation
+- Synthetic Data Validation
+- Learning Outcomes of students of T115

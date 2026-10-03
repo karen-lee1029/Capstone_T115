@@ -45,8 +45,10 @@ at most once, so a third attempt is structurally impossible. On success it retur
 `ValidatedBriefing` with `attempt_count = 2` through the existing successful-outcome path;
 `StudentService` persists it (the workflow never persists). On a second failure it returns a
 terminal `generation` or `validation` outcome, which maps to the existing `502`; a
-configuration error surfacing during the retry is re-raised unchanged (`503`). No new
-advisor-visible retry indicator is added — `attempt_count` is the record. The revision request
+configuration error surfacing during the retry is re-raised unchanged (`503`). No
+advisor-visible retry indicator exists — `attempt_count` is workflow metadata, carried in the
+API response, the stored document and the logs, and deliberately not rendered on the advisor
+panel (FR-032). The revision request
 sent to generation is the original context with a minimal block relaying only the failed
 acceptance criteria and Validation Feedback that validation actually returned; it is replaced
 when the final US-12 instructions land.
@@ -61,6 +63,32 @@ Files-API failure surfaces as `BriefingStorageError` (`503`). Set `BRIEFING_VOLU
 `/Volumes/<catalog>/<schema>/<volume>` path to enable it; leave it blank to keep
 `InMemoryBriefingStore` (local mode and the test suite). The concrete deployment Volume path is
 supplied at deploy time — none is hard-coded.
+
+#### Persistence confirmation (amendment, 2026-09-22)
+
+Because a briefing is saved precisely when it has passed validation, a successful result says so
+explicitly. `ValidatedBriefing.storage_confirmed` means *the validated-briefing store has
+confirmed it holds this briefing*. `StudentService._persist` sets it on the line **after**
+`save_validated` returns, so it can never be reported for a save that did not succeed — a
+`BriefingStorageError` short-circuits first. The retrieval paths set it too, because they read
+the briefing out of the store. It is a property of storage, not of the generation attempt, so it
+is identical for an attempt-1 and an attempt-2 briefing.
+
+The flag follows the same stamping pattern as `source`: the briefing is serialised into the
+store *before* its save is confirmed, so the stored JSON document always records `False`, and
+the retrieval path restamps it to `True` exactly as it restamps `source="generated"` to
+`source="stored"`. Documents written before this amendment carry no such key and still parse.
+
+The advisor panel renders the confirmation as a success banner after a generate or regenerate,
+and shows `Saved: Yes` in the briefing metadata line. A successful regeneration that supersedes
+an earlier briefing says so, because the superseded briefing is no longer what **Retrieve Saved**
+returns. The wording lives in `briefing_messages.py` rather than `ui.py` — `ui.py` executes
+Streamlit at import and so cannot be imported by a test — and is deliberately store-neutral
+("the validated briefing store", never "Unity Catalog Volume"), because the in-memory store is
+still the local and test implementation.
+
+No REST or MCP contract changed: `ValidatedBriefing` is already the response model for both
+briefing endpoints and both MCP briefing tools, so the field ships on every surface.
 
 ## Local setup on macOS/zsh
 

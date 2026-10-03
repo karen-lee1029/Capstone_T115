@@ -1,8 +1,13 @@
 # Phase 1 Data Model: Feature-002 — Briefing Retry and Validated Briefing Storage (US-15)
 
-Feature-002 adds **no new shared domain type and no new persisted field**. It consumes the
-Feature-001 workflow types unchanged, adds two concrete seam implementations, one additive model
-factory, one configuration setting, and a stored-file layout for the Unity Catalog Volume.
+Feature-002 adds **no new shared domain type**. It consumes the Feature-001 workflow types
+unchanged, adds two concrete seam implementations, one additive model factory, one configuration
+setting, and a stored-file layout for the Unity Catalog Volume.
+
+*Amended 2026-09-22*: the persistence confirmation adds **one additive field** to
+`ValidatedBriefing` — `storage_confirmed: bool = False`. It is the only change to a shared type
+in this feature. It is defaulted, so every existing construction site and every previously
+stored JSON document stays valid; see "Persistence confirmation" below.
 
 ## Reused Feature-001 types (unchanged — imported, not redefined)
 
@@ -32,8 +37,9 @@ The retry-seam output (`models.py`). Feature-002 now exercises both:
 ### `ValidatedBriefing`
 The only briefing form returned or stored (`models.py`). Feature-002 sets `attempt_count = 2`
 for a retry success and `source = "generated"`; all other fields are derived from
-`context.prediction` exactly as a first-attempt success. No field added. The retrieval path
-still stamps `source = "stored"` (existing `StudentService` behaviour).
+`context.prediction` exactly as a first-attempt success. The retrieval path still stamps
+`source = "stored"` (existing `StudentService` behaviour). *Amended 2026-09-22*: one additive
+field, `storage_confirmed`, described below.
 
 ## New implementation types (not shared domain types)
 
@@ -70,6 +76,38 @@ Single constructor for `ValidatedBriefing` from a `StudentPrediction`. Used by
 (`attempt_count=1`). `source="generated"`, `validated=True`, `generated_at` defaults to
 `datetime.now(UTC)`.
 
+## Persistence confirmation *(added 2026-09-22)*
+
+### `ValidatedBriefing.storage_confirmed: bool = False`
+
+| Aspect | Value |
+|---|---|
+| Meaning | the validated-briefing store has confirmed it holds this briefing |
+| Type | `bool`, defaulted `False` — additive; no existing construction site, stored document or test changes |
+| Set `True` by | `StudentService._persist`, **after** `store.save_validated(briefing)` returns (spec FR-035/FR-036) |
+| Also set `True` by | the retrieval paths (`get_stored_briefing`, and the `returned_existing` branch of `request_briefing`), which read the briefing out of the store (FR-037) |
+| Never set by | `SingleRetryWorkflow`, `make_validated_briefing`, or any store — a producer cannot confirm its own persistence |
+| Varies by attempt? | **No.** Identical for Attempt 1 and Attempt 2; it is a property of storage, not of generation (FR-040, and FR-032 — it carries no retry indication) |
+| In the stored file | `False` — the briefing is serialised *before* the save is confirmed, so the document holds the correct pre-confirmation snapshot; the retrieval path restamps it to `True` |
+
+This mirrors the existing `source` field precisely. Both are stamped by `StudentService` on the
+way out rather than written by the producer, both are persisted in their pre-retrieval state
+(`source="generated"`, `storage_confirmed=False`), and both are restamped on read
+(`source="stored"`, `storage_confirmed=True`). No new pattern is introduced.
+
+### `StudentService.has_stored_briefing(student_hash) -> bool` (additive)
+
+A one-line public delegation to `store.has_validated`, so the advisor-facing surface can ask the
+service whether a regeneration will supersede an existing briefing without reaching through the
+service into the store (FR-039, constitution IX).
+
+### `briefing_messages.storage_confirmation_message(*, replaced: bool) -> str` (new module)
+
+Advisor-facing confirmation copy, store-neutral by requirement (FR-041) — it names "the
+validated briefing store", never a storage technology, because the in-memory store remains the
+local and test implementation. It lives outside `ui.py` because `ui.py` executes Streamlit calls
+at import and therefore cannot be imported by a test.
+
 ## Stored-file model (Unity Catalog Volume)
 
 | Aspect | Value |
@@ -77,7 +115,7 @@ Single constructor for `ValidatedBriefing` from a `StudentPrediction`. Used by
 | Root | `${BRIEFING_VOLUME}` — a `/Volumes/<catalog>/<schema>/<volume>[/<prefix>]` path |
 | Per-student directory | `${BRIEFING_VOLUME}/<student_deidentified_hash>/` |
 | File name | `<generated_at:%Y%m%dT%H%M%S%fZ>-attempt<attempt_count>-<6-char token>.json` |
-| File body | `ValidatedBriefing.model_dump_json()` — exactly the model fields; no prompt, no feedback blob, no secret (FR-026) |
+| File body | `ValidatedBriefing.model_dump_json()` — exactly the model fields; no prompt, no feedback blob, no secret (FR-026). Includes `storage_confirmed`, always `False` in the stored document (see Persistence confirmation); restamped `True` on read. |
 | Write | `upload(overwrite=False)` — new file each save; never overwrites/deletes (FR-023) |
 | "Most recent" | lexicographically greatest file name in the directory (timestamp prefix ⇒ chronological) |
 | "None available" | directory missing or empty (FR-022) |
