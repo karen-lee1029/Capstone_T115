@@ -278,10 +278,11 @@ assert Feature-005's colours, order and descriptions, now on all seven current c
   "At Risk" and "Not At Risk".
 - **FR-004**: No interaction path MUST narrow any widget by gender, socioeconomic status, First
   Nations status or home language (Q6). This covers (a) filter widgets — none may be bound to these
-  fields — and (b) chart selections — a click on a chart whose category is one of these fields MUST
-  NOT narrow any other widget. Tables do not emit selections on the platform (research R-8), so the
-  Gender column in the demographic table is display-only. Mechanism (Q16 = a): Risk by Gender sits
-  alone on a "Gender Breakdown" page, so its selections have no other widget to narrow.
+  fields — and (b) selections — a click on a chart or table showing one of these fields MUST NOT
+  narrow any other widget. Charts: Risk by Gender sits alone on a "Gender Breakdown" page (Q16 = a).
+  Tables: tables are cross-filter sources on the platform (research R-8, corrected after code review
+  CODE-01). The Student List table is alone on its page. The mechanism for the Demographic Breakdown
+  table, which shows Gender (Q9), is **pending decision Q21** (`review-dispositions.md`).
 - **FR-005**: Every counter, chart and table MUST respond to the dashboard-wide filters. No widget
   may carry a fixed filter on a filtered field, except the At Risk and Not At Risk counters on
   Risk Level.
@@ -370,7 +371,7 @@ assert Feature-005's colours, order and descriptions, now on all seven current c
 
 ## Success Criteria *(mandatory)*
 
-- **SC-001**: 8 of 8 agreed filters exist and narrow 100% of counters, charts and tables on all 4 pages.
+- **SC-001**: 8 of 8 agreed filters exist and narrow 100% of counters, charts and tables on all 5 canvas pages (Overview, Course Analysis, Demographic Breakdown, Gender Breakdown, Student List).
 - **SC-002**: For any selection, Total = At Risk + Not At Risk on Overview.
 - **SC-003**: 3 of 3 analysis pages have a "Students in this view" table sorted by Risk % descending.
 - **SC-004**: From any chart bar of an allowed field, the advisor reaches its students in at most 2 clicks.

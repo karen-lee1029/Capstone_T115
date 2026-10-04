@@ -34,8 +34,8 @@ Never bound to any filter widget in the dashboard (Q6): `gender`, `socioeconomic
 NOT narrow any other widget. Today only `52cb0fd3` Risk by Gender is such a chart. Mechanism
 (Q16 = a): it sits on its own canvas page `gender_breakdown` with no other data widget (C-4). Rule
 checked offline: any chart whose query uses one of these four fields is the only data widget (chart,
-table or counter) on its page. Tables emit no selections (research R-8), so table columns of these
-fields are display-only.
+table or counter) on its page. Tables are also selection sources (research R-8, corrected after
+CODE-01). The table rule (`drill_table_demographic` shows Gender) is pending decision Q21.
 
 ## C-2 Students in this view tables (Q7, Q9)
 

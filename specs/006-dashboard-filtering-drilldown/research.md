@@ -20,7 +20,9 @@ advisor page (Q1).
 filters query P directly.
 
 **Decision**: Bind enrolment filters to E; rely on the relationship to narrow graph widgets.
-Verified in the workspace (quickstart step 4); fallback in plan D-2.
+**Not yet verified.** It is checked in the workspace by quickstart matrix rows A1 – A11. If a widget
+does not narrow, implementation stops and escalates (plan D-2 gate); there is no fallback query
+change.
 
 ## R-3 Serialised form of new elements
 
@@ -75,17 +77,22 @@ Drill-through rejected by the product owner.
 
 - **Cross-filter scope**: a click on a chart filters the other widgets **on the same page** that
   share the dataset (graph) ([Use dashboard filters](https://docs.databricks.com/aws/en/dashboards/manage/filters/)).
-- **Which widgets emit selections**: click-to-filter works for bar, box plot, heatmap, histogram,
-  pie, scatter and point-map visualisations; table widgets do not emit cross-filters (Databricks
-  community article "Cross-filtering for AI/BI dashboards",
-  https://community.databricks.com/t5/community-articles/cross-filtering-for-ai-bi-dashboards/td-p/82912).
-  No documented per-widget switch to turn cross-filtering off was found. To be confirmed from the
-  workspace export (R-3).
+- **Which widgets emit selections** (corrected after code review CODE-01, 2026-10-04): the
+  official page, updated 2026-10-02, lists **Table** among cross-filter sources ("Bar, Box chart,
+  Choropleth map, Funnel, Heatmap, Histogram, Pie, Pivot table, Point map, Scatter, Table,
+  Waterfall"). An older community article said tables do not cross-filter; that is superseded and
+  is no longer relied on. The docs do not say which column a table click filters by.
+- **Suppression**: the docs describe a per-widget **Ignored filters** setting. A receiving widget can
+  ignore chosen global filters, page filter widgets, or cross-filter visualisations on its page. It
+  works per source widget, not per column. No dashboard-wide off switch is documented.
 - **Rendering limits**: tables render up to 100,000 rows before truncation; bar and other charts
   render up to 10,000 rows. For datasets over 100,000 rows the query runs on the backend
   ([Dashboard limits](https://docs.databricks.com/aws/en/dashboards/limits)). Whether truncation
   applies after the table's sort is to be confirmed in the workspace (matrix row C4).
 
-Consequences: the Gender **column** in a table cannot narrow anything; the Risk by **Gender** bar
-chart can narrow the other widgets on its page (SDD-01, Q16); a broad selection (unfiltered, about
-974,000 students) cannot be shown in full in one table (SDD-02, Q17).
+Consequences: the Risk by **Gender** bar chart can narrow the other widgets on its page, so it sits
+alone (SDD-01, Q16). A table containing a Gender column **can also be a selection source**, so the
+Demographic Breakdown table can narrow the Age Band and Origin charts on its page (CODE-01; decision
+pending, `review-dispositions.md`). The Student List Student Details table is the only data widget on
+its page, so it has no peer to narrow. A broad selection (unfiltered, about 974,000 students) cannot
+be shown in full in one table (SDD-02, Q17).

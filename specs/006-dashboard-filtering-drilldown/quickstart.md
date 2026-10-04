@@ -38,8 +38,8 @@ log. "Counters add up" = Total = At Risk + Not At Risk.
 | Row | Steps | Expected |
 |---|---|---|
 | A0 | Check the page list (Overview, Course Analysis, Demographic Breakdown, Gender Breakdown, Student List); open the filter panel | Exactly 8 filters (Risk Level, Faculty, Course Level, Field of Education, Origin, Age Band, Study Mode, Commencing/Continuing); none for gender, socioeconomic status, First Nations status, home language |
-| A1 | Risk Level = "Not At Risk" | At Risk counter 0; every page shows only Not At Risk students |
-| A2 | Faculty = one value | Counters drop and add up; every chart and table on all 4 pages narrows |
+| A1 | Risk Level = "Not At Risk" | At Risk counter 0; each of the 5 canvas pages, Gender Breakdown included, shows only Not At Risk students |
+| A2 | Faculty = one value | Counters drop and add up; every chart and table on all 5 canvas pages (Overview, Course Analysis, Demographic Breakdown, Gender Breakdown, Student List) narrows. Record each page separately |
 | A3 | Course Level = one value | As A2 |
 | A4 | Field of Education = one value | As A2 |
 | A5 | Origin = one value | As A2 |
@@ -63,6 +63,7 @@ If any widget in A1 – A10 does not narrow: stop, record widget/field/observati
 | B4 | Gender Breakdown: click a bar of Risk by Gender, then visit every other page | **No other widget or table narrows** (negative evidence for Q6) |
 | B5 | Demographic Breakdown: click one Age Band bar, then one Origin bar | Other allowed charts and the table narrow; clearing restores |
 | B6 | Overview: click one Risk Score Range bar | Counters, Risk Level chart and the table narrow |
+| B7 | Demographic Breakdown: click a Gender cell (and a Gender column value) in the "Students in this view" table | **Risk by Age Band and Risk by Origin do not narrow** (negative evidence for Q6; mechanism per Q21). Then confirm Age Band and Origin bar clicks still narrow the table |
 
 ### C — Drill-down tables (US3; FR-010 – FR-013)
 

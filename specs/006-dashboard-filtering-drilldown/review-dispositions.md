@@ -45,3 +45,37 @@ Evidence: `tests/test_dashboard.py:366` `test_has_one_page_named_overview` asser
 - **a) Leave it unchanged** (recommended). Record that a workspace-connected run would fail it, as a pre-existing defect outside the 24 repairs. The offline suite is green, and the handoff says so explicitly.
 - **b) Authorise a narrow repair.** It would assert the published page list: Overview, Course Analysis, Demographic Breakdown, Student List and Filters, plus the Q16 page if Q16 = a. It would be logged as a teammate change to Karen's test.
 - **c) Remove that one live test.** It would be logged as a teammate change.
+
+
+# Code review dispositions (2026-10-04)
+
+Source: independent Codex code review of `f745a62`
+(`hive/agents/codex-code-reviewer-mutdf98m/handoffs/US-29/Code_Independent_Review_Handoff.md`).
+Recommendation: Request changes (P2 × 2, P3 × 1).
+
+| Finding | Disposition | Changes |
+|---|---|---|
+| **CODE-01** (P2) Table selections were exempted from the Q6 checks | **Accepted.** The official filter docs (updated 2026-10-02) list Table as a cross-filter source, so research R-8's "tables emit no selections" was wrong. It came from an older community article. The Student List table is the only data widget on its page. The Demographic Breakdown table shows Gender (Q9) beside the Age Band and Origin charts, so a selection in it could narrow them. The only documented suppression ("Ignored filters") works per source widget, not per column, so every fix changes design or needs workspace work. Sent to the product owner as **Q21**; not implemented yet. | research R-8 corrected; spec FR-004 and contract C-1 mark the table rule pending; test comment updated |
+| **CODE-02** (P2) Offline checks validated aliases, not bindings | **Accepted and fixed.** New `test_filter_binding_is_complete` (8 cases) checks each filter's query fields, expressions, query name and encoding as one binding. `_filter_dimensions` reads expressions and encodings too, so the sensitive-filter check catches an expression bound to gender. `test_drill_table_columns_match_contract` checks every column's expression. The reviewer's three faults now each fail a test (see Implementation_Handoff.md). | `tests/test_dashboard_filtering.py` |
+| **CODE-03** (P3) Acceptance text said four pages | **Accepted and fixed.** SC-001 and matrix rows A1 – A2 (and A3 – A8 through "As A2") name all 5 canvas pages, Gender Breakdown included. | spec SC-001, quickstart |
+| Stale R-2 wording (assurance limits) | **Accepted and fixed.** R-2 now says "not yet verified" and points to the A1 – A11 gate, with no fallback. | research R-2 |
+
+## Q21 (CODE-01) — Stopping a selection in the Demographic Breakdown table from narrowing by Gender
+
+Evidence: the official [filter docs](https://docs.databricks.com/aws/en/dashboards/manage/filters/)
+(updated 2026-10-02) list Table as a cross-filter source and describe an **Ignored filters** setting
+on the receiving widget, per source widget. They do not say which column a table click filters by.
+`drill_table_demographic` shares its page with `eaf7eaf4` Risk by Age Band and `292bc630` Risk by
+Origin. No workspace test has been run. Q6 stays binding, and Q9 requires the Gender column.
+
+- **a) Test, then suppress if needed** (recommended). With the product owner's permission, the agent
+  first adds the Ignored filters setting to the existing "US29 format probe" through the API to learn
+  its exact JSON. It then sets Risk by Age Band and Risk by Origin to ignore `drill_table_demographic`
+  as a cross-filter source. The table keeps Gender, still follows chart clicks and global filters,
+  and its own clicks narrow nothing. A new matrix row (B7) gives the negative evidence. Cost: a
+  setting on two of Karen's charts (logged), one workspace write to the probe, and losing table →
+  chart filtering on that page (no answer requires it).
+- **b) Observe first, change only if it leaks.** The product owner publishes and clicks a Gender cell
+  (B7). If nothing narrows, record that behaviour and its deployment scope, with no change. If it
+  narrows, apply (a). Cost: the outcome stays open until the workspace check.
+- **c) Remove Gender from the Demographic Breakdown table.** Cost: reverses Q9.

@@ -154,10 +154,17 @@ def _uses_dimension(widget: dict, dimension: str) -> bool:
 
 
 def _filter_dimensions(widget: dict) -> set[str]:
-    return {
-        f["name"] for q in widget.get("queries", []) for f in q["query"]["fields"]
-        if not f["name"].endswith("_associativity")
-    }
+    """Dimensions a filter is bound to, read from both its field aliases and its expressions."""
+    found = set()
+    for query in widget.get("queries", []):
+        for field in query["query"]["fields"]:
+            if field["name"].endswith("_associativity"):
+                continue
+            found.add(field["name"])
+            found.add(field["expression"].strip("`"))
+    for field in widget.get("spec", {}).get("encodings", {}).get("fields", []):
+        found.add(field.get("fieldName"))
+    return found
 
 
 def _dataset_dimensions(dash: dict, dataset_name: str) -> set[str]:
@@ -198,6 +205,21 @@ class TestDashboardWideFilters:
         assert [q["query"]["datasetName"] for q in widget["queries"]] == [dataset]
         assert _filter_dimensions(widget) == {dimension}
         assert dimension in _dataset_dimensions(dash, dataset)
+
+    @pytest.mark.parametrize("name,title,dataset,dimension", FILTER_CONTRACT)
+    def test_filter_binding_is_complete(self, name, title, dataset, dimension):
+        # Query fields, query name and encoding must bind the control to one dimension together.
+        widget = _widget(_load(), name)
+        [query] = widget["queries"]
+        assert query["query"]["fields"] == [
+            {"name": dimension, "expression": f"`{dimension}`"},
+            {"name": f"{dimension}_associativity",
+             "expression": "COUNT_IF(`associative_filter_predicate_group`)"},
+        ]
+        assert query["query"]["disaggregated"] is False
+        assert widget["spec"]["encodings"]["fields"] == [
+            {"fieldName": dimension, "queryName": query["name"]},
+        ]
 
     def test_no_filter_on_sensitive_attributes(self):
         for _, widget in _all_widgets(_load()):
@@ -247,7 +269,7 @@ class TestChartSelection:
             data = [w for w in _widgets(page) if _is_data_widget(w)]
             for widget in data:
                 if _widget_type(widget) == "table":
-                    continue  # tables emit no selections (research R-8)
+                    continue  # tables: rule pending decision Q21 (code review CODE-01)
                 if any(_uses_dimension(widget, d) for d in SENSITIVE_DIMENSIONS):
                     assert data == [widget], (
                         f"{widget['name']} selects on a sensitive field but shares "
@@ -281,7 +303,12 @@ class TestDrillTables:
         assert widget in _widgets(_page(dash, page_name))
         columns = [(c["fieldName"], c["displayName"]) for c in widget["spec"]["encodings"]["columns"]]
         assert columns == DRILL_TABLES[key]
-        assert [f["name"] for f in widget["queries"][0]["query"]["fields"]] == [c for c, _ in columns]
+        # Each column is bound to the dimension its alias names, not only labelled with it.
+        expected_fields = []
+        for alias, _ in columns:
+            source, dimension = alias.split("__")
+            expected_fields.append({"name": alias, "expression": f"`{source}`.`{dimension}`"})
+        assert widget["queries"][0]["query"]["fields"] == expected_fields
 
     @pytest.mark.parametrize("key", sorted(DRILL_TABLES))
     def test_drill_table_sorted_by_risk_desc_with_boundary_text(self, key):
