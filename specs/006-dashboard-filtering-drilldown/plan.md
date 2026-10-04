@@ -105,6 +105,12 @@ row, records the widget, field and observation in the implementation handoff, an
 No query, dataset or widget change beyond C-4 is made without an approved SDD amendment, so C-5
 (preservation) stays unconditional. Until the row passes, its acceptance is reported as pending.
 
+**Outcome (2026-10-05)**: the gate fired. Enrolment-bound filters raised UNRESOLVED_COLUMN on every
+chart; relationship filter propagation is a Public Preview that Free Edition cannot enable (Q23).
+The approved amendment is Q25 = a: P's source joins in the five enrolment fields and the filters
+bind to P (contract C-1, C-5 exception, teammate change TC-4). This is evidenced offline by the
+Risk Level filter, already bound to P, which narrowed every widget in the workspace (B1).
+
 ### D-2a Sensitive chart isolation (Q16 = a, SDD-01)
 
 Add canvas page `gender_breakdown` ("Gender Breakdown") after Demographic Breakdown. Move widget

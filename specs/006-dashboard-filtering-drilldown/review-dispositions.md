@@ -111,3 +111,11 @@ Decisions: **Q23 = a** (an admin checks the two previews, then A rows are re-run
 the product owner's rule** (remove any filter that only shows null or errors). Faculty and Study
 Mode are removed. The four erroring enrolment filters, plus Field of Education (bound the same
 way, not reported), are removed too if they still error after the preview check.
+
+### Outcome of Q23 and Q25 (2026-10-05)
+
+Q23 = a: the product owner found no Previews page (the user menu, Settings and the direct URL were
+all checked) and confirmed the workspace is Databricks Free Edition. The account is a workspace
+admin. **Q25 = a**: the five enrolment fields are joined into the prediction dataset's source, and
+all six filters bind to it. A read-only check shows the joined query returns 973,770 rows, one per
+student, with every filter field filled. This is a C-5 exception for Karen's dataset (TC-4).

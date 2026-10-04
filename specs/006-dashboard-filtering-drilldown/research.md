@@ -19,7 +19,12 @@ advisor page (Q1).
 (definition lines 174–192). Charts and the Student Details table query through the graph; the base
 filters query P directly.
 
-**Decision**: Bind enrolment filters to E; rely on the relationship to narrow graph widgets.
+**Superseded by Q25 (2026-10-05)**: the workspace showed UNRESOLVED_COLUMN on every chart.
+Filters on a related dataset carry across relationships only with a Public Preview ("Cross-dataset
+filtering through relationships", 2026-09-03) that Databricks Free Edition cannot enable. The five
+enrolment fields are now joined into P's source and every filter binds to P.
+
+**Original decision**: Bind enrolment filters to E; rely on the relationship to narrow graph widgets.
 **Not yet verified.** It is checked in the workspace by quickstart matrix rows A1 – A11. If a widget
 does not narrow, implementation stops and escalates (plan D-2 gate); there is no fallback query
 change.

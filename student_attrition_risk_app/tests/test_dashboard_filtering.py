@@ -8,6 +8,7 @@ not here; see the acceptance matrix in specs/006-dashboard-filtering-drilldown/q
 """
 
 import json
+import re
 import subprocess
 from pathlib import Path
 
@@ -21,17 +22,25 @@ BASE_COMMIT = "0409d7e"
 PREDICTION = "b798cf1c"
 ENROLMENT = "student_enrolment"
 
-# (widget name, title, dataset, dimension) -- contract C-1, in order.
+# (widget name, title, dataset, dimension) -- contract C-1, in order. Q25: every filter is bound
+# to the prediction dataset, whose source query joins in the enrolment fields (filters on a related
+# dataset need a Public Preview that Free Edition lacks).
 FILTER_CONTRACT = [
     ("filter_risk_level", "Filter by Risk Level", PREDICTION, "risk_level"),
-    ("filter_course_level", "Filter by Course Level", ENROLMENT, "course_level"),
-    ("filter_field_of_education", "Filter by Field of Education", ENROLMENT,
-     "broad_primary_field_of_education"),
-    ("filter_origin", "Filter by Origin", ENROLMENT, "international_domestic"),
-    ("filter_age_band", "Filter by Age Band", ENROLMENT, "age_band"),
-    ("filter_commencing_continuing", "Filter by Commencing/Continuing", ENROLMENT,
-     "commencing_continuing"),
+    ("filter_course_level", "Filter by Course Level", PREDICTION, "enrol_course_level"),
+    ("filter_field_of_education", "Filter by Field of Education", PREDICTION,
+     "enrol_field_of_education"),
+    ("filter_origin", "Filter by Origin", PREDICTION, "enrol_origin"),
+    ("filter_age_band", "Filter by Age Band", PREDICTION, "enrol_age_band"),
+    ("filter_commencing_continuing", "Filter by Commencing/Continuing", PREDICTION,
+     "enrol_commencing_continuing"),
 ]
+JOINED_COLUMNS = {dimension for _, _, _, dimension in FILTER_CONTRACT[1:]}
+PREDICTION_TABLE = "workspace.student_aggregate.student_attrition_risk_prediction"
+SENSITIVE_SOURCE_COLUMNS = {
+    "student_gender", "socioeconomic_status", "student_is_first_nations_student",
+    "student_home_language",
+}
 FILTERED_DIMENSIONS = {dimension for _, _, _, dimension in FILTER_CONTRACT}
 SENSITIVE_DIMENSIONS = {"gender", "socioeconomic_status", "first_nations", "home_language"}
 EMPTY_SOURCE_DIMENSIONS = {"faculty", "study_mode"}  # NULL in every source row (Q24)
@@ -170,8 +179,21 @@ def _filter_dimensions(widget: dict) -> set[str]:
 
 
 def _dataset_dimensions(dash: dict, dataset_name: str) -> set[str]:
-    dataset = next(d for d in dash["datasets"] if d["name"] == dataset_name)
-    return {dim.get("name") for dim in dataset["config"].get("dimensions", [])}
+    """Named dimensions plus the columns a SQL source aliases (exposed through ``source.*``)."""
+    config = next(d for d in dash["datasets"] if d["name"] == dataset_name)["config"]
+    return {dim.get("name") for dim in config.get("dimensions", [])} | _source_aliases(config)
+
+
+def _source_aliases(config: dict) -> set[str]:
+    return set(re.findall(r"\bAS\s+(\w+)", config["source"], flags=re.IGNORECASE)) - {"rn"}
+
+
+def _without_prediction_source(dash: dict) -> list[dict]:
+    datasets = json.loads(json.dumps(dash["datasets"]))
+    for dataset in datasets:
+        if dataset["name"] == PREDICTION:
+            dataset["config"].pop("source")
+    return datasets
 
 
 def _table_sort(widget: dict) -> list[tuple[str, str]]:
@@ -222,6 +244,18 @@ class TestDashboardWideFilters:
         assert widget["spec"]["encodings"]["fields"] == [
             {"fieldName": dimension, "queryName": query["name"]},
         ]
+
+    def test_prediction_source_joins_only_filter_fields(self):
+        # Q25: one row per student, enrolment fields LEFT JOINed in, no sensitive column added.
+        config = next(d for d in _load()["datasets"] if d["name"] == PREDICTION)["config"]
+        source = config["source"]
+        assert f"FROM {PREDICTION_TABLE} p" in source
+        assert "p.*" in source and "LEFT JOIN" in source
+        assert "ROW_NUMBER() OVER (PARTITION BY e.student_deidentified_hash" in source
+        assert "WHERE t.rn = 1" in source
+        assert "ON p.student_deidentified_hash = e.student_deidentified_hash" in source
+        assert _source_aliases(config) == JOINED_COLUMNS
+        assert not {c for c in SENSITIVE_SOURCE_COLUMNS if c in source}
 
     def test_no_filter_on_sensitive_attributes(self):
         for _, widget in _all_widgets(_load()):
@@ -363,8 +397,10 @@ class TestExplanationAndPreservation:
 
     def test_preserved_parts_match_base(self):
         base, current = _load_base(), _load()
-        for key in ("datasets", "relationshipGraphs", "uiSettings"):
+        for key in ("relationshipGraphs", "uiSettings"):
             assert current[key] == base[key], key
+        # Q25 exception to C-5: only the prediction dataset's source changes (enrolment fields joined in).
+        assert _without_prediction_source(current) == _without_prediction_source(base)
         current_widgets = {w["name"]: w for _, w in _all_widgets(current)}
         for _, widget in _all_widgets(base):
             name = widget["name"]

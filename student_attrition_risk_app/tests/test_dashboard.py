@@ -362,7 +362,9 @@ class TestDashboardWidgets:
         )
         assert pred_ds is not None, "Prediction dataset not found"
         config = pred_ds.get("config", {})
-        assert config.get("source") == PREDICTION_TABLE
+        # US-29 Q25: the source is now a query over the prediction table that joins in the
+        # enrolment filter fields; it must still read from the prediction table.
+        assert f"FROM {PREDICTION_TABLE} p" in config.get("source", "")
 
     def test_has_one_page_named_overview(self):
         dash = self._load_dashboard()

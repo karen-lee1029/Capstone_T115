@@ -15,11 +15,17 @@ appended after the four existing pages. Exactly these widgets, all `filter-multi
 | # | Widget name | Title | Dataset | Dimension |
 |---|---|---|---|---|
 | 0 | `filter_risk_level` | Filter by Risk Level | P | `risk_level` |
-| 1 | `filter_course_level` | Filter by Course Level | E | `course_level` |
-| 2 | `filter_field_of_education` | Filter by Field of Education | E | `broad_primary_field_of_education` |
-| 3 | `filter_origin` | Filter by Origin | E | `international_domestic` |
-| 4 | `filter_age_band` | Filter by Age Band | E | `age_band` |
-| 5 | `filter_commencing_continuing` | Filter by Commencing/Continuing | E | `commencing_continuing` |
+| 1 | `filter_course_level` | Filter by Course Level | P | `enrol_course_level` |
+| 2 | `filter_field_of_education` | Filter by Field of Education | P | `enrol_field_of_education` |
+| 3 | `filter_origin` | Filter by Origin | P | `enrol_origin` |
+| 4 | `filter_age_band` | Filter by Age Band | P | `enrol_age_band` |
+| 5 | `filter_commencing_continuing` | Filter by Commencing/Continuing | P | `enrol_commencing_continuing` |
+
+Q25: all filters bind to P. P's source is a query that reads the prediction table (`p.*`) and LEFT
+JOINs the de-duplicated enrolment record plus its course, adding exactly the five `enrol_*` columns
+above (exposed through P's existing `source.*` dimension). The enrolment-bound version failed in the
+workspace with UNRESOLVED_COLUMN, because filters on a related dataset need a Public Preview that
+Free Edition does not offer. Query name per widget: `<widget name>_b798cf1c`.
 
 `filter_faculty` and `filter_study_mode` were removed by Q24: their source columns are NULL for every
 student (2026-10-05 read-only check), so they could only offer "null".
@@ -94,7 +100,8 @@ No overlap within a page. Every other widget keeps its base position.
 
 ## C-5 Unchanged versus base `0409d7e`
 
-`datasets`, `relationshipGraphs`, `uiSettings`; every base widget not in C-4 (compared whole); C-4
+`datasets` (except P's `config.source`, the Q25 exception), `relationshipGraphs`, `uiSettings`;
+every base widget not in C-4 (compared whole); C-4
 base widgets compared without `position` (`521bf497` also without its text lines); the four base
 pages keep name, displayName and pageType. Page order: Overview, Course Analysis, Demographic
 Breakdown, Gender Breakdown (`name: "gender_breakdown"`, `PAGE_TYPE_CANVAS`), Student List, Filters.

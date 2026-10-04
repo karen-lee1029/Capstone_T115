@@ -10,6 +10,7 @@ implementation. Matrix rows (A0 – D4) are in `quickstart.md`; a row not run is
 | FR-001 | TDF `test_single_global_filters_page`, `test_page_order` |
 | FR-002 | TDF `test_global_filters_match_contract` |
 | FR-003 | TDF `test_filter_fields_resolve_to_dataset_dimensions` |
+| FR-003a | TDF `test_prediction_source_joins_only_filter_fields`, `test_preserved_parts_match_base`; TD `test_prediction_dataset_source_table` (TC-4) |
 | FR-004 | TDF `test_no_filter_on_sensitive_attributes` (a); TDF `test_sensitive_charts_are_isolated`, `test_gender_chart_is_on_gender_breakdown` (b); matrix A0, B4, B7 (Demographic table, Q21 → Q22) |
 | FR-005 | TDF `test_no_fixed_filter_conflicts_with_global_filters`; matrix A1 – A11 |
 | FR-006 | TDF `test_student_list_risk_filter_replaced` |

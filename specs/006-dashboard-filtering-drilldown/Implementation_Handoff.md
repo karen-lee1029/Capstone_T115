@@ -145,3 +145,36 @@ exactly.
 - Under the product owner's rule, any enrolment filter still erroring after that check is removed.
   If all five go, only Risk Level remains, which would hollow out US-29's filtering. That outcome
   goes back to the product owner, not straight to removal.
+
+## Round 3: Q23 outcome and Q25 (2026-10-05)
+
+**Q23 = a outcome**: no Previews page in this workspace. The product owner checked the user menu,
+Settings and the direct URL, and confirmed it is Databricks Free Edition. The account is a workspace
+admin (read-only check), so the gap is not a permissions problem.
+
+**Q25 = a**: the five enrolment filter fields are joined into Karen's prediction dataset, and all six
+filters bind to it.
+- A read-only run of the joined query returned 973,770 rows and 973,770 distinct students. Every
+  filter field is filled. Course Level has 4 values: Undergraduate 607,339, Postgraduate (Coursework)
+  243,454, Other 85,137, HDR 37,840.
+- The course table has a unique key, 1,544 of 1,544.
+- Widget queries, dimensions and measures are unchanged. This is a C-5 exception for the dataset
+  source only, logged as teammate change TC-4. Karen's `test_prediction_dataset_source_table` now
+  asserts the source reads from the prediction table.
+- Evidence that this binding reaches the charts: the Risk Level filter is already bound to this
+  dataset, and it narrowed every widget (B1 passed).
+
+**New checks**: `test_prediction_source_joins_only_filter_fields`. It requires one row per student,
+the LEFT JOIN, exactly the five `enrol_*` columns and no sensitive column. Preservation now allows
+only the prediction source to change.
+
+**Verification**:
+- `uv run pytest -q`: 351 passed, 14 skipped, 0 failed.
+- US-29 file: 39 passed.
+- Ruff: base I001 only.
+- Mutation: 10 of 10 faults caught. New faults: "Age Band filter bound to the enrolment dataset
+  again" (2 failed) and "gender column joined into the prediction source" (1 failed).
+
+**Pending (product owner)**: re-publish from this commit, then re-run A2 – A10, B2, B5 – B7, C3, C4
+and D1 – D3. Chart clicks that only highlight (B5, B6, the second half of B7) may persist, because Q25
+does not change how charts query. If they do, that comes back as a decision.

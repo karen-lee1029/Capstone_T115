@@ -11,7 +11,7 @@ Feature-006 adds **no** data. It reuses existing dimensions and measures unchang
 | P | `risk_pct` | all tables; sort key |
 | P | `risk_score_bucket` | Overview table |
 | P | `count` | counters, charts (unchanged) |
-| E | `course_level`, `broad_primary_field_of_education`, `international_domestic`, `age_band`, `commencing_continuing` | filters (Faculty and Study Mode removed, Q24) |
+| P (joined, Q25) | `enrol_course_level`, `enrol_field_of_education`, `enrol_origin`, `enrol_age_band`, `enrol_commencing_continuing` | filters (Faculty and Study Mode removed, Q24); one row per student, 973,770 rows, every value filled (read-only check 2026-10-05) |
 | E | `course_level`, `broad_primary_field_of_education` | Course Analysis table |
 | E | `age_band`, `gender`, `international_domestic` | Demographic Breakdown table |
 

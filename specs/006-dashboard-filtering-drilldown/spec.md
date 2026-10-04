@@ -136,6 +136,12 @@ the product owner in chat on 2026-10-04.
   are empty → **a) with the product owner's rule: a filter that can only show "null", or that
   errors, is removed because it is not useful.** Faculty and Study Mode are removed now. Any filter
   still erroring after the Q23 preview check is removed under the same rule.
+- **Q25** (Q23 = a outcome: the workspace is Databricks Free Edition, which has no Previews page,
+  so relationship filter propagation cannot be enabled) What happens to the five enrolment
+  filters? → **a) Add the five fields to the prediction dataset by joining in the de-duplicated
+  enrolment data (one row per student), and bind the five filters to that dataset.** This is an
+  approved exception to C-5 for Karen's dataset definition only; widget queries are unchanged. The
+  product owner's Q24 rule (remove a filter that errors) applies only if this fails in the workspace.
 - **Q19** (R-3) How to obtain the global-filter and table-sort JSON formats when CLI logins had
   expired → **The product owner logs in; the agent reads workspace dashboards read-only.**
 
@@ -287,8 +293,13 @@ assert Feature-005's colours, order and descriptions, now on all seven current c
 - **FR-002**: The dashboard-wide filters MUST be exactly six, multi-select, defaulting to all
   values, titled: "Filter by Risk Level", "Filter by Course Level", "Filter by Field of Education", "Filter by Origin", "Filter by Age Band", "Filter by Commencing/Continuing" (Q5, Q8; Faculty and Study Mode removed by Q24 because their source
   columns are empty).
-- **FR-003**: Each filter MUST be bound to an existing dataset dimension; Risk Level MUST offer only
-  "At Risk" and "Not At Risk".
+- **FR-003**: Each filter MUST be bound to the prediction dataset, to a named dimension or a
+  column its source query provides (Q25); Risk Level MUST offer only "At Risk" and "Not At Risk".
+- **FR-003a** (Q25): The prediction dataset's source MUST read the prediction table and LEFT JOIN
+  the enrolment record chosen by the same rule as the enrolment dataset (latest census date, then
+  enrolment year), keeping one row per student. It adds only `enrol_course_level`,
+  `enrol_field_of_education`, `enrol_origin`, `enrol_age_band` and `enrol_commencing_continuing`,
+  and no sensitive field.
 - **FR-004**: No interaction path MUST narrow any widget by gender, socioeconomic status, First
   Nations status or home language (Q6). This covers (a) filter widgets — none may be bound to these
   fields — and (b) selections — a click on a chart or table showing one of these fields MUST NOT

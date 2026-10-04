@@ -87,3 +87,9 @@ If any widget in A1 – A10 does not narrow: stop, record widget/field/observati
 
 The implementation handoff lists every row as **passed (evidence)**, **failed (escalated)**,
 **pending (not run)** or **not applicable (reason)**.
+
+### Re-test after Q25 (round 3)
+
+Re-publish from the Q25 commit. Then re-run A2 – A10, B2, B5 – B7, C3, C4 and D1 – D3. Record each
+row as pass, fail or pending, never as assumed. Chart clicks that only highlight (B5, B6, the second
+half of B7) may persist; Q25 does not change how charts query.

@@ -50,3 +50,17 @@ Status: **implemented** in the Feature-006 implementation commit on `agent/claud
 - **Commit**: the Feature-006 implementation commit (see Status)
 - **Revert**: `git checkout 0409d7e -- student_attrition_risk_app/tests/test_ui.py`. If Lu restores
   the button and checkbox in `ui.py`, this revert is the matching test change.
+
+## TC-4 Prediction dataset `b798cf1c` source and `tests/test_dashboard.py::test_prediction_dataset_source_table` (US-17)
+
+- **Original author / commit**: Karen (dashboard dataset and its test).
+- **Change and reason** (Q25 = a): `config.source` changes from the prediction table name to a
+  query. The query reads that table (`p.*`) and LEFT JOINs the de-duplicated enrolment record plus
+  course, adding five `enrol_*` filter columns. Dimensions, measures and every widget query are
+  unchanged. The test now asserts that the source reads `FROM <prediction table> p` instead of
+  equalling the table name.
+- **Commit**: the Q25 commit (see Implementation_Handoff.md).
+- **Revert**: set `config.source` back to
+  `workspace.student_aggregate.student_attrition_risk_prediction`, restore the test assertion
+  `config.get("source") == PREDICTION_TABLE`, and rebind the five filters to `student_enrolment`.
+  Note: that binding errors on Databricks Free Edition.

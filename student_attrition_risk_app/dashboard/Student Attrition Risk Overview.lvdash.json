@@ -5,7 +5,7 @@
       "displayName": "student_attrition_risk_prediction",
       "config": {
         "version": "1.1",
-        "source": "workspace.student_aggregate.student_attrition_risk_prediction",
+        "source": "SELECT\n  p.*,\n  e.course_level AS enrol_course_level,\n  e.broad_primary_field_of_education AS enrol_field_of_education,\n  e.international_domestic_student AS enrol_origin,\n  e.age_band AS enrol_age_band,\n  e.commencing_continuing AS enrol_commencing_continuing\nFROM workspace.student_aggregate.student_attrition_risk_prediction p\nLEFT JOIN (\n  SELECT\n    t.student_deidentified_hash,\n    c.course_level,\n    c.broad_primary_field_of_education,\n    t.international_domestic_student,\n    t.age_band,\n    t.commencing_continuing\n  FROM (\n    SELECT\n      e.*,\n      ROW_NUMBER() OVER (PARTITION BY e.student_deidentified_hash ORDER BY e.census_date DESC, e.enrolment_year DESC) AS rn\n    FROM workspace.student_aggregate.rpt_student_management__fact__all_enrolment_eftsl__deidentified e\n  ) t\n  LEFT JOIN workspace.student_aggregate.dwh_curriculum__course c ON t.course_key_hash = c.course_key_hash\n  WHERE t.rn = 1\n) e ON p.student_deidentified_hash = e.student_deidentified_hash",
         "dimensions": [
           {
             "expr": "source.*"
@@ -1809,16 +1809,16 @@
             "name": "filter_course_level",
             "queries": [
               {
-                "name": "filter_course_level_student_enrolment",
+                "name": "filter_course_level_b798cf1c",
                 "query": {
-                  "datasetName": "student_enrolment",
+                  "datasetName": "b798cf1c",
                   "fields": [
                     {
-                      "name": "course_level",
-                      "expression": "`course_level`"
+                      "name": "enrol_course_level",
+                      "expression": "`enrol_course_level`"
                     },
                     {
-                      "name": "course_level_associativity",
+                      "name": "enrol_course_level_associativity",
                       "expression": "COUNT_IF(`associative_filter_predicate_group`)"
                     }
                   ],
@@ -1839,8 +1839,8 @@
               "encodings": {
                 "fields": [
                   {
-                    "fieldName": "course_level",
-                    "queryName": "filter_course_level_student_enrolment"
+                    "fieldName": "enrol_course_level",
+                    "queryName": "filter_course_level_b798cf1c"
                   }
                 ]
               }
@@ -1858,16 +1858,16 @@
             "name": "filter_field_of_education",
             "queries": [
               {
-                "name": "filter_field_of_education_student_enrolment",
+                "name": "filter_field_of_education_b798cf1c",
                 "query": {
-                  "datasetName": "student_enrolment",
+                  "datasetName": "b798cf1c",
                   "fields": [
                     {
-                      "name": "broad_primary_field_of_education",
-                      "expression": "`broad_primary_field_of_education`"
+                      "name": "enrol_field_of_education",
+                      "expression": "`enrol_field_of_education`"
                     },
                     {
-                      "name": "broad_primary_field_of_education_associativity",
+                      "name": "enrol_field_of_education_associativity",
                       "expression": "COUNT_IF(`associative_filter_predicate_group`)"
                     }
                   ],
@@ -1888,8 +1888,8 @@
               "encodings": {
                 "fields": [
                   {
-                    "fieldName": "broad_primary_field_of_education",
-                    "queryName": "filter_field_of_education_student_enrolment"
+                    "fieldName": "enrol_field_of_education",
+                    "queryName": "filter_field_of_education_b798cf1c"
                   }
                 ]
               }
@@ -1907,16 +1907,16 @@
             "name": "filter_origin",
             "queries": [
               {
-                "name": "filter_origin_student_enrolment",
+                "name": "filter_origin_b798cf1c",
                 "query": {
-                  "datasetName": "student_enrolment",
+                  "datasetName": "b798cf1c",
                   "fields": [
                     {
-                      "name": "international_domestic",
-                      "expression": "`international_domestic`"
+                      "name": "enrol_origin",
+                      "expression": "`enrol_origin`"
                     },
                     {
-                      "name": "international_domestic_associativity",
+                      "name": "enrol_origin_associativity",
                       "expression": "COUNT_IF(`associative_filter_predicate_group`)"
                     }
                   ],
@@ -1937,8 +1937,8 @@
               "encodings": {
                 "fields": [
                   {
-                    "fieldName": "international_domestic",
-                    "queryName": "filter_origin_student_enrolment"
+                    "fieldName": "enrol_origin",
+                    "queryName": "filter_origin_b798cf1c"
                   }
                 ]
               }
@@ -1956,16 +1956,16 @@
             "name": "filter_age_band",
             "queries": [
               {
-                "name": "filter_age_band_student_enrolment",
+                "name": "filter_age_band_b798cf1c",
                 "query": {
-                  "datasetName": "student_enrolment",
+                  "datasetName": "b798cf1c",
                   "fields": [
                     {
-                      "name": "age_band",
-                      "expression": "`age_band`"
+                      "name": "enrol_age_band",
+                      "expression": "`enrol_age_band`"
                     },
                     {
-                      "name": "age_band_associativity",
+                      "name": "enrol_age_band_associativity",
                       "expression": "COUNT_IF(`associative_filter_predicate_group`)"
                     }
                   ],
@@ -1986,8 +1986,8 @@
               "encodings": {
                 "fields": [
                   {
-                    "fieldName": "age_band",
-                    "queryName": "filter_age_band_student_enrolment"
+                    "fieldName": "enrol_age_band",
+                    "queryName": "filter_age_band_b798cf1c"
                   }
                 ]
               }
@@ -2005,16 +2005,16 @@
             "name": "filter_commencing_continuing",
             "queries": [
               {
-                "name": "filter_commencing_continuing_student_enrolment",
+                "name": "filter_commencing_continuing_b798cf1c",
                 "query": {
-                  "datasetName": "student_enrolment",
+                  "datasetName": "b798cf1c",
                   "fields": [
                     {
-                      "name": "commencing_continuing",
-                      "expression": "`commencing_continuing`"
+                      "name": "enrol_commencing_continuing",
+                      "expression": "`enrol_commencing_continuing`"
                     },
                     {
-                      "name": "commencing_continuing_associativity",
+                      "name": "enrol_commencing_continuing_associativity",
                       "expression": "COUNT_IF(`associative_filter_predicate_group`)"
                     }
                   ],
@@ -2035,8 +2035,8 @@
               "encodings": {
                 "fields": [
                   {
-                    "fieldName": "commencing_continuing",
-                    "queryName": "filter_commencing_continuing_student_enrolment"
+                    "fieldName": "enrol_commencing_continuing",
+                    "queryName": "filter_commencing_continuing_b798cf1c"
                   }
                 ]
               }
