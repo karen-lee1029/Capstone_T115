@@ -93,3 +93,11 @@ The implementation handoff lists every row as **passed (evidence)**, **failed (e
 Re-publish from the Q25 commit. Then re-run A2 – A10, B2, B5 – B7, C3, C4 and D1 – D3. Record each
 row as pass, fail or pending, never as assumed. Chart clicks that only highlight (B5, B6, the second
 half of B7) may persist; Q25 does not change how charts query.
+
+### Re-test after Q26 (round 4)
+
+Re-publish from the Q26 commit. Re-run B1, B2, B3, B5 and B7: no "multiple sources" error, and the
+other widgets on the page narrow. For B7, the Gender click must not narrow the Age Band or Origin
+charts; if they narrow, stop and escalate. Also run C4 with **all filters cleared**, searching on
+Student List for an ID ranked below the top 100,000 (example: `64e9c59460e17c3a`, Risk % 49.7,
+613,371 students rank above it).

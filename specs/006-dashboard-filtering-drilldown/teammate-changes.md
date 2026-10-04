@@ -64,3 +64,18 @@ Status: **implemented** in the Feature-006 implementation commit on `agent/claud
   `workspace.student_aggregate.student_attrition_risk_prediction`, restore the test assertion
   `config.get("source") == PREDICTION_TABLE`, and rebind the five filters to `student_enrolment`.
   Note: that binding errors on Databricks Free Edition.
+
+## TC-5 Charts `028257ed`, `90548010`, `eaf7eaf4`, `292bc630`, `52cb0fd3` (US-17 / US-28)
+
+- **Original author / commit**: Karen (dashboard charts).
+- **Change and reason** (Q26 = a): each chart's enrolment field is renamed from
+  `Student_Enrolment_Details.<dim>` to the joined prediction column
+  `student_attrition_risk_prediction.enrol_<dim>` (Course Level, Field of Education, Age Band,
+  Origin, Gender). A click previously selected values from two datasets, and the platform rejected
+  it ("Filter expression references multiple sources"). Titles, colours, axes, sort and descriptions
+  are unchanged. The joined source gains `enrol_gender`, for display only. Karen's tests needed no
+  change.
+- **Commit**: the Q26 commit (see Implementation_Handoff.md).
+- **Revert**: in each chart, rename the fields back (`student_attrition_risk_prediction__enrol_<dim>`
+  → `Student_Enrolment_Details__<dim>`, with the matching expressions), and drop `enrol_gender` from
+  the prediction source. Chart clicks then error again on Free Edition.

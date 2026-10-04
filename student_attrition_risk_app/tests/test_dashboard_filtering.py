@@ -42,7 +42,22 @@ SENSITIVE_SOURCE_COLUMNS = {
     "student_home_language",
 }
 FILTERED_DIMENSIONS = {dimension for _, _, _, dimension in FILTER_CONTRACT}
-SENSITIVE_DIMENSIONS = {"gender", "socioeconomic_status", "first_nations", "home_language"}
+SENSITIVE_DIMENSIONS = {
+    "gender", "enrol_gender", "socioeconomic_status", "first_nations", "home_language",
+}
+# Q26: charts and tables whose enrolment fields now come from the joined prediction source, so a
+# chart click selects values from one dataset only. Compared with base after the field rename.
+REBOUND = {
+    "028257ed", "90548010", "eaf7eaf4", "292bc630", "52cb0fd3",
+}
+ENROLMENT_RENAME = {
+    "course_level": "enrol_course_level",
+    "broad_primary_field_of_education": "enrol_field_of_education",
+    "international_domestic": "enrol_origin",
+    "age_band": "enrol_age_band",
+    "gender": "enrol_gender",
+}
+GENDER_COLUMN = "enrol_gender"  # displayed only (Gender Breakdown, Demographic table), never filtered
 EMPTY_SOURCE_DIMENSIONS = {"faculty", "study_mode"}  # NULL in every source row (Q24)
 # Q21 -> Q22: the only table allowed to show a sensitive field beside other data widgets.
 # No ignore setting is available in the workspace; matrix row B7 checks it there.
@@ -66,13 +81,13 @@ DRILL_TABLES = {
         (P + "risk_score_bucket", "Risk Score Range"),
     ],
     ("Course Analysis", "drill_table_course"): COMMON_COLUMNS + [
-        (E + "course_level", "Course Level"),
-        (E + "broad_primary_field_of_education", "Field of Education"),
+        (P + "enrol_course_level", "Course Level"),
+        (P + "enrol_field_of_education", "Field of Education"),
     ],
     ("Demographic Breakdown", "drill_table_demographic"): COMMON_COLUMNS + [
-        (E + "age_band", "Age Band"),
-        (E + "gender", "Gender"),
-        (E + "international_domestic", "Origin"),
+        (P + "enrol_age_band", "Age Band"),
+        (P + "enrol_gender", "Gender"),
+        (P + "enrol_origin", "Origin"),
     ],
 }
 DRILL_TITLE = "Students in this view"
@@ -196,6 +211,15 @@ def _without_prediction_source(dash: dict) -> list[dict]:
     return datasets
 
 
+def _rebound(widget: dict) -> dict:
+    """A base widget with its enrolment fields renamed to the joined prediction columns (Q26)."""
+    text = json.dumps(widget)
+    for old, new in ENROLMENT_RENAME.items():
+        text = text.replace(f'Student_Enrolment_Details__{old}"', f'{P}{new}"')
+        text = text.replace(f"`{E[:-2]}`.`{old}`", f"`{P[:-2]}`.`{new}`")
+    return json.loads(text)
+
+
 def _table_sort(widget: dict) -> list[tuple[str, str]]:
     """(expression, direction) pairs of a table's default sort, from the query's ``orders`` (R-3)."""
     orders = widget["queries"][0]["query"].get("orders", [])
@@ -245,6 +269,16 @@ class TestDashboardWideFilters:
             {"fieldName": dimension, "queryName": query["name"]},
         ]
 
+    def test_selections_use_one_dataset(self):
+        # Q26: a chart or table selection spanning two datasets fails on the platform.
+        for page in _load()["pages"]:
+            # Student List keeps Student Details unchanged: it is the only data widget there.
+            if page["displayName"] == "Student List" or page.get("pageType") != "PAGE_TYPE_CANVAS":
+                continue
+            for widget in _widgets(page):
+                exprs = " ".join(_expressions(widget))
+                assert "`Student_Enrolment_Details`" not in exprs, widget["name"]
+
     def test_prediction_source_joins_only_filter_fields(self):
         # Q25: one row per student, enrolment fields LEFT JOINed in, no sensitive column added.
         config = next(d for d in _load()["datasets"] if d["name"] == PREDICTION)["config"]
@@ -254,8 +288,8 @@ class TestDashboardWideFilters:
         assert "ROW_NUMBER() OVER (PARTITION BY e.student_deidentified_hash" in source
         assert "WHERE t.rn = 1" in source
         assert "ON p.student_deidentified_hash = e.student_deidentified_hash" in source
-        assert _source_aliases(config) == JOINED_COLUMNS
-        assert not {c for c in SENSITIVE_SOURCE_COLUMNS if c in source}
+        assert _source_aliases(config) == JOINED_COLUMNS | {GENDER_COLUMN}
+        assert not {c for c in SENSITIVE_SOURCE_COLUMNS - {"student_gender"} if c in source}
 
     def test_no_filter_on_sensitive_attributes(self):
         for _, widget in _all_widgets(_load()):
@@ -408,6 +442,10 @@ class TestExplanationAndPreservation:
                 continue
             if name in TEXT_EDITED:
                 assert set(current_widgets[name]) == set(widget)
+                continue
+            if name in REBOUND:
+                # Q26 exception to C-5: identical to base apart from the enrolment field rebinding.
+                assert current_widgets[name] == _rebound(widget), name
                 continue
             assert current_widgets[name] == widget, name
         for page in base["pages"]:

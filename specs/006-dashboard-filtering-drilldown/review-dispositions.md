@@ -119,3 +119,11 @@ all checked) and confirmed the workspace is Databricks Free Edition. The account
 admin. **Q25 = a**: the five enrolment fields are joined into the prediction dataset's source, and
 all six filters bind to it. A read-only check shows the joined query returns 973,770 rows, one per
 student, with every filter field filled. This is a C-5 exception for Karen's dataset (TC-4).
+
+### Q26 (2026-10-05)
+
+Round 3 showed every filter passing, but chart clicks on Course Analysis and Demographic Breakdown
+raised "Filter expression references multiple sources". Those charts mixed an enrolment-dataset axis
+with the prediction-dataset Risk Level colour. **Q26 = a**: they and the two drill tables now take
+their enrolment fields from the joined prediction source. The Overview Risk Score Range click, which
+uses only prediction fields, already worked (B6).

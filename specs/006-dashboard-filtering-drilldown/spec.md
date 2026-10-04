@@ -144,6 +144,13 @@ the product owner in chat on 2026-10-04.
   enrolment data (one row per student), and bind the five filters to that dataset.** This is an
   approved exception to C-5 for Karen's dataset definition only; widget queries are unchanged. The
   product owner's Q24 rule (remove a filter that errors) applies only if this fails in the workspace.
+- **Q26** (round 3: chart clicks fail with "Filter expression references multiple sources",
+  because a chart's axis came from the enrolment dataset and its colour from the prediction
+  dataset) → **a) Rebind the five Course Analysis, Demographic and Gender charts and the Course
+  and Demographic "Students in this view" tables to the joined prediction columns**, adding
+  `enrol_gender` for display. Every selection then uses one dataset. Student Details on Student
+  List is unchanged; it is the only data widget on its page. This is a C-5 exception for Karen's
+  chart queries (TC-5).
 - **Q19** (R-3) How to obtain the global-filter and table-sort JSON formats when CLI logins had
   expired → **The product owner logs in; the agent reads workspace dashboards read-only.**
 
@@ -300,7 +307,8 @@ assert Feature-005's colours, order and descriptions, now on all seven current c
   the enrolment record chosen by the same rule as the enrolment dataset (latest census date, then
   enrolment year), keeping one row per student. It adds only `enrol_course_level`,
   `enrol_field_of_education`, `enrol_origin`, `enrol_age_band` and `enrol_commencing_continuing`,
-  and no sensitive field.
+  plus `enrol_gender` for display only (Q26). No other sensitive field is added, and no filter may
+  bind to `enrol_gender` (FR-004).
 - **FR-004**: No interaction path MUST narrow any widget by gender, socioeconomic status, First
   Nations status or home language (Q6). This covers (a) filter widgets — none may be bound to these
   fields — and (b) selections — a click on a chart or table showing one of these fields MUST NOT
@@ -320,7 +328,9 @@ assert Feature-005's colours, order and descriptions, now on all seven current c
 #### Click-to-focus
 
 - **FR-008**: On each canvas page, every chart and table MUST query the same relationship graph so
-  a selection on a chart of an allowed field can filter the other widgets on that page.
+  a selection on a chart of an allowed field can filter the other widgets on that page. **Q26**: on
+  the analysis pages, every field MUST come from the prediction dataset, so a selection never spans
+  two datasets.
 - **FR-009**: Feature-006 MUST NOT disable cross-filtering for charts of allowed fields or the
   active filter bar. Sensitive-field charts follow FR-004(b).
 

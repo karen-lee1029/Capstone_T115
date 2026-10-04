@@ -15,7 +15,7 @@ implementation. Matrix rows (A0 – D4) are in `quickstart.md`; a row not run is
 | FR-005 | TDF `test_no_fixed_filter_conflicts_with_global_filters`; matrix A1 – A11 |
 | FR-006 | TDF `test_student_list_risk_filter_replaced` |
 | FR-007 | TDF `test_filters_apply_immediately` |
-| FR-008 | TDF `test_page_widgets_share_relationship_graph`; matrix B1 – B3, B5, B6 |
+| FR-008 | TDF `test_page_widgets_share_relationship_graph`, `test_selections_use_one_dataset` (Q26); matrix B1 – B3, B5, B6 |
 | FR-009 | TDF `test_filters_apply_immediately`; matrix B1, B4 |
 | FR-010 | TDF `test_each_analysis_page_has_one_drill_table` |
 | FR-011 | TDF `test_drill_table_columns_match_contract` |

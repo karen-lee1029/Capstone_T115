@@ -59,8 +59,13 @@ most 100,000 table rows. Field names follow `<graph source>__<dimension>`.
 | Widget name | Page | Columns in order (dimension → display name) |
 |---|---|---|
 | `drill_table_overview` | Overview | `P.student_id` → Student ID (de-identified); `P.risk_pct` → Risk %; `P.risk_level` → Risk Level; `P.risk_score_bucket` → Risk Score Range |
-| `drill_table_course` | Course Analysis | Student ID (de-identified); Risk %; Risk Level; `E.course_level` → Course Level; `E.broad_primary_field_of_education` → Field of Education |
-| `drill_table_demographic` | Demographic Breakdown | Student ID (de-identified); Risk %; Risk Level; `E.age_band` → Age Band; `E.gender` → Gender; `E.international_domestic` → Origin |
+| `drill_table_course` | Course Analysis | Student ID (de-identified); Risk %; Risk Level; `P.enrol_course_level` → Course Level; `P.enrol_field_of_education` → Field of Education |
+| `drill_table_demographic` | Demographic Breakdown | Student ID (de-identified); Risk %; Risk Level; `P.enrol_age_band` → Age Band; `P.enrol_gender` → Gender; `P.enrol_origin` → Origin |
+
+Q26: on Overview, Course Analysis, Demographic Breakdown and Gender Breakdown every widget field comes
+from P (graph source `student_attrition_risk_prediction`). Karen's charts `028257ed`, `90548010`,
+`eaf7eaf4`, `292bc630` and `52cb0fd3` keep everything except their enrolment fields, which are
+renamed `Student_Enrolment_Details__<dim>` → `student_attrition_risk_prediction__enrol_<dim>`.
 
 The Student ID column has `useForSearch: true`, as in `163516f4`.
 
@@ -101,7 +106,7 @@ No overlap within a page. Every other widget keeps its base position.
 ## C-5 Unchanged versus base `0409d7e`
 
 `datasets` (except P's `config.source`, the Q25 exception), `relationshipGraphs`, `uiSettings`;
-every base widget not in C-4 (compared whole); C-4
+the five Q26 charts equal base after the enrolment-field rename; every other base widget not in C-4 (compared whole); C-4
 base widgets compared without `position` (`521bf497` also without its text lines); the four base
 pages keep name, displayName and pageType. Page order: Overview, Course Analysis, Demographic
 Breakdown, Gender Breakdown (`name: "gender_breakdown"`, `PAGE_TYPE_CANVAS`), Student List, Filters.

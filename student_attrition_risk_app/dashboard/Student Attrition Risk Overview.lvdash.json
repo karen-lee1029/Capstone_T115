@@ -5,7 +5,7 @@
       "displayName": "student_attrition_risk_prediction",
       "config": {
         "version": "1.1",
-        "source": "SELECT\n  p.*,\n  e.course_level AS enrol_course_level,\n  e.broad_primary_field_of_education AS enrol_field_of_education,\n  e.international_domestic_student AS enrol_origin,\n  e.age_band AS enrol_age_band,\n  e.commencing_continuing AS enrol_commencing_continuing\nFROM workspace.student_aggregate.student_attrition_risk_prediction p\nLEFT JOIN (\n  SELECT\n    t.student_deidentified_hash,\n    c.course_level,\n    c.broad_primary_field_of_education,\n    t.international_domestic_student,\n    t.age_band,\n    t.commencing_continuing\n  FROM (\n    SELECT\n      e.*,\n      ROW_NUMBER() OVER (PARTITION BY e.student_deidentified_hash ORDER BY e.census_date DESC, e.enrolment_year DESC) AS rn\n    FROM workspace.student_aggregate.rpt_student_management__fact__all_enrolment_eftsl__deidentified e\n  ) t\n  LEFT JOIN workspace.student_aggregate.dwh_curriculum__course c ON t.course_key_hash = c.course_key_hash\n  WHERE t.rn = 1\n) e ON p.student_deidentified_hash = e.student_deidentified_hash",
+        "source": "SELECT\n  p.*,\n  e.course_level AS enrol_course_level,\n  e.broad_primary_field_of_education AS enrol_field_of_education,\n  e.international_domestic_student AS enrol_origin,\n  e.age_band AS enrol_age_band,\n  e.commencing_continuing AS enrol_commencing_continuing,\n  e.student_gender AS enrol_gender\nFROM workspace.student_aggregate.student_attrition_risk_prediction p\nLEFT JOIN (\n  SELECT\n    t.student_deidentified_hash,\n    c.course_level,\n    c.broad_primary_field_of_education,\n    t.international_domestic_student,\n    t.age_band,\n    t.commencing_continuing,\n    t.student_gender\n  FROM (\n    SELECT\n      e.*,\n      ROW_NUMBER() OVER (PARTITION BY e.student_deidentified_hash ORDER BY e.census_date DESC, e.enrolment_year DESC) AS rn\n    FROM workspace.student_aggregate.rpt_student_management__fact__all_enrolment_eftsl__deidentified e\n  ) t\n  LEFT JOIN workspace.student_aggregate.dwh_curriculum__course c ON t.course_key_hash = c.course_key_hash\n  WHERE t.rn = 1\n) e ON p.student_deidentified_hash = e.student_deidentified_hash",
         "dimensions": [
           {
             "expr": "source.*"
@@ -766,8 +766,8 @@
                       "expression": "MEASURE(`student_attrition_risk_prediction`.`count`)"
                     },
                     {
-                      "name": "Student_Enrolment_Details__course_level",
-                      "expression": "`Student_Enrolment_Details`.`course_level`"
+                      "name": "student_attrition_risk_prediction__enrol_course_level",
+                      "expression": "`student_attrition_risk_prediction`.`enrol_course_level`"
                     }
                   ],
                   "disaggregated": false
@@ -801,7 +801,7 @@
                   }
                 },
                 "y": {
-                  "fieldName": "Student_Enrolment_Details__course_level",
+                  "fieldName": "student_attrition_risk_prediction__enrol_course_level",
                   "scale": {
                     "type": "categorical",
                     "sort": {
@@ -855,8 +855,8 @@
                       "expression": "MEASURE(`student_attrition_risk_prediction`.`count`)"
                     },
                     {
-                      "name": "Student_Enrolment_Details__broad_primary_field_of_education",
-                      "expression": "`Student_Enrolment_Details`.`broad_primary_field_of_education`"
+                      "name": "student_attrition_risk_prediction__enrol_field_of_education",
+                      "expression": "`student_attrition_risk_prediction`.`enrol_field_of_education`"
                     }
                   ],
                   "disaggregated": false
@@ -890,7 +890,7 @@
                   }
                 },
                 "y": {
-                  "fieldName": "Student_Enrolment_Details__broad_primary_field_of_education",
+                  "fieldName": "student_attrition_risk_prediction__enrol_field_of_education",
                   "scale": {
                     "type": "categorical",
                     "sort": {
@@ -982,12 +982,12 @@
                       "expression": "`student_attrition_risk_prediction`.`risk_level`"
                     },
                     {
-                      "name": "Student_Enrolment_Details__course_level",
-                      "expression": "`Student_Enrolment_Details`.`course_level`"
+                      "name": "student_attrition_risk_prediction__enrol_course_level",
+                      "expression": "`student_attrition_risk_prediction`.`enrol_course_level`"
                     },
                     {
-                      "name": "Student_Enrolment_Details__broad_primary_field_of_education",
-                      "expression": "`Student_Enrolment_Details`.`broad_primary_field_of_education`"
+                      "name": "student_attrition_risk_prediction__enrol_field_of_education",
+                      "expression": "`student_attrition_risk_prediction`.`enrol_field_of_education`"
                     }
                   ],
                   "disaggregated": true,
@@ -1031,11 +1031,11 @@
                     "displayName": "Risk Level"
                   },
                   {
-                    "fieldName": "Student_Enrolment_Details__course_level",
+                    "fieldName": "student_attrition_risk_prediction__enrol_course_level",
                     "displayName": "Course Level"
                   },
                   {
-                    "fieldName": "Student_Enrolment_Details__broad_primary_field_of_education",
+                    "fieldName": "student_attrition_risk_prediction__enrol_field_of_education",
                     "displayName": "Field of Education"
                   }
                 ]
@@ -1095,8 +1095,8 @@
                       "expression": "MEASURE(`student_attrition_risk_prediction`.`count`)"
                     },
                     {
-                      "name": "Student_Enrolment_Details__age_band",
-                      "expression": "`Student_Enrolment_Details`.`age_band`"
+                      "name": "student_attrition_risk_prediction__enrol_age_band",
+                      "expression": "`student_attrition_risk_prediction`.`enrol_age_band`"
                     }
                   ],
                   "disaggregated": false
@@ -1130,7 +1130,7 @@
                   }
                 },
                 "y": {
-                  "fieldName": "Student_Enrolment_Details__age_band",
+                  "fieldName": "student_attrition_risk_prediction__enrol_age_band",
                   "scale": {
                     "type": "categorical",
                     "sort": {
@@ -1184,8 +1184,8 @@
                       "expression": "MEASURE(`student_attrition_risk_prediction`.`count`)"
                     },
                     {
-                      "name": "Student_Enrolment_Details__international_domestic",
-                      "expression": "`Student_Enrolment_Details`.`international_domestic`"
+                      "name": "student_attrition_risk_prediction__enrol_origin",
+                      "expression": "`student_attrition_risk_prediction`.`enrol_origin`"
                     }
                   ],
                   "disaggregated": false
@@ -1219,7 +1219,7 @@
                   }
                 },
                 "y": {
-                  "fieldName": "Student_Enrolment_Details__international_domestic",
+                  "fieldName": "student_attrition_risk_prediction__enrol_origin",
                   "scale": {
                     "type": "categorical",
                     "sort": {
@@ -1311,16 +1311,16 @@
                       "expression": "`student_attrition_risk_prediction`.`risk_level`"
                     },
                     {
-                      "name": "Student_Enrolment_Details__age_band",
-                      "expression": "`Student_Enrolment_Details`.`age_band`"
+                      "name": "student_attrition_risk_prediction__enrol_age_band",
+                      "expression": "`student_attrition_risk_prediction`.`enrol_age_band`"
                     },
                     {
-                      "name": "Student_Enrolment_Details__gender",
-                      "expression": "`Student_Enrolment_Details`.`gender`"
+                      "name": "student_attrition_risk_prediction__enrol_gender",
+                      "expression": "`student_attrition_risk_prediction`.`enrol_gender`"
                     },
                     {
-                      "name": "Student_Enrolment_Details__international_domestic",
-                      "expression": "`Student_Enrolment_Details`.`international_domestic`"
+                      "name": "student_attrition_risk_prediction__enrol_origin",
+                      "expression": "`student_attrition_risk_prediction`.`enrol_origin`"
                     }
                   ],
                   "disaggregated": true,
@@ -1364,15 +1364,15 @@
                     "displayName": "Risk Level"
                   },
                   {
-                    "fieldName": "Student_Enrolment_Details__age_band",
+                    "fieldName": "student_attrition_risk_prediction__enrol_age_band",
                     "displayName": "Age Band"
                   },
                   {
-                    "fieldName": "Student_Enrolment_Details__gender",
+                    "fieldName": "student_attrition_risk_prediction__enrol_gender",
                     "displayName": "Gender"
                   },
                   {
-                    "fieldName": "Student_Enrolment_Details__international_domestic",
+                    "fieldName": "student_attrition_risk_prediction__enrol_origin",
                     "displayName": "Origin"
                   }
                 ]
@@ -1432,8 +1432,8 @@
                       "expression": "MEASURE(`student_attrition_risk_prediction`.`count`)"
                     },
                     {
-                      "name": "Student_Enrolment_Details__gender",
-                      "expression": "`Student_Enrolment_Details`.`gender`"
+                      "name": "student_attrition_risk_prediction__enrol_gender",
+                      "expression": "`student_attrition_risk_prediction`.`enrol_gender`"
                     }
                   ],
                   "disaggregated": false
@@ -1467,7 +1467,7 @@
                   }
                 },
                 "y": {
-                  "fieldName": "Student_Enrolment_Details__gender",
+                  "fieldName": "student_attrition_risk_prediction__enrol_gender",
                   "scale": {
                     "type": "categorical",
                     "sort": {

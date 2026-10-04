@@ -197,3 +197,30 @@ Source: the product owner's "Notes on changes and recompleting failed tests for 
 | D3 | Not applicable | Every student has an enrolment record. Per the product owner, the missing-enrolment sentence is removed from the help panel (this commit) |
 
 The probe dashboard stays by the product owner's decision. Its deletion is no longer pending.
+
+## Round 4: Q26 (2026-10-05)
+
+**Q26 = a**: the five charts `028257ed`, `90548010`, `eaf7eaf4`, `292bc630` and `52cb0fd3`, plus the
+Course and Demographic drill tables, now take their enrolment fields from the joined prediction
+columns. Selections on analysis pages therefore use one dataset. The joined source gains
+`enrol_gender`, for display only; no filter binds to it. A read-only run returned 973,770 rows, one per
+student, with gender filled for all. This is a C-5 exception for Karen's chart queries (TC-5); her
+tests needed no change.
+
+**Age bands**: the product owner reports they now work. The data has 11 bands (read-only check).
+
+**C4**: still failing as reported. With no filters, searching `64e9c59460e17c3a` (Risk % 49.7;
+613,371 students rank above it, so it is outside the top 100,000) shows "No Data". Cause not yet
+known; see the question to the product owner on which search box was used.
+
+**New checks**: `test_selections_use_one_dataset`. Preservation compares the five charts with base
+after the field rename.
+
+**Verification**:
+- `uv run pytest -q`: 352 passed, 14 skipped, 0 failed.
+- Ruff: base I001 only.
+- Mutation: 11 of 11 faults caught. New fault: "Age Band chart bound to the enrolment dataset again"
+  (2 failed).
+
+**Pending (product owner)**: re-publish, then run the quickstart round 4 re-test (B1 – B3, B5, B7,
+C4).
