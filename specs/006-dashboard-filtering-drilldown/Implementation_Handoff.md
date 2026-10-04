@@ -230,6 +230,6 @@ C4).
 | Row | Result | Note |
 |---|---|---|
 | B1, B2, B3 | Pass | No "multiple sources" error. Course Analysis selections narrow, combine with filters and clear independently |
-| B5 | Not reported | Requested again |
+| B5 | Pass | Age Band and Origin bar clicks narrow the other chart and the table without error (product owner confirmed; the first note labelled B7 as B5) |
 | B7 | Pending product owner decision (Q27) | A click in the Demographic table selects that student's row, so Risk by Age Band and Risk by Origin narrow to one student. That is narrowing by student, not by gender. The written expectation ("do not change") is not met; the intent of Q6 ("never narrow by gender") appears to be met |
 | C4 | Pass | With no filters, Search Student on Student List finds `64e9c59460e17c3a` (ranked below the top 100,000). The magnifier inside a "Students in this view" table only searches the up-to-100,000 rows it holds, as its description states |
