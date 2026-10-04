@@ -9,6 +9,7 @@ not here; see the acceptance matrix in specs/006-dashboard-filtering-drilldown/q
 
 import json
 import re
+import sqlite3
 import subprocess
 from pathlib import Path
 
@@ -220,6 +221,52 @@ def _rebound(widget: dict) -> dict:
     return json.loads(text)
 
 
+def _run_prediction_source() -> dict[str, dict]:
+    """Run the prediction dataset's source query on an in-memory SQLite fixture (R2-01).
+
+    Offline logic check only: schema qualification is removed, and Databricks dialect behaviour is
+    evidenced in the workspace. Values are chosen so that each joined column holds a distinct value.
+    """
+    config = next(d for d in _load()["datasets"] if d["name"] == PREDICTION)["config"]
+    sql = config["source"].replace("workspace.student_aggregate.", "")
+    db = sqlite3.connect(":memory:")
+    db.executescript(
+        """
+        CREATE TABLE student_attrition_risk_prediction (
+            student_deidentified_hash TEXT, attrition_risk_percentage REAL);
+        CREATE TABLE rpt_student_management__fact__all_enrolment_eftsl__deidentified (
+            student_deidentified_hash TEXT, census_date TEXT, enrolment_year INTEGER,
+            course_key_hash TEXT, international_domestic_student TEXT, age_band TEXT,
+            commencing_continuing TEXT, student_gender TEXT, socioeconomic_status TEXT);
+        CREATE TABLE dwh_curriculum__course (
+            course_key_hash TEXT, course_level TEXT, broad_primary_field_of_education TEXT);
+        INSERT INTO student_attrition_risk_prediction VALUES
+            ('s1', 61.0), ('s2', 40.0), ('s3', 52.5), ('s4', 47.0);
+        INSERT INTO rpt_student_management__fact__all_enrolment_eftsl__deidentified VALUES
+            ('s1', '2023-03-31', 2023, 'c_old', 'International', '15 to 19', 'Commencing',
+             'Female', 'Low'),
+            ('s1', '2025-03-31', 2025, 'c_new', 'Domestic', '20 to 24', 'Continuing',
+             'Female', 'Low'),
+            ('s3', '2025-03-31', 2025, 'c_missing', 'International', '25 to 29', 'Commencing',
+             'Male', 'High'),
+            ('s4', '2025-03-31', 2024, 'c_other', 'Domestic', '15 to 19', 'Commencing',
+             'Male', 'Low'),
+            ('s4', '2025-03-31', 2025, 'c_hdr', 'Domestic', '30 to 34', 'Continuing',
+             'Male', 'Low');
+        INSERT INTO dwh_curriculum__course VALUES
+            ('c_old', 'Postgraduate (Coursework)', 'HEALTH'),
+            ('c_new', 'Undergraduate', 'ENGINEERING'),
+            ('c_other', 'Other', 'ARTS'),
+            ('c_hdr', 'HDR', 'IT');
+        """
+    )
+    columns = sorted(JOINED_COLUMNS | {GENDER_COLUMN})
+    query = f"SELECT student_deidentified_hash, {', '.join(columns)} FROM ({sql})"
+    rows = db.execute(query).fetchall()
+    assert len(rows) == len({row[0] for row in rows}), "more than one row for a student"
+    return {row[0]: dict(zip(columns, row[1:])) for row in rows}
+
+
 def _table_sort(widget: dict) -> list[tuple[str, str]]:
     """(expression, direction) pairs of a table's default sort, from the query's ``orders`` (R-3)."""
     orders = widget["queries"][0]["query"].get("orders", [])
@@ -290,6 +337,26 @@ class TestDashboardWideFilters:
         assert "ON p.student_deidentified_hash = e.student_deidentified_hash" in source
         assert _source_aliases(config) == JOINED_COLUMNS | {GENDER_COLUMN}
         assert not {c for c in SENSITIVE_SOURCE_COLUMNS - {"student_gender"} if c in source}
+
+    def test_prediction_source_rows_and_values(self):
+        # R2-01: run the real source query on a small fixture, so the checks cover what each joined
+        # column holds, that every student is kept, and that the latest enrolment record is used.
+        rows = _run_prediction_source()
+        assert sorted(rows) == ["s1", "s2", "s3", "s4"]  # one row per student, none dropped
+        assert rows["s1"] == {  # latest census date wins over an older record
+            "enrol_course_level": "Undergraduate", "enrol_field_of_education": "ENGINEERING",
+            "enrol_origin": "Domestic", "enrol_age_band": "20 to 24",
+            "enrol_commencing_continuing": "Continuing", "enrol_gender": "Female",
+        }
+        assert rows["s2"] == dict.fromkeys(rows["s1"])  # no enrolment record: kept, fields empty
+        assert rows["s3"] == {  # enrolment without a course row: kept, course fields empty
+            "enrol_course_level": None, "enrol_field_of_education": None,
+            "enrol_origin": "International", "enrol_age_band": "25 to 29",
+            "enrol_commencing_continuing": "Commencing", "enrol_gender": "Male",
+        }
+        # Same census date: the later enrolment year wins.
+        assert rows["s4"]["enrol_course_level"] == "HDR"
+        assert rows["s4"]["enrol_age_band"] == "30 to 34"
 
     def test_no_filter_on_sensitive_attributes(self):
         for _, widget in _all_widgets(_load()):

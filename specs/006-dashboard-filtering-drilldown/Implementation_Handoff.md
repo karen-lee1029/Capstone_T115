@@ -237,3 +237,22 @@ C4).
 **Q27 = a** (product owner): B7 is accepted as a pass, with its expectation reworded. With this, every
 workspace acceptance row is passed, accepted or not applicable (D3). Nothing is pending in the
 workspace. Push, PR and merge still need the product owner's explicit approval; none has been done.
+
+## Code review round 2 remediation (R2-01, R2-02)
+
+- **R2-01** (P2): accepted and fixed. `test_prediction_source_rows_and_values` runs the real source
+  query on an in-memory SQLite fixture covering latest census date, the year tie-break, no
+  enrolment and no course row. Every joined column holds a distinct value. This is offline logic
+  only; the Databricks dialect is evidenced in the workspace.
+- **R2-02** (P3): accepted and fixed. FR-004, B7 (one pass/fail rule) and the round-4 re-test now
+  follow Q27. SC-001 and the US1 test use 6 filters, C-1 lists 6 joined columns (Gender display
+  only), and C-3 drops "enrolment record".
+
+**Verification**:
+- `uv run pytest -q`: 353 passed, 14 skipped, 0 failed.
+- `tests/test_dashboard_filtering.py`: 41 passed.
+- Ruff: base I001 only.
+- Mutation: 15 of 15 faults caught, including the reviewer's 3 SQL faults (1 failed each) and a new
+  "course joined on the wrong key" fault (1 failed). The file was restored byte for byte.
+
+No dashboard change in this round.

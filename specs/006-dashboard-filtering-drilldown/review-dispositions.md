@@ -134,3 +134,16 @@ In round 4, B7 showed that a table click selects the student's row, so the Age B
 narrow to that one student. **Q27 = a**: accepted as a pass. Narrowing by one clicked student is not
 narrowing by gender, so Q6 holds. B7's expectation in the quickstart is reworded to match. SDD-01 and
 CODE-01 have their workspace evidence.
+
+# Code review round 2 dispositions (2026-10-05)
+
+Source: `hive/agents/codex-code-reviewer-mutdf98m/handoffs/US-29/Review_Verification_Handoff_round2.md`
+(target `321ef34`, Request changes).
+
+| Finding | Disposition | Changes |
+|---|---|---|
+| **R2-01** (P2) Source-query checks miss field meaning, student retention and latest record | **Accepted and fixed.** New `test_prediction_source_rows_and_values` runs the real source query on an in-memory SQLite fixture with schema qualification removed. Four students cover: newest census date, enrolment-year tie-break, no enrolment record (row kept, fields empty), and an enrolment without a course row (row kept, course fields empty). Each joined column holds a distinct value, so a swapped column is caught. All 3 reviewer faults now fail, as does a wrong course-join key. This is offline logic only; Databricks dialect behaviour stays workspace evidence. | `tests/test_dashboard_filtering.py` |
+| **R2-02** (P3) Acceptance text contradicts Q24, Q26 and Q27 | **Accepted and fixed.** FR-004 now forbids narrowing to a group defined by a sensitive field and allows one-student row selection (Q27). B7 states one pass/fail rule, and the round-4 re-test points to it. SC-001 and the US1 independent test use the 6 filters. Contract C-1 lists six joined columns (five filter columns plus display-only Gender). C-3 drops the "enrolment record" phrase. | spec, quickstart, contract |
+
+Not changed (reviewer's data assumptions, not findings): course-key uniqueness and enrolment ties on
+equal census date and year. Both are inherited from the original enrolment dataset rule.

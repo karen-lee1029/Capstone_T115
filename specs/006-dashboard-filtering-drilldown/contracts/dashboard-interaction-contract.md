@@ -22,8 +22,9 @@ appended after the four existing pages. Exactly these widgets, all `filter-multi
 | 5 | `filter_commencing_continuing` | Filter by Commencing/Continuing | P | `enrol_commencing_continuing` |
 
 Q25: all filters bind to P. P's source is a query that reads the prediction table (`p.*`) and LEFT
-JOINs the de-duplicated enrolment record plus its course, adding exactly the five `enrol_*` columns
-above (exposed through P's existing `source.*` dimension). The enrolment-bound version failed in the
+JOINs the de-duplicated enrolment record plus its course. It adds exactly six columns, exposed
+through P's existing `source.*` dimension: the five `enrol_*` filter columns above, plus
+`enrol_gender` for display only (Q26). No filter may bind to `enrol_gender`. The enrolment-bound version failed in the
 workspace with UNRESOLVED_COLUMN, because filters on a related dataset need a Public Preview that
 Free Edition does not offer. Query name per widget: `<widget name>_b798cf1c`.
 
@@ -73,8 +74,8 @@ The Student ID column has `useForSearch: true`, as in `163516f4`.
 
 Text widget `how_to_filter` on Overview; heading `How to filter and drill down` in the
 `how_to_read` heading style. Body contains (case-insensitive): "Filters", "every page", "click a
-bar", "active filter bar", "Students in this view", "Student ID (de-identified)", "enrolment
-record", "100,000", "Gender Breakdown". MUST NOT contain "High", "Low" or "Medium" as category words.
+bar", "active filter bar", "Students in this view", "Student ID (de-identified)", "100,000",
+"Gender Breakdown". (The "enrolment record" sentence was removed in round 3: every student has one.) MUST NOT contain "High", "Low" or "Medium" as category words.
 
 ## C-4 Layout (canvas width 12)
 

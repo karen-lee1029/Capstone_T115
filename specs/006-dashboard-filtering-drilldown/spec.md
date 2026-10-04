@@ -178,8 +178,8 @@ criterion and the base for drill-down.
 
 **Independent Test**: Offline, the definition has one dashboard-wide filter page with exactly the
 six remaining filters (Q24), each bound to an existing dataset field, and no widget carries a fixed filter
-that contradicts them (except the two category counters). In the workspace, choose one Faculty and
-check every page narrows and the counters add up.
+that contradicts them (except the two category counters). In the workspace, choose one Course Level
+and check every page narrows and the counters add up.
 
 **Acceptance Scenarios**:
 
@@ -315,12 +315,14 @@ assert Feature-005's colours, order and descriptions, now on all seven current c
 - **FR-004**: No interaction path MUST narrow any widget by gender, socioeconomic status, First
   Nations status or home language (Q6). This covers (a) filter widgets — none may be bound to these
   fields — and (b) selections — a click on a chart or table showing one of these fields MUST NOT
-  narrow any other widget. Charts: Risk by Gender sits alone on a "Gender Breakdown" page (Q16 = a).
+  narrow any other widget to a group defined by that field. Selecting one student's row in a table
+  may narrow the page to that one student (Q27). Charts: Risk by Gender sits alone on a "Gender Breakdown" page (Q16 = a).
   Tables: tables are cross-filter sources on the platform (research R-8, corrected after code review
   CODE-01). The Student List table is alone on its page. The mechanism for the Demographic Breakdown
   table, which shows Gender (Q9), is **observe first** (Q21 → Q22): no ignore setting is added
-  (the platform option is unavailable here), and matrix row B7 must show that clicks in that table
-  do not narrow Risk by Age Band or Risk by Origin. Until B7 runs, this part of FR-004 is unproven.
+  (the platform option is unavailable here), and matrix row B7 must show that a click in that table
+  never narrows Risk by Age Band or Risk by Origin to a gender group. Narrowing them to the one
+  selected student is allowed (Q27). B7 passed in round 4.
 - **FR-005**: Every counter, chart and table MUST respond to the dashboard-wide filters. No widget
   may carry a fixed filter on a filtered field, except the At Risk and Not At Risk counters on
   Risk Level.
@@ -411,7 +413,7 @@ assert Feature-005's colours, order and descriptions, now on all seven current c
 
 ## Success Criteria *(mandatory)*
 
-- **SC-001**: 8 of 8 agreed filters exist and narrow 100% of counters, charts and tables on all 5 canvas pages (Overview, Course Analysis, Demographic Breakdown, Gender Breakdown, Student List).
+- **SC-001**: 6 of 6 filters (Q24: Faculty and Study Mode removed) exist and narrow 100% of counters, charts and tables on all 5 canvas pages (Overview, Course Analysis, Demographic Breakdown, Gender Breakdown, Student List).
 - **SC-002**: For any selection, Total = At Risk + Not At Risk on Overview.
 - **SC-003**: 3 of 3 analysis pages have a "Students in this view" table sorted by Risk % descending.
 - **SC-004**: From any chart bar of an allowed field, the advisor reaches its students in at most 2 clicks.

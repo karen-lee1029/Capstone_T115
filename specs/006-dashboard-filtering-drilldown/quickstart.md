@@ -63,7 +63,7 @@ If any widget in A1 – A10 does not narrow: stop, record widget/field/observati
 | B4 | Gender Breakdown: click a bar of Risk by Gender, then visit every other page | **No other widget or table narrows** (negative evidence for Q6) |
 | B5 | Demographic Breakdown: click one Age Band bar, then one Origin bar | Other allowed charts and the table narrow; clearing restores |
 | B6 | Overview: click one Risk Score Range bar | Counters, Risk Level chart and the table narrow |
-| B7 | Demographic Breakdown: click a Gender cell (and a Gender column value) in the "Students in this view" table | **Risk by Age Band and Risk by Origin never narrow by gender**. A row click may narrow them to that one student (Q27) (negative evidence for Q6; no suppression setting is applied, per Q21 → Q22. If either chart narrows, stop and escalate). Then confirm Age Band and Origin bar clicks still narrow the table |
+| B7 | Demographic Breakdown: click a Gender cell (and a Gender column value) in the "Students in this view" table | **Risk by Age Band and Risk by Origin never narrow by gender**. A row click may narrow them to that one student (Q27) (negative evidence for Q6; no suppression setting is applied, per Q21 → Q22). **Pass**: each chart shows either all students or only the one selected student. **Fail, stop and escalate**: either chart narrows to a gender group (more than the one selected student). Then confirm Age Band and Origin bar clicks still narrow the table |
 
 ### C — Drill-down tables (US3; FR-010 – FR-013)
 
@@ -94,10 +94,10 @@ Re-publish from the Q25 commit. Then re-run A2 – A10, B2, B5 – B7, C3, C4 an
 row as pass, fail or pending, never as assumed. Chart clicks that only highlight (B5, B6, the second
 half of B7) may persist; Q25 does not change how charts query.
 
-### Re-test after Q26 (round 4)
+### Re-test after Q26 (round 4, completed; all passed or accepted)
 
 Re-publish from the Q26 commit. Re-run B1, B2, B3, B5 and B7: no "multiple sources" error, and the
-other widgets on the page narrow. For B7, the Gender click must not narrow the Age Band or Origin
-charts; if they narrow, stop and escalate. Also run C4 with **all filters cleared**, searching on
+other widgets on the page narrow. For B7, use the pass and fail rule in row B7: narrowing to the one
+selected student passes (Q27), and narrowing to a gender group fails. Also run C4 with **all filters cleared**, searching on
 Student List for an ID ranked below the top 100,000 (example: `64e9c59460e17c3a`, Risk % 49.7,
 613,371 students rank above it).
