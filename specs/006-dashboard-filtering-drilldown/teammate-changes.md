@@ -5,7 +5,9 @@ The team approved edits to teammates' contributions needed to implement US-28 an
 repairs the 24 base test failures (Q3) by updating the tests (Q15). Every edit is logged here with
 revert steps. Revert support lives only in this document.
 
-Status: **planned** (SDD stage). The implementation stage fills in commit SHAs and exact lines.
+Status: **implemented** in the Feature-006 implementation commit on `agent/claude-coder-mutdg3d2`
+(the commit that adds `tests/test_dashboard_filtering.py`; find it with
+`git log --oneline -- student_attrition_risk_app/tests/test_dashboard_filtering.py`).
 
 ## TC-1 Dashboard layout (US-27)
 
@@ -14,13 +16,18 @@ Status: **planned** (SDD stage). The implementation stage fills in commit SHAs a
   owner: Renny (confirmed 2026-10-01).
 - **Change and reason**: remove `310fbbb0` "Filter by Risk Level" (Q8, replaced dashboard-wide);
   widen `c2d55445` w 6→12; move `3158dd73` y18→31, `98aa39b6` y19→32, `100b44c5` y10→20,
-  `3edf02b6` y11→21, `41477a60` y18→28, `0d5ba328` y19→29 (room for the new widgets). Additions
-  are Feature-006's own content.
-- **Commit**: _at implementation_
+  `3edf02b6` y11→21, `41477a60` y18→28, `0d5ba328` y19→29 (room for the new widgets). Q16 = a:
+  move `52cb0fd3` Risk by Gender from Demographic Breakdown (x 0, y 10, w 6, h 8) to the new Gender
+  Breakdown page (x 0, y 2, w 12, h 8); widen `292bc630` Risk by Origin (x 6 → 0, w 6 → 12); change
+  `521bf497`'s subtitle from "Risk distribution by age band, gender and origin" to "Risk
+  distribution by age band and origin". Additions are Feature-006's own content.
+- **Commit**: the Feature-006 implementation commit (see Status)
 - **Revert**: `git checkout 0409d7e -- "student_attrition_risk_app/dashboard/Student Attrition Risk Overview.lvdash.json"`
   (also removes all Feature-006 dashboard content; then remove `tests/test_dashboard_filtering.py`,
   which asserts it). Partial: re-insert `310fbbb0` from the base file at x 6, y 2, w 6, h 2 and set
-  `c2d55445` back to w 6.
+  `c2d55445` back to w 6. To undo only the Gender move, delete the `gender_breakdown` page, put
+  `52cb0fd3` back on Demographic Breakdown at x 0, y 10, w 6, h 8, set `292bc630` to x 6, w 6 and
+  restore `521bf497`'s subtitle.
 
 ## TC-2 `tests/test_dashboard.py` (US-17)
 
@@ -28,9 +35,10 @@ Status: **planned** (SDD stage). The implementation stage fills in commit SHAs a
 - **Change and reason** (Q3, plan D-8): re-key `CHART_CONTRACT` and its axis map to the seven
   current charts; update `EXPECTED_WIDGET_TITLES` (drop "Filter by Risk Flag", add "Risk by Course
   Level" and "Risk by Field of Education"); make the overlap check per page.
-- **Commit**: _at implementation_
+- **Commit**: the Feature-006 implementation commit (see Status)
 - **Revert**: `git checkout 0409d7e -- student_attrition_risk_app/tests/test_dashboard.py` (the 18
-  base failures return).
+  base failures return). Also (Q20) `test_student_id_is_labelled_de_identified` count 2 → 5;
+  revert by setting it back to 2 together with removing the three US-29 tables.
 
 ## TC-3 `tests/test_ui.py` (US-17)
 
@@ -39,6 +47,6 @@ Status: **planned** (SDD stage). The implementation stage fills in commit SHAs a
   Saved" and the review checkbox — assert "Retrieve Saved" absent in the profile test; drop the
   checkbox block from the generate test (renamed); replace the three Retrieve Saved tests and the
   checkbox-toggle test with one absence test; update the docstring.
-- **Commit**: _at implementation_
+- **Commit**: the Feature-006 implementation commit (see Status)
 - **Revert**: `git checkout 0409d7e -- student_attrition_risk_app/tests/test_ui.py`. If Lu restores
   the button and checkbox in `ui.py`, this revert is the matching test change.

@@ -4,7 +4,7 @@
 
 **Created**: 2026-10-04
 
-**Status**: Draft — amended after independent SDD review (SDD-01 – SDD-05); three product-owner decisions pending (Q16 – Q18, see `review-dispositions.md`)
+**Status**: Amended after independent SDD review (SDD-01 – SDD-05); Q16 – Q19 answered; implementation in progress
 
 **Input**: Product Backlog US-29, GitHub issue karen-lee1029/Capstone_T115 #110.
 
@@ -104,14 +104,25 @@ Answers given by the product owner in chat on 2026-10-04. Authoritative; not re-
   "Retrieve Saved" button and the review checkbox in `385041c`? → **Update the tests** to match the
   simplified page. `ui.py` is not touched.
 
-### Pending product-owner decisions after the SDD review (2026-10-04)
+### Session 2026-10-04 (decisions after the independent SDD review)
 
-Raised by the independent SDD review; options and evidence in `review-dispositions.md`. Nothing
-that depends on them is implemented until the product owner's answers are recorded here.
+Raised by the independent SDD review; options and evidence in `review-dispositions.md`. Answered by
+the product owner in chat on 2026-10-04.
 
-- **Q16** (SDD-01) How to stop a click on the Risk by Gender chart from narrowing other widgets → _pending_
-- **Q17** (SDD-02) What the "Students in this view" tables promise given the 100,000-row rendering limit → _pending_
-- **Q18** (review item 3) Whether to repair the live, workspace-only one-page check at `tests/test_dashboard.py:366` → _pending_
+- **Q16** (SDD-01) How to stop a click on the Risk by Gender chart from narrowing other widgets →
+  **a) Move Risk by Gender to its own "Gender Breakdown" page with no other data widget.**
+- **Q17** (SDD-02) What the "Students in this view" tables promise given the 100,000-row rendering
+  limit → **a) Up to 100,000 students, highest risk first, no extra cap; description and help panel
+  say so and point to narrowing and Student List search.**
+- **Q18** (review item 3) Whether to repair the live, workspace-only one-page check at
+  `tests/test_dashboard.py:366` → **a) Leave it unchanged; record it as a known pre-existing failure
+  that appears only with workspace access.**
+- **Q20** (implementation) The three new tables each add a "Student ID (de-identified)" column, so
+  Feature-005's check `test_student_id_is_labelled_de_identified` (count of that label == 2) would
+  fail → **Update the count to 5** (dimension, Student Details, three new tables), keeping the check
+  that a bare "Student ID" label never appears.
+- **Q19** (R-3) How to obtain the global-filter and table-sort JSON formats when CLI logins had
+  expired → **The product owner logs in; the agent reads workspace dashboards read-only.**
 
 ### Settled from project records
 
@@ -239,15 +250,15 @@ assert Feature-005's colours, order and descriptions, now on all seven current c
   Faculty, Course Level, Field of Education, Origin, Age Band, Study Mode or Commencing/Continuing
   is filtered (Q12). Explained in the panel.
 - **~974,000 students**: the platform renders at most 100,000 rows in a table (Databricks
-  dashboard limits). A table therefore cannot show every student of a broad selection; how this is
-  presented is pending decision Q17 (SDD-02).
+  dashboard limits). A table shows the 100,000 highest-risk students of a broad view and says so;
+  the advisor narrows or searches to reach others (Q17 = a).
 - **Search Student plus filters**: Search Student stays page-level on Student List; a student
   outside the filters is not shown.
 - **A dashboard-wide filter does not narrow some widget** (platform risk R-2): implementation stops
   that check, records the widget and escalates via god (plan D-2). No query change is made without
   an approved SDD amendment.
 - **Clicking a bar of a sensitive attribute** (Risk by Gender): MUST NOT narrow any other widget or
-  table (FR-004). Mechanism pending decision Q16 (SDD-01).
+  table (FR-004). Risk by Gender is alone on its own page (Q16 = a).
 - **Workspace unreachable in tests**: all Feature-006 checks are offline; the existing live
   dashboard check keeps its skip behaviour.
 
@@ -269,7 +280,8 @@ assert Feature-005's colours, order and descriptions, now on all seven current c
   Nations status or home language (Q6). This covers (a) filter widgets — none may be bound to these
   fields — and (b) chart selections — a click on a chart whose category is one of these fields MUST
   NOT narrow any other widget. Tables do not emit selections on the platform (research R-8), so the
-  Gender column in the demographic table is display-only. The mechanism for (b) is pending Q16.
+  Gender column in the demographic table is display-only. Mechanism (Q16 = a): Risk by Gender sits
+  alone on a "Gender Breakdown" page, so its selections have no other widget to narrow.
 - **FR-005**: Every counter, chart and table MUST respond to the dashboard-wide filters. No widget
   may carry a fixed filter on a filtered field, except the At Risk and Not At Risk counters on
   Risk Level.
@@ -291,10 +303,11 @@ assert Feature-005's colours, order and descriptions, now on all seven current c
 - **FR-011**: Columns, in order: Student ID (de-identified), Risk %, Risk Level, then the page's
   charted fields — Overview: Risk Score Range; Course Analysis: Course Level, Field of Education;
   Demographic Breakdown: Age Band, Gender, Origin (Q9).
-- **FR-012**: Each table MUST default to Risk % descending. Its completeness contract is pending
-  Q17: the platform renders at most 100,000 rows, which is a rendering limit distinct from a query
-  limit, so a structural "no limit" check MUST NOT be presented as proof that every student is
-  reachable in the table.
+- **FR-012**: Each table MUST default to Risk % descending and MUST NOT set a query row cap (Q17 = a).
+  Its description MUST say it shows up to 100,000 students in the view, highest risk first, and how
+  to reach others (narrow with filters or a chart selection; find a student by ID on Student List).
+  The 100,000 limit is the platform's rendering limit; the structural check is not proof that every
+  student is reachable, and the boundary is evidenced by matrix row C4.
 - **FR-013**: Student ID MUST be the existing 16-character `student_id` dimension; no identifier or
   field is added to any dataset.
 
@@ -323,13 +336,15 @@ assert Feature-005's colours, order and descriptions, now on all seven current c
   current design: drop "Filter by Risk Flag" (removed in `946aab0`), add "Risk by Course Level" and
   "Risk by Field of Education", keep "Filter by Risk Level" and "Search Student".
 - **FR-020**: The overlap check in `tests/test_dashboard.py` MUST compare widgets within each page.
+- **FR-020a** (Q20): `test_student_id_is_labelled_de_identified` MUST expect 5 occurrences of the
+  "Student ID (de-identified)" label; its bare-"Student ID" assertion is unchanged.
 - **FR-021**: `tests/test_ui.py` MUST be updated to the simplified advisor page: the profile test
   asserts "Retrieve Saved" is **absent**; the generate test drops its review-checkbox assertion;
   the three Retrieve Saved tests and the checkbox-toggle test are replaced by one test asserting
   that neither the "Retrieve Saved" button nor the review checkbox is rendered. No other assertion
   changes. `ui.py` is not edited (Q15).
 - **FR-022**: Repairs MUST NOT delete or loosen any assertion other than those named in FR-018 –
-  FR-021.
+  FR-021 and FR-020a.
 
 #### Verification
 

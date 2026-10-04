@@ -27,9 +27,17 @@ Verified in the workspace (quickstart step 4); fallback in plan D-2.
 **Finding**: The base definition has no global-filter page and no table default sort (no `orders`
 or `limit` keys; only chart-axis `sort`). Public docs do not show the serialised global-filter page.
 
-**Decision**: Before editing, copy the exact shapes from a workspace export of a scratch dashboard
-with one global filter and one table sorted descending. The contract fixes names, titles, fields,
-columns and positions, which the tests check. If a default table sort cannot be stored, escalate.
+**Decision**: Confirm the shapes against the workspace before editing.
+
+**Evidence (2026-10-04, Q19)**: None of the six workspace dashboards used a global filter or a table
+sort. At the product owner's request the agent created a scratch dashboard, "US29 format probe"
+(`01f1bfdf60b11b2188494e9fab7b0937`, `/Users/t115.capstone2026@outlook.com/US29 format probe.lvdash.json`),
+with the Lakeview API (`databricks lakeview create`). It held a `PAGE_TYPE_GLOBAL_FILTERS` page with a
+`filter-multi-select` widget, a table whose query had `"orders": [{"direction": "DESC", "expression": ...}]`,
+and a control table whose query had an unknown key. The server accepted the dashboard, kept the
+global-filter page, the filter widget and `orders` exactly, and **dropped the unknown key**. So the
+server validates query keys, and `orders` is a recognised field. These are the shapes used. The
+probe is not published and is not part of the deliverable.
 
 ## R-4 Students without an enrolment record
 

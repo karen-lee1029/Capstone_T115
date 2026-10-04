@@ -31,17 +31,20 @@ Never bound to any filter widget in the dashboard (Q6): `gender`, `socioeconomic
 `first_nations`, `home_language`.
 
 **Chart selections (SDD-01)**: a click on a chart whose category is one of these four fields MUST
-NOT narrow any other widget. Today only `52cb0fd3` Risk by Gender is such a chart. The mechanism,
-and any resulting change to C-4 / C-5 for `52cb0fd3`, is fixed by decision Q16. Tables emit no
-selections (research R-8), so table columns of these fields are display-only.
+NOT narrow any other widget. Today only `52cb0fd3` Risk by Gender is such a chart. Mechanism
+(Q16 = a): it sits on its own canvas page `gender_breakdown` with no other data widget (C-4). Rule
+checked offline: any chart whose query uses one of these four fields is the only data widget (chart,
+table or counter) on its page. Tables emit no selections (research R-8), so table columns of these
+fields are display-only.
 
 ## C-2 Students in this view tables (Q7, Q9)
 
 `widgetType: "table"`, title "Students in this view", `showDescription: true`, description
-"Students matching the current filters and chart selection, highest risk first". Graph query (no
+"Up to 100,000 students matching the current filters and chart selection, highest risk first. Narrow
+the view to see others, or find any student by ID on Student List". Graph query (no
 `datasetName`), `disaggregated: true`, no `filters`, no row limit, default sort `risk_pct`
-descending (serialised form per research R-3). The platform renders at most 100,000 table rows; the
-row cap and the wording of the description for that boundary are fixed by decision Q17 (SDD-02). Field names follow `<graph source>__<dimension>`.
+descending (serialised form per research R-3), no query row cap (Q17 = a). The platform renders at
+most 100,000 table rows. Field names follow `<graph source>__<dimension>`.
 
 | Widget name | Page | Columns in order (dimension → display name) |
 |---|---|---|
@@ -56,7 +59,7 @@ The Student ID column has `useForSearch: true`, as in `163516f4`.
 Text widget `how_to_filter` on Overview; heading `How to filter and drill down` in the
 `how_to_read` heading style. Body contains (case-insensitive): "Filters", "every page", "click a
 bar", "active filter bar", "Students in this view", "Student ID (de-identified)", "enrolment
-record", and the table boundary wording fixed by Q17. MUST NOT contain "High", "Low" or "Medium" as category words.
+record", "100,000", "Gender Breakdown". MUST NOT contain "High", "Low" or "Medium" as category words.
 
 ## C-4 Layout (canvas width 12)
 
@@ -69,9 +72,16 @@ record", and the table boundary wording fixed by Q17. MUST NOT contain "High", "
 | Course Analysis | `drill_table_course` | 0 | 10 | 12 | 10 | added |
 | Course Analysis | `100b44c5` (note) | 0 | 20 | 12 | 1 | y 10→20 |
 | Course Analysis | `3edf02b6` (footer) | 0 | 21 | 12 | 1 | y 11→21 |
+| Demographic Breakdown | `521bf497` (page title) | 0 | 0 | 12 | 2 | text: subtitle "Risk distribution by age band and origin" |
+| Demographic Breakdown | `292bc630` (Risk by Origin) | 0 | 10 | 12 | 8 | x 6→0, w 6→12 |
+| Demographic Breakdown | `52cb0fd3` (Risk by Gender) | — | — | — | — | moved to Gender Breakdown |
 | Demographic Breakdown | `drill_table_demographic` | 0 | 18 | 12 | 10 | added |
 | Demographic Breakdown | `41477a60` (note) | 0 | 28 | 12 | 1 | y 18→28 |
 | Demographic Breakdown | `0d5ba328` (footer) | 0 | 29 | 12 | 1 | y 19→29 |
+| Gender Breakdown | `gender_title` | 0 | 0 | 12 | 2 | added: "# Gender Breakdown" + "Risk distribution by gender. Selecting a bar here does not filter other charts or tables." |
+| Gender Breakdown | `52cb0fd3` (Risk by Gender) | 0 | 2 | 12 | 8 | moved here; spec and query unchanged |
+| Gender Breakdown | `gender_note` | 0 | 10 | 12 | 1 | added: copy of the privacy notice of `41477a60` |
+| Gender Breakdown | `gender_footer` | 0 | 11 | 12 | 1 | added: copy of the footer of `0d5ba328` |
 | Student List | `310fbbb0` | — | — | — | — | removed |
 | Student List | `c2d55445` (Search Student) | 0 | 2 | 12 | 2 | w 6→12 |
 | Filters | `filter_*` (8) | 0 | 2·i | 12 | 2 | added, i = C-1 # |
@@ -81,8 +91,9 @@ No overlap within a page. Every other widget keeps its base position.
 ## C-5 Unchanged versus base `0409d7e`
 
 `datasets`, `relationshipGraphs`, `uiSettings`; every base widget not in C-4 (compared whole); C-4
-base widgets compared without `position` (`c2d55445` also without its width); the four base pages
-keep name, displayName, pageType and order.
+base widgets compared without `position` (`521bf497` also without its text lines); the four base
+pages keep name, displayName and pageType. Page order: Overview, Course Analysis, Demographic
+Breakdown, Gender Breakdown (`name: "gender_breakdown"`, `PAGE_TYPE_CANVAS`), Student List, Filters.
 
 ## C-6 Feature-005 chart checks after repair (Q3)
 
@@ -97,5 +108,5 @@ and a shown description equal to:
 | `028257ed` | Course Analysis | Risk by Course Level | y | At Risk and Not At Risk student counts for each course level |
 | `90548010` | Course Analysis | Risk by Field of Education | y | At Risk and Not At Risk student counts for each broad field of education |
 | `eaf7eaf4` | Demographic Breakdown | Risk by Age Band | y | At Risk and Not At Risk student counts for each age band |
-| `52cb0fd3` | Demographic Breakdown | Risk by Gender | y | At Risk and Not At Risk student counts for each gender |
+| `52cb0fd3` | Gender Breakdown | Risk by Gender | y | At Risk and Not At Risk student counts for each gender |
 | `292bc630` | Demographic Breakdown | Risk by Origin | y | At Risk and Not At Risk student counts for domestic and international students |

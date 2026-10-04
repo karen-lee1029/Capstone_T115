@@ -37,7 +37,7 @@ log. "Counters add up" = Total = At Risk + Not At Risk.
 
 | Row | Steps | Expected |
 |---|---|---|
-| A0 | Open the filter panel | Exactly 8 filters (Risk Level, Faculty, Course Level, Field of Education, Origin, Age Band, Study Mode, Commencing/Continuing); none for gender, socioeconomic status, First Nations status, home language |
+| A0 | Check the page list (Overview, Course Analysis, Demographic Breakdown, Gender Breakdown, Student List); open the filter panel | Exactly 8 filters (Risk Level, Faculty, Course Level, Field of Education, Origin, Age Band, Study Mode, Commencing/Continuing); none for gender, socioeconomic status, First Nations status, home language |
 | A1 | Risk Level = "Not At Risk" | At Risk counter 0; every page shows only Not At Risk students |
 | A2 | Faculty = one value | Counters drop and add up; every chart and table on all 4 pages narrows |
 | A3 | Course Level = one value | As A2 |
@@ -60,7 +60,7 @@ If any widget in A1 – A10 does not narrow: stop, record widget/field/observati
 | B1 | Course Analysis: click the At Risk segment of one course level | Field of Education chart and the "Students in this view" table narrow; selection shows in the active filter bar |
 | B2 | Keep B1, then set Faculty = one value | Widgets show the intersection of the selection and the filter |
 | B3 | Remove the chart selection from the active filter bar, then clear Faculty | Each removal restores the previous state independently |
-| B4 | Click a bar of Risk by Gender (wherever Q16 places it) | **No other widget or table narrows** (negative evidence for Q6) |
+| B4 | Gender Breakdown: click a bar of Risk by Gender, then visit every other page | **No other widget or table narrows** (negative evidence for Q6) |
 | B5 | Demographic Breakdown: click one Age Band bar, then one Origin bar | Other allowed charts and the table narrow; clearing restores |
 | B6 | Overview: click one Risk Score Range bar | Counters, Risk Level chart and the table narrow |
 
@@ -71,7 +71,7 @@ If any widget in A1 – A10 does not narrow: stop, record widget/field/observati
 | C1 | On each of Overview, Course Analysis, Demographic Breakdown, read the table | Columns per contract C-2; Risk % highest first |
 | C2 | Copy one Student ID into the advisor page | Student found (Feature-005 FR-027) |
 | C3 | Choose a narrow cohort (< 100,000 students; note its counter value) | The table reaches the end of the cohort (scroll to the last row); where the platform shows a row count it equals the counter value |
-| C4 | Cleared state (about 974,000 students, > 100,000) | Behaviour matches decision Q17: the stated boundary is shown, rows are the highest Risk % first, and the documented way to reach other students works |
+| C4 | Cleared state (about 974,000 students, > 100,000) | Description says up to 100,000; rows run from the highest Risk % down; narrowing to < 100,000 shows the whole cohort; a student outside the table is found via Search Student |
 
 ### D — Other cases (edge cases; FR-014)
 
@@ -80,7 +80,7 @@ If any widget in A1 – A10 does not narrow: stop, record widget/field/observati
 | D1 | Student List: Search Student = a student, then set a Faculty that excludes them | Student not shown; clearing Faculty shows them again |
 | D2 | Pick filters with no students | Counters 0, charts no data, tables empty, no error |
 | D3 | Missing enrolment: find a Student ID with no enrolment record (product owner's read-only query: prediction rows without a matching enrolment hash). With no filter set, search it on Student List; then set any enrolment filter | Shown with no filter; gone once an enrolment filter is set. If no such student exists, record "no case in data" and mark D3 not applicable |
-| D4 | Read the "How to filter and drill down" panel | Explains filters, clicking a bar, active filter bar, tables, missing-enrolment exclusion and the Q17 boundary |
+| D4 | Read the "How to filter and drill down" panel | Explains filters, clicking a bar, active filter bar, tables, missing-enrolment exclusion, the 100,000 boundary and the Gender Breakdown page |
 
 ## Completion report
 

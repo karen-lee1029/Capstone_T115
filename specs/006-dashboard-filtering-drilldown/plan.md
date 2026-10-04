@@ -77,7 +77,7 @@ checks without changing the dashboard's charts.
 
 | File | Change | FRs |
 |---|---|---|
-| `student_attrition_risk_app/dashboard/Student Attrition Risk Overview.lvdash.json` | Filter page + 8 filters; remove `310fbbb0`; widen `c2d55445`; 3 tables; panel; move 6 widgets | FR-001 – FR-017 |
+| `student_attrition_risk_app/dashboard/Student Attrition Risk Overview.lvdash.json` | Filter page + 8 filters; Gender Breakdown page (D-2a); remove `310fbbb0`; widen `c2d55445`; 3 tables; panel; layout per C-4 | FR-001 – FR-017 |
 | `student_attrition_risk_app/tests/test_dashboard_filtering.py` (new) | US-29 offline checks | FR-023 |
 | `student_attrition_risk_app/tests/test_dashboard.py` (Karen) | Repair per D-8 | FR-018 – FR-020, FR-022 |
 | `student_attrition_risk_app/tests/test_ui.py` (Karen) | Repair per D-9 | FR-021, FR-022 |
@@ -105,6 +105,15 @@ row, records the widget, field and observation in the implementation handoff, an
 No query, dataset or widget change beyond C-4 is made without an approved SDD amendment, so C-5
 (preservation) stays unconditional. Until the row passes, its acceptance is reported as pending.
 
+### D-2a Sensitive chart isolation (Q16 = a, SDD-01)
+
+Add canvas page `gender_breakdown` ("Gender Breakdown") after Demographic Breakdown. Move widget
+`52cb0fd3` Risk by Gender there with its spec and query unchanged, plus a title text, a privacy note
+and a footer (contract C-4). On Demographic Breakdown, widen Risk by Origin to w 12 and drop "gender"
+from the page subtitle. Cross-filters act only within a page (research R-8), so a Gender selection
+has no other widget to narrow. Global filters still apply to the chart. Matrix row B4 is the
+negative evidence.
+
 ### D-3 Student List risk filter (Q8)
 
 Remove `310fbbb0`. The dashboard-wide Risk Level filter uses the same title. Widen `c2d55445`
@@ -118,8 +127,8 @@ graph-style queries like `163516f4`, `disaggregated: true`, columns per contract
 so its shape comes from a workspace export (R-3). If the platform cannot store a default table
 sort, stop and escalate to the product owner via god; do not decide. The platform renders at most
 100,000 table rows (rendering limit, not a query limit); the table's completeness contract, its
-description wording and any explicit row cap follow decision Q17 (SDD-02). Implementation of the
-three tables waits for Q17.
+description says "up to 100,000", highest risk first, and how to reach others (Q17 = a); no query
+row cap.
 
 ### D-5 Explanation panel (Q13)
 
@@ -143,6 +152,7 @@ existing widget except `310fbbb0` (removed), `c2d55445` (width) and six note/foo
 - `EXPECTED_WIDGET_TITLES` per FR-019. This set is also used by the live (skipped) workspace check;
   the same update applies.
 - `test_layout_has_no_overlapping_widgets`: group layout items by page before the pairwise check.
+- `test_student_id_is_labelled_de_identified`: expected label count 2 → 5 (Q20, FR-020a).
 - No other test, constant or replica changes (FR-022).
 
 ### D-9 Repair `tests/test_ui.py` (Q15)
@@ -169,18 +179,18 @@ existing widget except `310fbbb0` (removed), `c2d55445` (width) and six note/foo
 | Each filter field resolves to a dimension of the dataset it queries | FR-003 |
 | Risk Level filter field is the `risk_level` dimension (two-category rule is Feature-005's, not re-tested) | FR-003 |
 | No filter widget anywhere bound to `gender`, `socioeconomic_status`, `first_nations`, `home_language` | FR-004(a) |
-| No chart whose category field is one of those four shares a canvas page with any other data widget, or the Q16-chosen mechanism holds (check finalised after Q16) | FR-004(b) |
+| Any chart whose query uses one of those four fields is the only data widget on its page; `52cb0fd3` is on `gender_breakdown` | FR-004(b) |
 | No widget query has a fixed filter on a filtered field except `counter_high`/`counter_low` on `risk_level` | FR-005 |
 | `310fbbb0` absent; "Search Student" present on Student List at w 12 | FR-006 |
 | `uiSettings.applyModeEnabled` is false | FR-007, FR-009 |
 | On every canvas page, chart and table queries have no `datasetName` (graph queries) | FR-008 |
 | Each of the 3 pages has exactly one "Students in this view" table | FR-010 |
 | Table columns match contract C-2 in order | FR-011 |
-| Table default sort `risk_pct` descending; row cap / description per Q17 | FR-012 |
+| Table default sort `risk_pct` descending; no row cap; description per contract C-2 | FR-012 |
 | Student ID column is the `student_id` dimension | FR-013 |
 | `how_to_filter` on Overview contains contract phrases; no "High"/"Low"/"Medium" | FR-014, FR-015 |
 | Datasets, relationship graph, uiSettings and untouched widgets equal base (`git show`) | FR-016 |
-| No overlap within any page | FR-017 |
+| No overlap within any page — covered by the repaired per-page check in `test_dashboard.py` (FR-020), not duplicated | FR-017 |
 
 ### Repaired files
 

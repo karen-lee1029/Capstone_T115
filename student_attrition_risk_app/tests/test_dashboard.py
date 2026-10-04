@@ -46,11 +46,12 @@ EXPECTED_WIDGET_TITLES = {
     "Risk Level Distribution",
     "Risk Score Distribution",
     "Student Details",
+    "Risk by Course Level",
+    "Risk by Field of Education",
     "Risk by Age Band",
     "Risk by Gender",
     "Risk by Origin",
     "Filter by Risk Level",
-    "Filter by Risk Flag",
     "Search Student",
 }
 
@@ -386,29 +387,34 @@ RISK_COLOUR_MAPPINGS = [
     {"color": "#42A5F5", "value": "Not At Risk"},
 ]
 
+# Widget names follow the four-page layout introduced by US-27 (commit 946aab0).
 CHART_DESCRIPTIONS = {
-    "chart_risk_donut": (
+    "5e91fa54": (
         "Number of students in each risk category: At Risk (50% or higher) "
         "and Not At Risk (below 50%)"
     ),
-    "chart_risk_by_faculty": (
+    "329be35e": (
         "Number of students in each attrition risk score range, lowest to highest; "
         "ranges from 50% are At Risk"
     ),
-    "chart_risk_study_mode": "At Risk and Not At Risk student counts for each age band",
-    "chart_risk_gender": "At Risk and Not At Risk student counts for each gender",
-    "chart_risk_intl": (
+    "028257ed": "At Risk and Not At Risk student counts for each course level",
+    "90548010": "At Risk and Not At Risk student counts for each broad field of education",
+    "eaf7eaf4": "At Risk and Not At Risk student counts for each age band",
+    "52cb0fd3": "At Risk and Not At Risk student counts for each gender",
+    "292bc630": (
         "At Risk and Not At Risk student counts for domestic and international students"
     ),
 }
 
 # Chart widget name -> categorical axis that carries the natural-order sort.
 CHART_CATEGORICAL_AXIS = {
-    "chart_risk_donut": "y",
-    "chart_risk_by_faculty": "x",
-    "chart_risk_study_mode": "y",
-    "chart_risk_gender": "y",
-    "chart_risk_intl": "y",
+    "5e91fa54": "y",
+    "329be35e": "x",
+    "028257ed": "y",
+    "90548010": "y",
+    "eaf7eaf4": "y",
+    "52cb0fd3": "y",
+    "292bc630": "y",
 }
 
 COUNTER_CONTRACT = {
@@ -464,7 +470,8 @@ class TestRepositoryDashboardDefinition:
 
     def test_student_id_is_labelled_de_identified(self):
         raw = REPO_DASHBOARD_PATH.read_text(encoding="utf-8")
-        assert raw.count('"displayName": "Student ID (de-identified)"') == 2
+        # The dimension, the Student Details table and the three US-29 "Students in this view" tables.
+        assert raw.count('"displayName": "Student ID (de-identified)"') == 5
         assert '"displayName": "Student ID"' not in raw
 
     def test_no_legacy_category_text(self):
@@ -535,11 +542,11 @@ class TestRepositoryDashboardDefinition:
         assert not missing, f"Missing expected widget titles: {missing}"
 
     def test_layout_has_no_overlapping_widgets(self):
-        items = _layout_items(_load_repo_dashboard())
-        cells: dict[tuple[int, int], str] = {}
-        for item in items:
-            pos, name = item["position"], item["widget"]["name"]
-            for x in range(pos["x"], pos["x"] + pos["width"]):
-                for y in range(pos["y"], pos["y"] + pos["height"]):
-                    assert (x, y) not in cells, f"{name} overlaps {cells[(x, y)]} at {(x, y)}"
-                    cells[(x, y)] = name
+        for page in _load_repo_dashboard().get("pages", []):
+            cells: dict[tuple[int, int], str] = {}
+            for item in page.get("layout", []):
+                pos, name = item["position"], item["widget"]["name"]
+                for x in range(pos["x"], pos["x"] + pos["width"]):
+                    for y in range(pos["y"], pos["y"] + pos["height"]):
+                        assert (x, y) not in cells, f"{name} overlaps {cells[(x, y)]} at {(x, y)}"
+                        cells[(x, y)] = name

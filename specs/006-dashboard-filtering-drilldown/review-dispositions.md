@@ -17,8 +17,7 @@ Source: independent Codex SDD review by Pam, 2026-10-04
 
 ## Decisions requested from the product owner
 
-These are open. Recommendations are marked but are **not** answers. Nothing that depends on them is
-implemented until the answers are recorded in spec.md Clarifications.
+**Answered 2026-10-04 by the product owner: Q16 = a, Q17 = a, Q18 = a** (spec Clarifications).
 
 ### Q16 (SDD-01) — Stopping a click on Risk by Gender from narrowing other widgets
 
