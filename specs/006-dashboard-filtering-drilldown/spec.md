@@ -4,7 +4,7 @@
 
 **Created**: 2026-10-04
 
-**Status**: Draft — ready for independent SDD review
+**Status**: Draft — amended after independent SDD review (SDD-01 – SDD-05); three product-owner decisions pending (Q16 – Q18, see `review-dispositions.md`)
 
 **Input**: Product Backlog US-29, GitHub issue karen-lee1029/Capstone_T115 #110.
 
@@ -103,6 +103,15 @@ Answers given by the product owner in chat on 2026-10-04. Authoritative; not re-
 - **Q15** (follow-up to Q3) How to fix the 6 `test_ui.py` failures caused by Lu commenting out the
   "Retrieve Saved" button and the review checkbox in `385041c`? → **Update the tests** to match the
   simplified page. `ui.py` is not touched.
+
+### Pending product-owner decisions after the SDD review (2026-10-04)
+
+Raised by the independent SDD review; options and evidence in `review-dispositions.md`. Nothing
+that depends on them is implemented until the product owner's answers are recorded here.
+
+- **Q16** (SDD-01) How to stop a click on the Risk by Gender chart from narrowing other widgets → _pending_
+- **Q17** (SDD-02) What the "Students in this view" tables promise given the 100,000-row rendering limit → _pending_
+- **Q18** (review item 3) Whether to repair the live, workspace-only one-page check at `tests/test_dashboard.py:366` → _pending_
 
 ### Settled from project records
 
@@ -229,11 +238,16 @@ assert Feature-005's colours, order and descriptions, now on all seven current c
 - **Student without an enrolment record**: included with no enrolment filter set; excluded once
   Faculty, Course Level, Field of Education, Origin, Age Band, Study Mode or Commencing/Continuing
   is filtered (Q12). Explained in the panel.
-- **~974,000 students**: tables page and sort on the platform; no row limit hides students.
+- **~974,000 students**: the platform renders at most 100,000 rows in a table (Databricks
+  dashboard limits). A table therefore cannot show every student of a broad selection; how this is
+  presented is pending decision Q17 (SDD-02).
 - **Search Student plus filters**: Search Student stays page-level on Student List; a student
   outside the filters is not shown.
-- **Enrolment filter does not reach a prediction-only widget** (platform risk R-2): fallback in
-  plan D-2; checked in the workspace before evidence.
+- **A dashboard-wide filter does not narrow some widget** (platform risk R-2): implementation stops
+  that check, records the widget and escalates via god (plan D-2). No query change is made without
+  an approved SDD amendment.
+- **Clicking a bar of a sensitive attribute** (Risk by Gender): MUST NOT narrow any other widget or
+  table (FR-004). Mechanism pending decision Q16 (SDD-01).
 - **Workspace unreachable in tests**: all Feature-006 checks are offline; the existing live
   dashboard check keeps its skip behaviour.
 
@@ -251,8 +265,11 @@ assert Feature-005's colours, order and descriptions, now on all seven current c
   Commencing/Continuing" (Q5, Q8).
 - **FR-003**: Each filter MUST be bound to an existing dataset dimension; Risk Level MUST offer only
   "At Risk" and "Not At Risk".
-- **FR-004**: No filter anywhere in the dashboard MUST be bound to gender, socioeconomic status,
-  First Nations status or home language (Q6).
+- **FR-004**: No interaction path MUST narrow any widget by gender, socioeconomic status, First
+  Nations status or home language (Q6). This covers (a) filter widgets — none may be bound to these
+  fields — and (b) chart selections — a click on a chart whose category is one of these fields MUST
+  NOT narrow any other widget. Tables do not emit selections on the platform (research R-8), so the
+  Gender column in the demographic table is display-only. The mechanism for (b) is pending Q16.
 - **FR-005**: Every counter, chart and table MUST respond to the dashboard-wide filters. No widget
   may carry a fixed filter on a filtered field, except the At Risk and Not At Risk counters on
   Risk Level.
@@ -263,8 +280,9 @@ assert Feature-005's colours, order and descriptions, now on all seven current c
 #### Click-to-focus
 
 - **FR-008**: On each canvas page, every chart and table MUST query the same relationship graph so
-  a chart selection can filter the other widgets on that page.
-- **FR-009**: Feature-006 MUST NOT disable cross-filtering or the active filter bar.
+  a selection on a chart of an allowed field can filter the other widgets on that page.
+- **FR-009**: Feature-006 MUST NOT disable cross-filtering for charts of allowed fields or the
+  active filter bar. Sensitive-field charts follow FR-004(b).
 
 #### Drill-down
 
@@ -273,7 +291,10 @@ assert Feature-005's colours, order and descriptions, now on all seven current c
 - **FR-011**: Columns, in order: Student ID (de-identified), Risk %, Risk Level, then the page's
   charted fields — Overview: Risk Score Range; Course Analysis: Course Level, Field of Education;
   Demographic Breakdown: Age Band, Gender, Origin (Q9).
-- **FR-012**: Each table MUST default to Risk % descending and MUST NOT set a row limit.
+- **FR-012**: Each table MUST default to Risk % descending. Its completeness contract is pending
+  Q17: the platform renders at most 100,000 rows, which is a rendering limit distinct from a query
+  limit, so a structural "no limit" check MUST NOT be presented as proof that every student is
+  reachable in the table.
 - **FR-013**: Student ID MUST be the existing 16-character `student_id` dimension; no identifier or
   field is added to any dataset.
 
@@ -337,7 +358,7 @@ assert Feature-005's colours, order and descriptions, now on all seven current c
 - **SC-001**: 8 of 8 agreed filters exist and narrow 100% of counters, charts and tables on all 4 pages.
 - **SC-002**: For any selection, Total = At Risk + Not At Risk on Overview.
 - **SC-003**: 3 of 3 analysis pages have a "Students in this view" table sorted by Risk % descending.
-- **SC-004**: From any chart bar, the advisor reaches its students in at most 2 clicks.
+- **SC-004**: From any chart bar of an allowed field, the advisor reaches its students in at most 2 clicks.
 - **SC-005**: 0 filters on gender, socioeconomic status, First Nations status or home language.
 - **SC-006**: `uv run pytest` 0 failures (base: 24); 0 new ruff findings.
 - **SC-007**: 7 of 7 bar charts covered by the repaired Feature-005 checks.
@@ -350,7 +371,8 @@ assert Feature-005's colours, order and descriptions, now on all seven current c
   (Databricks "Use dashboard filters" docs; research R-1). Exact serialised shapes are confirmed
   from a workspace export during implementation (R-3).
 - Enrolment-field filters narrow prediction-dataset widgets through the existing many-to-one
-  relationship (R-2); verified in the workspace by the product owner, fallback in plan D-2.
+  relationship (R-2); verified in the workspace by the product owner (quickstart matrix); if not,
+  escalation per plan D-2.
 - Lu's removal of "Retrieve Saved" and the review checkbox in `385041c` is intended (Q15).
 - US-27's layout at `0409d7e` is the current design (Q2).
 

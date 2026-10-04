@@ -61,11 +61,15 @@ checks without changing the dashboard's charts.
 | IV Minimal change | Reuses existing dimensions; repairs change only the assertions named in FR-018 – FR-021. |
 | V Reuse architecture | Platform filters, cross-filtering and tables; existing JSON conventions. |
 | VI No unnecessary complexity | No drill-through, parameters or custom SQL. |
+| VII Plan-defined structure | All changes sit in the files of the Change map, in the existing `dashboard/` and `tests/` layout; no new module, package or directory. |
 | VIII Technology compatibility | Lakeview-native widget types only. |
-| X Security and privacy | No new identifier; sensitive attributes not filterable (Q6). |
+| IX Separation of responsibilities | Filtering, selection and table rendering stay the platform's job; datasets keep data shaping; tests stay offline structure checks. No Python layer is added. |
+| X Security and privacy | No new identifier; no interaction path narrows by a sensitive attribute — filters and chart selections (FR-004, Q6, Q16). |
+| XI Input validation and errors | No new input crosses an application boundary: filter values come from dataset dimensions and the platform handles empty selections. Error paths are the platform's own (empty result = 0 / no data, edge cases). No custom validation layer is needed. |
 | XII Proportionate testing | Offline structure checks per FR; platform behaviour evidenced manually. |
 | XIII Human review | Codex SDD and code reviews; product owner publishes. |
 | XIV Traceability | `traceability.md`. |
+| XV Completion means specification satisfaction | Done requires offline checks green, full suite 0 failures, and every quickstart matrix row either evidenced or explicitly reported as pending (workspace-only). Offline green alone is not reported as acceptance. |
 | XVI Preserve team contributions | Edits to Karen's layout and tests are team-approved for US-29, minimal, and logged with revert steps. Lu's `ui.py` is untouched. |
 | XVII Human-controlled VCS | Local commits only. |
 
@@ -89,13 +93,17 @@ holding eight `filter-multi-select` widgets (contract C-1). Each widget's query 
 `COUNT_IF(\`associative_filter_predicate_group\`)`, `disaggregated: false`. Risk Level queries the
 prediction dataset `b798cf1c`; the seven enrolment filters query `student_enrolment`.
 
-### D-2 Filter reach across datasets (risk R-2)
+### D-2 Filter reach across datasets — verification and escalation gate (R-2, SDD-03)
 
-Charts and tables query through the relationship graph (prediction → enrolment, many-to-one).
-Expected: an enrolment filter narrows every graph-based widget, including counters. **Fallback** if
-the workspace shows a widget not narrowing: change only that widget's query to the graph
-field-expression style the charts use. No dataset change (FR-016). Checked at quickstart step 4
-before evidence; if needed, fixed at the code-review stage.
+All eleven existing data widgets (three counters, seven bar charts, Student Details) already query
+through the relationship graph (no `datasetName`), and the new tables do too. There is therefore no
+"switch to graph style" fallback; the earlier fallback is withdrawn (SDD-03).
+
+Gate: the product owner runs quickstart matrix rows A1 – A9 in the workspace. If every widget
+narrows, record that as evidence. If any widget does not narrow, implementation **stops** for that
+row, records the widget, field and observation in the implementation handoff, and escalates via god.
+No query, dataset or widget change beyond C-4 is made without an approved SDD amendment, so C-5
+(preservation) stays unconditional. Until the row passes, its acceptance is reported as pending.
 
 ### D-3 Student List risk filter (Q8)
 
@@ -108,7 +116,10 @@ Three `table` widgets (`drill_table_overview`, `drill_table_course`, `drill_tabl
 graph-style queries like `163516f4`, `disaggregated: true`, columns per contract C-2, default sort
 `risk_pct` descending, no row limit, no fixed filters. No existing widget serialises a table sort,
 so its shape comes from a workspace export (R-3). If the platform cannot store a default table
-sort, stop and escalate to the product owner via god; do not decide.
+sort, stop and escalate to the product owner via god; do not decide. The platform renders at most
+100,000 table rows (rendering limit, not a query limit); the table's completeness contract, its
+description wording and any explicit row cap follow decision Q17 (SDD-02). Implementation of the
+three tables waits for Q17.
 
 ### D-5 Explanation panel (Q13)
 
@@ -157,14 +168,15 @@ existing widget except `310fbbb0` (removed), `c2d55445` (width) and six note/foo
 | Its widgets are exactly the 8 contract filters, multi-select, contract titles and order | FR-002 |
 | Each filter field resolves to a dimension of the dataset it queries | FR-003 |
 | Risk Level filter field is the `risk_level` dimension (two-category rule is Feature-005's, not re-tested) | FR-003 |
-| No filter widget anywhere bound to `gender`, `socioeconomic_status`, `first_nations`, `home_language` | FR-004 |
+| No filter widget anywhere bound to `gender`, `socioeconomic_status`, `first_nations`, `home_language` | FR-004(a) |
+| No chart whose category field is one of those four shares a canvas page with any other data widget, or the Q16-chosen mechanism holds (check finalised after Q16) | FR-004(b) |
 | No widget query has a fixed filter on a filtered field except `counter_high`/`counter_low` on `risk_level` | FR-005 |
 | `310fbbb0` absent; "Search Student" present on Student List at w 12 | FR-006 |
 | `uiSettings.applyModeEnabled` is false | FR-007, FR-009 |
 | On every canvas page, chart and table queries have no `datasetName` (graph queries) | FR-008 |
 | Each of the 3 pages has exactly one "Students in this view" table | FR-010 |
 | Table columns match contract C-2 in order | FR-011 |
-| Table default sort `risk_pct` descending; no limit | FR-012 |
+| Table default sort `risk_pct` descending; row cap / description per Q17 | FR-012 |
 | Student ID column is the `student_id` dimension | FR-013 |
 | `how_to_filter` on Overview contains contract phrases; no "High"/"Low"/"Medium" | FR-014, FR-015 |
 | Datasets, relationship graph, uiSettings and untouched widgets equal base (`git show`) | FR-016 |
@@ -178,7 +190,9 @@ Full `uv run pytest` = 0 failures; ruff no new finding (FR-024). Manual: quickst
 
 | ID | Risk | Mitigation |
 |---|---|---|
-| R-2 | Enrolment filters do not reach a widget | D-2 fallback; quickstart step 4 |
+| R-2 | A dashboard-wide filter does not reach a widget | D-2 gate: evidence or stop-and-escalate; no unapproved query change |
+| R-7 | Sensitive chart selection narrows other widgets | FR-004(b); mechanism per Q16; matrix row B4 negative evidence |
+| R-8 | Table shows only 100,000 rows of a broad selection | Contract per Q17; matrix row C4 with a > 100,000 cohort |
 | R-3 | Global-filter page / table sort JSON shape undocumented | Copy from a workspace export before editing; escalate if sort cannot be stored |
 | R-4 | Students without enrolment records vanish under enrolment filters | Accepted and explained (Q12) |
 | R-6 | Repairs mask a real defect | FR-022; reviewer confirms each changed assertion maps to FR-018 – FR-021 |

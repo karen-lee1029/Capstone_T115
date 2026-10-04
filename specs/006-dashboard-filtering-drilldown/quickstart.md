@@ -11,28 +11,78 @@ uv run pytest tests/test_dashboard_filtering.py -q
 uv run pytest -q                                      # 0 failures (base had 24)
 ```
 
-## Product owner — publish and evidence
+Report whether the preservation checks ran or were skipped (they need git and base commit
+`0409d7e`).
+
+**Offline checks prove structure only.** Behaviour on the platform is proved only by the
+workspace acceptance matrix below. Any row not run, or run without the needed data, is reported as
+**pending**, never as passed (Constitution XV).
+
+## Product owner — publish
 
 Agents never publish. Use a light theme for screenshots.
 
 1. In the Databricks workspace, open *Student Attrition Risk Overview* → ⋮ → **Replace dashboard**
-   (or **Import** and replace) with the repository file
+   (or **Import** and replace) with
    `student_attrition_risk_app/dashboard/Student Attrition Risk Overview.lvdash.json`.
-2. **Publish** and open the published view.
-3. **Filters present**: open the filter panel; confirm the eight filters (Risk Level, Faculty,
-   Course Level, Field of Education, Origin, Age Band, Study Mode, Commencing/Continuing) and none
-   on gender, socioeconomic status, First Nations status or home language. Screenshot (US1).
-4. **Filters reach every widget (R-2)**: select one Faculty value. On Overview the counters drop
-   and Total = At Risk + Not At Risk. Visit every page and confirm each widget narrows. If any does
-   not, stop and report it (plan D-2). Screenshot Overview.
-5. **Risk Level filter**: set "Not At Risk"; the At Risk counter shows 0. Screenshot.
-6. **Clear filters**: everything returns.
-7. **Click-to-focus**: on Course Analysis click the At Risk segment of one course level; the other
-   chart and the "Students in this view" table narrow; the selection shows in the active filter
-   bar. Screenshot (US2).
-8. **Drill-down**: the table shows Student ID (de-identified), Risk %, Risk Level and the page's
-   fields, highest Risk % first. Paste one Student ID into the advisor page and retrieve the
-   student. Screenshot both (US3).
-9. **Explanation**: screenshot the "How to filter and drill down" panel (US4).
-10. **Empty combination**: pick filters with no students; 0 / no data, no error.
-11. Store the screenshots with the US-29 evidence.
+2. **Publish** and open the published view. Start every row from a cleared state (all filters All,
+   no chart selection) unless the row says otherwise.
+
+## Workspace acceptance matrix
+
+Evidence = screenshot named `US29-<row>.png`, plus the observed counts written in the evidence
+log. "Counters add up" = Total = At Risk + Not At Risk.
+
+### A — Dashboard-wide filters (US1; FR-001 – FR-007; R-2 gate, plan D-2)
+
+| Row | Steps | Expected |
+|---|---|---|
+| A0 | Open the filter panel | Exactly 8 filters (Risk Level, Faculty, Course Level, Field of Education, Origin, Age Band, Study Mode, Commencing/Continuing); none for gender, socioeconomic status, First Nations status, home language |
+| A1 | Risk Level = "Not At Risk" | At Risk counter 0; every page shows only Not At Risk students |
+| A2 | Faculty = one value | Counters drop and add up; every chart and table on all 4 pages narrows |
+| A3 | Course Level = one value | As A2 |
+| A4 | Field of Education = one value | As A2 |
+| A5 | Origin = one value | As A2 |
+| A6 | Age Band = one value | As A2 |
+| A7 | Study Mode = one value | As A2 |
+| A8 | Commencing/Continuing = one value | As A2 |
+| A9 | Two values in one filter (e.g. two faculties) | Union of the two; counters add up |
+| A10 | Faculty = one value AND Course Level = one value | Intersection: counts ≤ each single-filter count (A2, A3) |
+| A11 | Clear all filters | Every widget returns to the cleared-state counts |
+
+If any widget in A1 – A10 does not narrow: stop, record widget/field/observation, escalate via god
+(plan D-2). Do not continue to the evidence step for that row.
+
+### B — Chart selection (US2; FR-004(b), FR-008, FR-009)
+
+| Row | Steps | Expected |
+|---|---|---|
+| B1 | Course Analysis: click the At Risk segment of one course level | Field of Education chart and the "Students in this view" table narrow; selection shows in the active filter bar |
+| B2 | Keep B1, then set Faculty = one value | Widgets show the intersection of the selection and the filter |
+| B3 | Remove the chart selection from the active filter bar, then clear Faculty | Each removal restores the previous state independently |
+| B4 | Click a bar of Risk by Gender (wherever Q16 places it) | **No other widget or table narrows** (negative evidence for Q6) |
+| B5 | Demographic Breakdown: click one Age Band bar, then one Origin bar | Other allowed charts and the table narrow; clearing restores |
+| B6 | Overview: click one Risk Score Range bar | Counters, Risk Level chart and the table narrow |
+
+### C — Drill-down tables (US3; FR-010 – FR-013)
+
+| Row | Steps | Expected |
+|---|---|---|
+| C1 | On each of Overview, Course Analysis, Demographic Breakdown, read the table | Columns per contract C-2; Risk % highest first |
+| C2 | Copy one Student ID into the advisor page | Student found (Feature-005 FR-027) |
+| C3 | Choose a narrow cohort (< 100,000 students; note its counter value) | The table reaches the end of the cohort (scroll to the last row); where the platform shows a row count it equals the counter value |
+| C4 | Cleared state (about 974,000 students, > 100,000) | Behaviour matches decision Q17: the stated boundary is shown, rows are the highest Risk % first, and the documented way to reach other students works |
+
+### D — Other cases (edge cases; FR-014)
+
+| Row | Steps | Expected |
+|---|---|---|
+| D1 | Student List: Search Student = a student, then set a Faculty that excludes them | Student not shown; clearing Faculty shows them again |
+| D2 | Pick filters with no students | Counters 0, charts no data, tables empty, no error |
+| D3 | Missing enrolment: find a Student ID with no enrolment record (product owner's read-only query: prediction rows without a matching enrolment hash). With no filter set, search it on Student List; then set any enrolment filter | Shown with no filter; gone once an enrolment filter is set. If no such student exists, record "no case in data" and mark D3 not applicable |
+| D4 | Read the "How to filter and drill down" panel | Explains filters, clicking a bar, active filter bar, tables, missing-enrolment exclusion and the Q17 boundary |
+
+## Completion report
+
+The implementation handoff lists every row as **passed (evidence)**, **failed (escalated)**,
+**pending (not run)** or **not applicable (reason)**.

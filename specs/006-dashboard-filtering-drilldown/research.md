@@ -62,3 +62,22 @@ Drill-through rejected by the product owner.
   checkbox in `ui.py` (around lines 792 and 880).
 
 **Decision (Q3, Q15)**: Repair the tests to the current design (plan D-8, D-9); do not edit `ui.py`.
+
+## R-8 Platform interaction limits (added after the SDD review)
+
+- **Cross-filter scope**: a click on a chart filters the other widgets **on the same page** that
+  share the dataset (graph) ([Use dashboard filters](https://docs.databricks.com/aws/en/dashboards/manage/filters/)).
+- **Which widgets emit selections**: click-to-filter works for bar, box plot, heatmap, histogram,
+  pie, scatter and point-map visualisations; table widgets do not emit cross-filters (Databricks
+  community article "Cross-filtering for AI/BI dashboards",
+  https://community.databricks.com/t5/community-articles/cross-filtering-for-ai-bi-dashboards/td-p/82912).
+  No documented per-widget switch to turn cross-filtering off was found. To be confirmed from the
+  workspace export (R-3).
+- **Rendering limits**: tables render up to 100,000 rows before truncation; bar and other charts
+  render up to 10,000 rows. For datasets over 100,000 rows the query runs on the backend
+  ([Dashboard limits](https://docs.databricks.com/aws/en/dashboards/limits)). Whether truncation
+  applies after the table's sort is to be confirmed in the workspace (matrix row C4).
+
+Consequences: the Gender **column** in a table cannot narrow anything; the Risk by **Gender** bar
+chart can narrow the other widgets on its page (SDD-01, Q16); a broad selection (unfiltered, about
+974,000 students) cannot be shown in full in one table (SDD-02, Q17).

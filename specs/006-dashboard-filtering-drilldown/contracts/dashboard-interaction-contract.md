@@ -30,12 +30,18 @@ Query shape per widget: `datasetName` as above; fields `<dimension>` and
 Never bound to any filter widget in the dashboard (Q6): `gender`, `socioeconomic_status`,
 `first_nations`, `home_language`.
 
+**Chart selections (SDD-01)**: a click on a chart whose category is one of these four fields MUST
+NOT narrow any other widget. Today only `52cb0fd3` Risk by Gender is such a chart. The mechanism,
+and any resulting change to C-4 / C-5 for `52cb0fd3`, is fixed by decision Q16. Tables emit no
+selections (research R-8), so table columns of these fields are display-only.
+
 ## C-2 Students in this view tables (Q7, Q9)
 
 `widgetType: "table"`, title "Students in this view", `showDescription: true`, description
 "Students matching the current filters and chart selection, highest risk first". Graph query (no
 `datasetName`), `disaggregated: true`, no `filters`, no row limit, default sort `risk_pct`
-descending (serialised form per research R-3). Field names follow `<graph source>__<dimension>`.
+descending (serialised form per research R-3). The platform renders at most 100,000 table rows; the
+row cap and the wording of the description for that boundary are fixed by decision Q17 (SDD-02). Field names follow `<graph source>__<dimension>`.
 
 | Widget name | Page | Columns in order (dimension → display name) |
 |---|---|---|
@@ -50,7 +56,7 @@ The Student ID column has `useForSearch: true`, as in `163516f4`.
 Text widget `how_to_filter` on Overview; heading `How to filter and drill down` in the
 `how_to_read` heading style. Body contains (case-insensitive): "Filters", "every page", "click a
 bar", "active filter bar", "Students in this view", "Student ID (de-identified)", "enrolment
-record". MUST NOT contain "High", "Low" or "Medium" as category words.
+record", and the table boundary wording fixed by Q17. MUST NOT contain "High", "Low" or "Medium" as category words.
 
 ## C-4 Layout (canvas width 12)
 

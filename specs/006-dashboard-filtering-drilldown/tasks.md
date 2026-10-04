@@ -1,6 +1,7 @@
 # Tasks: Feature-006 (US-29)
 
-Implementation starts only after the independent SDD review. Work in `student_attrition_risk_app/`.
+Implementation starts only after the product owner answers Q16 – Q18 (`review-dispositions.md`). Tasks
+marked ⏸ depend on those answers. Work in `student_attrition_risk_app/`.
 [P] = can run in parallel.
 
 ## Phase 1 — Setup
@@ -10,7 +11,7 @@ Implementation starts only after the independent SDD review. Work in `student_at
 
 ## Phase 2 — Repair base failures (US5; Q3, Q15)
 
-- [ ] T003 [P] Repair `tests/test_dashboard.py` per plan D-8 / contract C-6
+- [ ] T003 [P] Repair `tests/test_dashboard.py` per plan D-8 / contract C-6 (and the live one-page check only if Q18 authorises it ⏸Q18)
 - [ ] T004 [P] Repair `tests/test_ui.py` per plan D-9
 - [ ] T005 Full suite: 0 failures before any dashboard change
 
@@ -25,13 +26,14 @@ Implementation starts only after the independent SDD review. Work in `student_at
 
 ## Phase 4 — Dashboard
 
+- [ ] T011a ⏸Q16 Apply the Q16 mechanism for Risk by Gender; finalise the FR-004(b) check
 - [ ] T012 US1: add `global_filters` page with 8 filters (C-1, C-4); remove `310fbbb0`; widen `c2d55445`
 - [ ] T013 US2: confirm graph queries on every page (no change expected)
-- [ ] T014 US3: add three drill tables (C-2, C-4)
+- [ ] T014 ⏸Q17 US3: add three drill tables (C-2, C-4) with the Q17 boundary contract
 - [ ] T015 US4: add `how_to_filter` (C-3); move note/footer widgets (C-4)
 
 ## Phase 5 — Verify and record
 
 - [ ] T016 New file green; full `pytest` 0 failures; ruff only the base finding
 - [ ] T017 Fill `teammate-changes.md` commits/lines; confirm traceability test names
-- [ ] T018 Implementation handoff for Codex Code Reviewer
+- [ ] T018 Implementation handoff for Codex Code Reviewer, listing every quickstart matrix row as passed / failed / pending / not applicable
