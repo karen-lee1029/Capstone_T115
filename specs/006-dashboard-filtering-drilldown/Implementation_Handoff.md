@@ -81,3 +81,67 @@ byte, confirmed): every fault fails at least one test.
   (Q21 → Q22, observe first). FR-004 for that table is unproven until B7 runs.
 - If any row fails, implementation stops and escalates via god (plan D-2). No query change is made
   without an SDD amendment.
+
+## Workspace acceptance round 2 (product owner, published `a5245c1`)
+
+Results are taken from the product owner's own report ("Human overview and testing of pending findings
+before committing to origin.pdf"). Its A3 – A7 numbering is shifted from the quickstart's. "Pass" and
+"Fail" are the product owner's words.
+
+| Row | Result | Note |
+|---|---|---|
+| A0 | Pass | |
+| A1 | Pass | At Risk counter blank (the platform shows zero as blank) |
+| A2 (Faculty) | Fail | Only "null" offered |
+| A3 (Course Level), A5 (Origin), A6 (Age Band), A8 (Commencing/Continuing) | Fail | UNRESOLVED_COLUMN on every chart |
+| A4 (Field of Education) | Not reported | Bound the same way as the failing filters |
+| A7 (Study Mode) | Fail | Only "null" offered |
+| A9 | Pass for Risk Level only | |
+| A10 | Fail | Faculty null, Course Level error |
+| A11 | Pass | |
+| B1 | Pass | |
+| B2 | Fail | Faculty only All / null |
+| B3 | Pass | |
+| B4 | Pass | Nothing narrows |
+| B5, B6 | Fail | Bars highlight but do not narrow |
+| B7 | Pass, except the second half | Gender click narrows nothing; Age Band and Origin clicks do not narrow the table |
+| C1, C2 | Pass | |
+| C3, C4 (outside-table search) | Blocked | No filter can narrow below 100,000. The sort order works (C4) |
+| D1 | Fail | Faculty |
+| D2 | Fail | No match or null raises an error |
+| D3 | Blocked | Enrolment filter error |
+| D4 | Pass | |
+
+**Diagnosis** (read-only workspace check, 2026-10-05). The published dashboard matched `a5245c1`
+exactly.
+1. Faculty and Study Mode are NULL in every source row (study-area table: 1,100 rows; enrolment
+   rows: 973,770).
+2. The enrolment-bound filters' conditions reach queries that hold only prediction columns. The
+   relationship filter propagation the design relied on (R-2) is Databricks Public Preview (3 and
+   10 Sep 2026).
+3. Chart clicks highlighting without narrowing are inferred to be the same propagation limit.
+
+**Decisions**:
+- Q23 = a: a workspace admin checks the two previews, then the A and B rows are re-run.
+- Q24 = a, with the product owner's rule that a filter showing only null, or erroring, is removed.
+
+**Changed in this round**:
+- Faculty and Study Mode filters removed; the 6 remaining filters stack without gaps.
+- Help panel text updated.
+- New checks: `test_no_filter_on_empty_source_fields` and `test_filters_stack_without_gaps`.
+- Spec Q23 / Q24 and FR-002, contract C-1, research, data model, quickstart rows (A2, A3, A7, A9,
+  A10, B2, B3, D1 re-pointed) and review-dispositions.
+
+**Verification**:
+- `uv run pytest -q`: 350 passed, 14 skipped, 0 failed. The −4 is the two parametrised filter checks
+  losing two cases each; +2 new checks.
+- US-29 file: 38 passed.
+- Ruff: base I001 only.
+- Mutation: 8 of 8 faults caught. Faults 3 – 5 now target the Course Level filter; new fault: "Faculty
+  filter put back" (2 failed).
+
+**Still pending**:
+- The preview check (admin), then a re-run of A2 – A10, B2, B5 – B7, C3, C4, D1 – D3.
+- Under the product owner's rule, any enrolment filter still erroring after that check is removed.
+  If all five go, only Risk Level remains, which would hollow out US-29's filtering. That outcome
+  goes back to the product owner, not straight to removal.

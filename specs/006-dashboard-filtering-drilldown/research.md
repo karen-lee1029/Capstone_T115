@@ -49,6 +49,11 @@ evidence; it does not change the design.
 
 ## R-5 Filter fields
 
+**Amended by Q24 (2026-10-05)**: Faculty and Study Mode are removed; their source columns
+(`dwh_curriculum__study_area_b.owning_faculty_organisation_name`, 1,100 rows, and enrolment
+`study_mode`, 973,770 rows) are NULL in every row, so the filters could only offer "null". Six
+filters remain.
+
 **Decision (Q5, Q6)**: Eight filters — Risk Level (P) and Faculty, Course Level, Field of
 Education, Origin, Age Band, Study Mode, Commencing/Continuing (E). Gender, socioeconomic status,
 First Nations status and home language are not filterable (Constitution X, lines 132–136).

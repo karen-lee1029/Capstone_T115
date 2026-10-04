@@ -15,13 +15,14 @@ appended after the four existing pages. Exactly these widgets, all `filter-multi
 | # | Widget name | Title | Dataset | Dimension |
 |---|---|---|---|---|
 | 0 | `filter_risk_level` | Filter by Risk Level | P | `risk_level` |
-| 1 | `filter_faculty` | Filter by Faculty | E | `faculty` |
-| 2 | `filter_course_level` | Filter by Course Level | E | `course_level` |
-| 3 | `filter_field_of_education` | Filter by Field of Education | E | `broad_primary_field_of_education` |
-| 4 | `filter_origin` | Filter by Origin | E | `international_domestic` |
-| 5 | `filter_age_band` | Filter by Age Band | E | `age_band` |
-| 6 | `filter_study_mode` | Filter by Study Mode | E | `study_mode` |
-| 7 | `filter_commencing_continuing` | Filter by Commencing/Continuing | E | `commencing_continuing` |
+| 1 | `filter_course_level` | Filter by Course Level | E | `course_level` |
+| 2 | `filter_field_of_education` | Filter by Field of Education | E | `broad_primary_field_of_education` |
+| 3 | `filter_origin` | Filter by Origin | E | `international_domestic` |
+| 4 | `filter_age_band` | Filter by Age Band | E | `age_band` |
+| 5 | `filter_commencing_continuing` | Filter by Commencing/Continuing | E | `commencing_continuing` |
+
+`filter_faculty` and `filter_study_mode` were removed by Q24: their source columns are NULL for every
+student (2026-10-05 read-only check), so they could only offer "null".
 
 Query shape per widget: `datasetName` as above; fields `<dimension>` and
 `<dimension>_associativity` = `COUNT_IF(\`associative_filter_predicate_group\`)`;

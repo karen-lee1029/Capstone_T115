@@ -629,7 +629,7 @@
               "lines": [
                 "<h3 style=\"color: #00407A; font-size: 16px; font-weight: 700; margin-bottom: 4px;\">How to filter and drill down</h3>\n",
                 "\n",
-                "<div style=\"background-color: #F5F7FA; border-left: 3px solid #1565C0; border-radius: 4px; padding: 10px 16px; color: #374151; font-size: 12px; line-height: 1.5;\"><br><strong>Filters</strong>: open the Filters panel to narrow every page at once by risk level, faculty, course level, field of education, origin, age band, study mode or commencing/continuing. Selected values combine, and every counter, chart and table updates.<br><br><strong>Focus a page</strong>: click a bar to narrow the other charts and the table on the same page. Your selections show in the active filter bar, where you can remove them. Selections on the Gender Breakdown page do not filter other charts or tables.<br><br><strong>Students in this view</strong>: each analysis page lists the matching students by Student ID (de-identified), highest risk first, up to 100,000 students. Narrow the view to see others, or find any student by ID on Student List.<br><br>Students without an enrolment record are left out once you filter by faculty, course level, field of education, origin, age band, study mode or commencing/continuing.<br></div>"
+                "<div style=\"background-color: #F5F7FA; border-left: 3px solid #1565C0; border-radius: 4px; padding: 10px 16px; color: #374151; font-size: 12px; line-height: 1.5;\"><br><strong>Filters</strong>: open the Filters panel to narrow every page at once by risk level, course level, field of education, origin, age band or commencing/continuing. Selected values combine, and every counter, chart and table updates.<br><br><strong>Focus a page</strong>: click a bar to narrow the other charts and the table on the same page. Your selections show in the active filter bar, where you can remove them. Selections on the Gender Breakdown page do not filter other charts or tables.<br><br><strong>Students in this view</strong>: each analysis page lists the matching students by Student ID (de-identified), highest risk first, up to 100,000 students. Narrow the view to see others, or find any student by ID on Student List.<br><br>Students without an enrolment record are left out once you filter by course level, field of education, origin, age band or commencing/continuing.<br></div>"
               ]
             }
           },
@@ -1806,55 +1806,6 @@
         },
         {
           "widget": {
-            "name": "filter_faculty",
-            "queries": [
-              {
-                "name": "filter_faculty_student_enrolment",
-                "query": {
-                  "datasetName": "student_enrolment",
-                  "fields": [
-                    {
-                      "name": "faculty",
-                      "expression": "`faculty`"
-                    },
-                    {
-                      "name": "faculty_associativity",
-                      "expression": "COUNT_IF(`associative_filter_predicate_group`)"
-                    }
-                  ],
-                  "disaggregated": false
-                }
-              }
-            ],
-            "spec": {
-              "version": 2,
-              "frame": {
-                "showTitle": true,
-                "title": {
-                  "value": "Filter by Faculty",
-                  "fields": []
-                }
-              },
-              "widgetType": "filter-multi-select",
-              "encodings": {
-                "fields": [
-                  {
-                    "fieldName": "faculty",
-                    "queryName": "filter_faculty_student_enrolment"
-                  }
-                ]
-              }
-            }
-          },
-          "position": {
-            "x": 0,
-            "y": 2,
-            "width": 12,
-            "height": 2
-          }
-        },
-        {
-          "widget": {
             "name": "filter_course_level",
             "queries": [
               {
@@ -1897,7 +1848,7 @@
           },
           "position": {
             "x": 0,
-            "y": 4,
+            "y": 2,
             "width": 12,
             "height": 2
           }
@@ -1946,7 +1897,7 @@
           },
           "position": {
             "x": 0,
-            "y": 6,
+            "y": 4,
             "width": 12,
             "height": 2
           }
@@ -1995,7 +1946,7 @@
           },
           "position": {
             "x": 0,
-            "y": 8,
+            "y": 6,
             "width": 12,
             "height": 2
           }
@@ -2044,56 +1995,7 @@
           },
           "position": {
             "x": 0,
-            "y": 10,
-            "width": 12,
-            "height": 2
-          }
-        },
-        {
-          "widget": {
-            "name": "filter_study_mode",
-            "queries": [
-              {
-                "name": "filter_study_mode_student_enrolment",
-                "query": {
-                  "datasetName": "student_enrolment",
-                  "fields": [
-                    {
-                      "name": "study_mode",
-                      "expression": "`study_mode`"
-                    },
-                    {
-                      "name": "study_mode_associativity",
-                      "expression": "COUNT_IF(`associative_filter_predicate_group`)"
-                    }
-                  ],
-                  "disaggregated": false
-                }
-              }
-            ],
-            "spec": {
-              "version": 2,
-              "frame": {
-                "showTitle": true,
-                "title": {
-                  "value": "Filter by Study Mode",
-                  "fields": []
-                }
-              },
-              "widgetType": "filter-multi-select",
-              "encodings": {
-                "fields": [
-                  {
-                    "fieldName": "study_mode",
-                    "queryName": "filter_study_mode_student_enrolment"
-                  }
-                ]
-              }
-            }
-          },
-          "position": {
-            "x": 0,
-            "y": 12,
+            "y": 8,
             "width": 12,
             "height": 2
           }
@@ -2142,7 +2044,7 @@
           },
           "position": {
             "x": 0,
-            "y": 14,
+            "y": 10,
             "width": 12,
             "height": 2
           }

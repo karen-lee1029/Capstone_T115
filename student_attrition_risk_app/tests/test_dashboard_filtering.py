@@ -24,18 +24,17 @@ ENROLMENT = "student_enrolment"
 # (widget name, title, dataset, dimension) -- contract C-1, in order.
 FILTER_CONTRACT = [
     ("filter_risk_level", "Filter by Risk Level", PREDICTION, "risk_level"),
-    ("filter_faculty", "Filter by Faculty", ENROLMENT, "faculty"),
     ("filter_course_level", "Filter by Course Level", ENROLMENT, "course_level"),
     ("filter_field_of_education", "Filter by Field of Education", ENROLMENT,
      "broad_primary_field_of_education"),
     ("filter_origin", "Filter by Origin", ENROLMENT, "international_domestic"),
     ("filter_age_band", "Filter by Age Band", ENROLMENT, "age_band"),
-    ("filter_study_mode", "Filter by Study Mode", ENROLMENT, "study_mode"),
     ("filter_commencing_continuing", "Filter by Commencing/Continuing", ENROLMENT,
      "commencing_continuing"),
 ]
 FILTERED_DIMENSIONS = {dimension for _, _, _, dimension in FILTER_CONTRACT}
 SENSITIVE_DIMENSIONS = {"gender", "socioeconomic_status", "first_nations", "home_language"}
+EMPTY_SOURCE_DIMENSIONS = {"faculty", "study_mode"}  # NULL in every source row (Q24)
 # Q21 -> Q22: the only table allowed to show a sensitive field beside other data widgets.
 # No ignore setting is available in the workspace; matrix row B7 checks it there.
 OBSERVED_SENSITIVE_TABLES = {"drill_table_demographic"}
@@ -228,6 +227,19 @@ class TestDashboardWideFilters:
         for _, widget in _all_widgets(_load()):
             if _is_filter(widget):
                 assert not _filter_dimensions(widget) & SENSITIVE_DIMENSIONS, widget["name"]
+
+    def test_no_filter_on_empty_source_fields(self):
+        # Q24: these source columns are NULL for every student, so a filter could only offer "null".
+        for _, widget in _all_widgets(_load()):
+            if _is_filter(widget):
+                assert not _filter_dimensions(widget) & EMPTY_SOURCE_DIMENSIONS, widget["name"]
+
+    def test_filters_stack_without_gaps(self):
+        dash = _load()
+        positions = [_position(dash, name) for name, _, _, _ in FILTER_CONTRACT]
+        assert [(p["x"], p["y"], p["width"], p["height"]) for p in positions] == [
+            (0, 2 * i, 12, 2) for i in range(len(FILTER_CONTRACT))
+        ]
 
     def test_no_fixed_filter_conflicts_with_global_filters(self):
         for _, widget in _all_widgets(_load()):

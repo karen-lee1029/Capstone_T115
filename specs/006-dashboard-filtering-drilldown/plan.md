@@ -7,7 +7,7 @@
 ## Summary
 
 Two parts. (1) **US-29**: in the repository dashboard definition, add one dashboard-wide filter
-page with eight multi-select filters, remove the now-duplicated Student List risk filter, add a
+page with six multi-select (eight before Q24) filters, remove the now-duplicated Student List risk filter, add a
 "Students in this view" table to three pages, add a "How to filter and drill down" panel, and move
 footers down. (2) **Repair (Q3, Q15)**: update Karen's `tests/test_dashboard.py` and
 `tests/test_ui.py` so the 24 base failures describe the current, intended design. US-29 checks go
@@ -31,7 +31,7 @@ definition with `git show 0409d7e:<path>` and skip if git or the commit is unava
 **Constraints**: Change map only. No Python source. Offline tests. Agents never publish. Every
 teammate edit logged.
 
-**Scale/Scope**: Dashboard: +1 page, +8 filters, +3 tables, +1 panel, −1 filter, 1 widget widened,
+**Scale/Scope**: Dashboard: +1 page, +6 filters (8 before Q24), +3 tables, +1 panel, −1 filter, 1 widget widened,
 6 note/footer widgets moved. Tests: 1 new file; 2 teammate test files repaired.
 
 ### Baseline (measured 2026-10-04 at `0409d7e`)
@@ -77,7 +77,7 @@ checks without changing the dashboard's charts.
 
 | File | Change | FRs |
 |---|---|---|
-| `student_attrition_risk_app/dashboard/Student Attrition Risk Overview.lvdash.json` | Filter page + 8 filters; Gender Breakdown page (D-2a); remove `310fbbb0`; widen `c2d55445`; 3 tables; panel; layout per C-4 | FR-001 – FR-017 |
+| `student_attrition_risk_app/dashboard/Student Attrition Risk Overview.lvdash.json` | Filter page + 6 filters (Q24); Gender Breakdown page (D-2a); remove `310fbbb0`; widen `c2d55445`; 3 tables; panel; layout per C-4 | FR-001 – FR-017 |
 | `student_attrition_risk_app/tests/test_dashboard_filtering.py` (new) | US-29 offline checks | FR-023 |
 | `student_attrition_risk_app/tests/test_dashboard.py` (Karen) | Repair per D-8 | FR-018 – FR-020, FR-022 |
 | `student_attrition_risk_app/tests/test_ui.py` (Karen) | Repair per D-9 | FR-021, FR-022 |
@@ -88,7 +88,7 @@ checks without changing the dashboard's charts.
 ### D-1 Dashboard-wide filter page
 
 One page `global_filters`, `displayName: "Filters"`, `pageType: "PAGE_TYPE_GLOBAL_FILTERS"`,
-holding eight `filter-multi-select` widgets (contract C-1). Each widget's query mirrors base widget
+holding six `filter-multi-select` widgets (contract C-1). Each widget's query mirrors base widget
 `310fbbb0`: `datasetName`, the field, and `<field>_associativity` =
 `COUNT_IF(\`associative_filter_predicate_group\`)`, `disaggregated: false`. Risk Level queries the
 prediction dataset `b798cf1c`; the seven enrolment filters query `student_enrolment`.

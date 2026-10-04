@@ -47,7 +47,7 @@ owner decided that Feature-006 repairs all 24 (decision Q3).
 
 ### What Feature-006 delivers
 
-- **Dashboard-wide filters**: eight filters that narrow every page at once.
+- **Dashboard-wide filters**: six filters (eight agreed in Q5; Faculty and Study Mode removed by Q24) that narrow every page at once.
 - **Click-to-focus**: clicking a chart bar narrows the other widgets on that page; the selection
   shows in the active filter bar.
 - **Drill-down**: a "Students in this view" table on Overview, Course Analysis and Demographic
@@ -128,6 +128,14 @@ the product owner in chat on 2026-10-04.
   unknown) → **a) Try the authoring assistant once; if it cannot, fall back to Q21 option b.** The
   assistant could not, so Q21 resolves to **b) observe first**: no ignore setting is added; the Demographic Breakdown table keeps Gender and the behaviour is checked in the workspace by matrix row B7. If B7 shows
   narrowing, Q6 is broken and the question returns to the product owner.
+- **Q23** (workspace acceptance, 2026-10-05) Enrolment filters raise UNRESOLVED_COLUMN on every
+  chart → **a) A workspace admin first checks that the Public Preview features "Cross-dataset
+  filtering through relationships" and "Relationship-scoped filters" are on, then the A rows are
+  re-run.**
+- **Q24** (workspace acceptance) Faculty and Study Mode list only null because the source columns
+  are empty → **a) with the product owner's rule: a filter that can only show "null", or that
+  errors, is removed because it is not useful.** Faculty and Study Mode are removed now. Any filter
+  still erroring after the Q23 preview check is removed under the same rule.
 - **Q19** (R-3) How to obtain the global-filter and table-sort JSON formats when CLI logins had
   expired → **The product owner logs in; the agent reads workspace dashboards read-only.**
 
@@ -144,14 +152,14 @@ the product owner in chat on 2026-10-04.
 
 ### User Story 1 - Narrow the whole dashboard to a group of students (Priority: P1) 🎯 MVP
 
-An Academic Advisor sets any of the eight dashboard-wide filters and every counter, chart and
+An Academic Advisor sets any of the six dashboard-wide filters and every counter, chart and
 table on every page shows only matching students.
 
 **Why this priority**: It is the "applies available filters ... updates consistently" half of the
 criterion and the base for drill-down.
 
 **Independent Test**: Offline, the definition has one dashboard-wide filter page with exactly the
-eight agreed filters, each bound to an existing dataset field, and no widget carries a fixed filter
+six remaining filters (Q24), each bound to an existing dataset field, and no widget carries a fixed filter
 that contradicts them (except the two category counters). In the workspace, choose one Faculty and
 check every page narrows and the counters add up.
 
@@ -254,8 +262,7 @@ assert Feature-005's colours, order and descriptions, now on all seven current c
 - **No students match**: counters 0, charts show no data, tables empty; no error; clearing restores.
 - **Risk Level filter excludes a counter's category**: that counter shows 0.
 - **Student without an enrolment record**: included with no enrolment filter set; excluded once
-  Faculty, Course Level, Field of Education, Origin, Age Band, Study Mode or Commencing/Continuing
-  is filtered (Q12). Explained in the panel.
+  Course Level, Field of Education, Origin, Age Band or Commencing/Continuing is filtered (Q12). Explained in the panel.
 - **~974,000 students**: the platform renders at most 100,000 rows in a table (Databricks
   dashboard limits). A table shows the 100,000 highest-risk students of a broad view and says so;
   the advisor narrows or searches to reach others (Q17 = a).
@@ -277,10 +284,9 @@ assert Feature-005's colours, order and descriptions, now on all seven current c
 
 - **FR-001**: The dashboard MUST provide one dashboard-wide filter page whose filters apply to every
   page (Q4).
-- **FR-002**: The dashboard-wide filters MUST be exactly eight, multi-select, defaulting to all
-  values, titled: "Filter by Risk Level", "Filter by Faculty", "Filter by Course Level", "Filter by
-  Field of Education", "Filter by Origin", "Filter by Age Band", "Filter by Study Mode", "Filter by
-  Commencing/Continuing" (Q5, Q8).
+- **FR-002**: The dashboard-wide filters MUST be exactly six, multi-select, defaulting to all
+  values, titled: "Filter by Risk Level", "Filter by Course Level", "Filter by Field of Education", "Filter by Origin", "Filter by Age Band", "Filter by Commencing/Continuing" (Q5, Q8; Faculty and Study Mode removed by Q24 because their source
+  columns are empty).
 - **FR-003**: Each filter MUST be bound to an existing dataset dimension; Risk Level MUST offer only
   "At Risk" and "Not At Risk".
 - **FR-004**: No interaction path MUST narrow any widget by gender, socioeconomic status, First

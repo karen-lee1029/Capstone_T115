@@ -37,17 +37,17 @@ log. "Counters add up" = Total = At Risk + Not At Risk.
 
 | Row | Steps | Expected |
 |---|---|---|
-| A0 | Check the page list (Overview, Course Analysis, Demographic Breakdown, Gender Breakdown, Student List); open the filter panel | Exactly 8 filters (Risk Level, Faculty, Course Level, Field of Education, Origin, Age Band, Study Mode, Commencing/Continuing); none for gender, socioeconomic status, First Nations status, home language |
+| A0 | Check the page list (Overview, Course Analysis, Demographic Breakdown, Gender Breakdown, Student List); open the filter panel | Exactly 6 filters (Risk Level, Course Level, Field of Education, Origin, Age Band, Commencing/Continuing; Faculty and Study Mode removed by Q24); none for gender, socioeconomic status, First Nations status, home language |
 | A1 | Risk Level = "Not At Risk" | At Risk counter 0; each of the 5 canvas pages, Gender Breakdown included, shows only Not At Risk students |
-| A2 | Faculty = one value | Counters drop and add up; every chart and table on all 5 canvas pages (Overview, Course Analysis, Demographic Breakdown, Gender Breakdown, Student List) narrows. Record each page separately |
-| A3 | Course Level = one value | As A2 |
+| A2 | Course Level = one value | Counters drop and add up; every chart and table on all 5 canvas pages (Overview, Course Analysis, Demographic Breakdown, Gender Breakdown, Student List) narrows. Record each page separately |
+| A3 | Removed (was Course Level; now A2). Faculty removed by Q24 | — |
 | A4 | Field of Education = one value | As A2 |
 | A5 | Origin = one value | As A2 |
 | A6 | Age Band = one value | As A2 |
-| A7 | Study Mode = one value | As A2 |
+| A7 | Removed: Study Mode removed by Q24 | — |
 | A8 | Commencing/Continuing = one value | As A2 |
-| A9 | Two values in one filter (e.g. two faculties) | Union of the two; counters add up |
-| A10 | Faculty = one value AND Course Level = one value | Intersection: counts ≤ each single-filter count (A2, A3) |
+| A9 | Two values in one filter (e.g. two age bands) | Union of the two; counters add up |
+| A10 | Course Level = one value AND Age Band = one value | Intersection: counts ≤ each single-filter count (A2, A6) |
 | A11 | Clear all filters | Every widget returns to the cleared-state counts |
 
 If any widget in A1 – A10 does not narrow: stop, record widget/field/observation, escalate via god
@@ -58,8 +58,8 @@ If any widget in A1 – A10 does not narrow: stop, record widget/field/observati
 | Row | Steps | Expected |
 |---|---|---|
 | B1 | Course Analysis: click the At Risk segment of one course level | Field of Education chart and the "Students in this view" table narrow; selection shows in the active filter bar |
-| B2 | Keep B1, then set Faculty = one value | Widgets show the intersection of the selection and the filter |
-| B3 | Remove the chart selection from the active filter bar, then clear Faculty | Each removal restores the previous state independently |
+| B2 | Keep B1, then set Course Level = one value | Widgets show the intersection of the selection and the filter |
+| B3 | Remove the chart selection from the active filter bar, then clear Course Level | Each removal restores the previous state independently |
 | B4 | Gender Breakdown: click a bar of Risk by Gender, then visit every other page | **No other widget or table narrows** (negative evidence for Q6) |
 | B5 | Demographic Breakdown: click one Age Band bar, then one Origin bar | Other allowed charts and the table narrow; clearing restores |
 | B6 | Overview: click one Risk Score Range bar | Counters, Risk Level chart and the table narrow |
@@ -78,7 +78,7 @@ If any widget in A1 – A10 does not narrow: stop, record widget/field/observati
 
 | Row | Steps | Expected |
 |---|---|---|
-| D1 | Student List: Search Student = a student, then set a Faculty that excludes them | Student not shown; clearing Faculty shows them again |
+| D1 | Student List: Search Student = a student, then set a Course Level that excludes them | Student not shown; clearing Course Level shows them again |
 | D2 | Pick filters with no students | Counters 0, charts no data, tables empty, no error |
 | D3 | Missing enrolment: find a Student ID with no enrolment record (product owner's read-only query: prediction rows without a matching enrolment hash). With no filter set, search it on Student List; then set any enrolment filter | Shown with no filter; gone once an enrolment filter is set. If no such student exists, record "no case in data" and mark D3 not applicable |
 | D4 | Read the "How to filter and drill down" panel | Explains filters, clicking a bar, active filter bar, tables, missing-enrolment exclusion, the 100,000 boundary and the Gender Breakdown page |

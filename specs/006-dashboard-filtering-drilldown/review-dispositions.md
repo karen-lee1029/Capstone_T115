@@ -94,3 +94,20 @@ Origin. No workspace test has been run. Q6 stays binding, and Q9 requires the Ge
   touched. The offline test names `drill_table_demographic` as the only table allowed to share a page
   while showing a sensitive field, so any other such table fails. Matrix row B7 gives the workspace
   evidence. If B7 shows narrowing, Q6 is broken and the question returns to the product owner.
+
+# Workspace acceptance round 2 (2026-10-05)
+
+The product owner published `a5245c1` and ran the matrix (results in Implementation_Handoff.md).
+Read-only diagnosis found three causes:
+
+1. **Faculty and Study Mode only list null**: the source columns are NULL in every row. This is
+   not a dashboard fault.
+2. **UNRESOLVED_COLUMN on every chart** for the enrolment filters: their condition is applied to
+   queries that hold only prediction columns. The design relied on relationship filter propagation
+   (research R-2, unverified), which Databricks lists as Public Preview (3 and 10 Sep 2026).
+3. **Chart clicks highlight but do not narrow**: inferred to be the same propagation limit.
+
+Decisions: **Q23 = a** (an admin checks the two previews, then A rows are re-run). **Q24 = a with
+the product owner's rule** (remove any filter that only shows null or errors). Faculty and Study
+Mode are removed. The four erroring enrolment filters, plus Field of Education (bound the same
+way, not reported), are removed too if they still error after the preview check.
