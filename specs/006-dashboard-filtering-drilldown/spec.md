@@ -121,6 +121,13 @@ the product owner in chat on 2026-10-04.
   Feature-005's check `test_student_id_is_labelled_de_identified` (count of that label == 2) would
   fail → **Update the count to 5** (dimension, Student Details, three new tables), keeping the check
   that a bare "Student ID" label never appears.
+- **Q21** (code review CODE-01) How to stop a click in the Demographic Breakdown table from narrowing
+  other widgets by Gender → **a) Test the "Ignored filters" setting, then suppress.**
+- **Q22** (Q21 = a could not be carried out: the "Ignored filters" option is not offered in this
+  workspace's editor, the dashboard authoring assistant could not set it, and its JSON format is
+  unknown) → **a) Try the authoring assistant once; if it cannot, fall back to Q21 option b.** The
+  assistant could not, so Q21 resolves to **b) observe first**: no ignore setting is added; the Demographic Breakdown table keeps Gender and the behaviour is checked in the workspace by matrix row B7. If B7 shows
+  narrowing, Q6 is broken and the question returns to the product owner.
 - **Q19** (R-3) How to obtain the global-filter and table-sort JSON formats when CLI logins had
   expired → **The product owner logs in; the agent reads workspace dashboards read-only.**
 
@@ -282,7 +289,9 @@ assert Feature-005's colours, order and descriptions, now on all seven current c
   narrow any other widget. Charts: Risk by Gender sits alone on a "Gender Breakdown" page (Q16 = a).
   Tables: tables are cross-filter sources on the platform (research R-8, corrected after code review
   CODE-01). The Student List table is alone on its page. The mechanism for the Demographic Breakdown
-  table, which shows Gender (Q9), is **pending decision Q21** (`review-dispositions.md`).
+  table, which shows Gender (Q9), is **observe first** (Q21 → Q22): no ignore setting is added
+  (the platform option is unavailable here), and matrix row B7 must show that clicks in that table
+  do not narrow Risk by Age Band or Risk by Origin. Until B7 runs, this part of FR-004 is unproven.
 - **FR-005**: Every counter, chart and table MUST respond to the dashboard-wide filters. No widget
   may carry a fixed filter on a filtered field, except the At Risk and Not At Risk counters on
   Risk Level.

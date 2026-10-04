@@ -35,7 +35,10 @@ NOT narrow any other widget. Today only `52cb0fd3` Risk by Gender is such a char
 (Q16 = a): it sits on its own canvas page `gender_breakdown` with no other data widget (C-4). Rule
 checked offline: any chart whose query uses one of these four fields is the only data widget (chart,
 table or counter) on its page. Tables are also selection sources (research R-8, corrected after
-CODE-01). The table rule (`drill_table_demographic` shows Gender) is pending decision Q21.
+CODE-01). `drill_table_demographic` shows Gender beside two charts; per Q21 → Q22 it carries no
+ignore setting (unavailable in this workspace) and is the only table allowed to share a page while
+showing a sensitive field. Matrix row B7 must give the negative evidence; a failure goes back to the
+product owner.
 
 ## C-2 Students in this view tables (Q7, Q9)
 

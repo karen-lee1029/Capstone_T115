@@ -79,3 +79,18 @@ Origin. No workspace test has been run. Q6 stays binding, and Q9 requires the Ge
   (B7). If nothing narrows, record that behaviour and its deployment scope, with no change. If it
   narrows, apply (a). Cost: the outcome stays open until the workspace check.
 - **c) Remove Gender from the Demographic Breakdown table.** Cost: reverses Q9.
+
+### Outcome (2026-10-04)
+
+- **Q21 = a.** One approved API write to the probe added candidate keys. Inconclusive: the server keeps
+  any unknown key inside a widget `spec`, so a surviving key proves nothing.
+- The product owner then looked for the option in the workspace editor: **no "Ignored filters"
+  option is offered.**
+- **Q22 = a** (try the dashboard authoring assistant once, else fall back to Q21 option b). The
+  assistant reported that its `setIgnoredFilters` operation is rejected by its own schema, that
+  `ignoredFilters` in the query is stripped, and that `ignoredFilters`, `ignoredSources` and
+  `filterExclusions` in the chart spec are rejected as unknown properties.
+- **Resolved as Q21 option b (observe first).** The dashboard is unchanged; Karen's charts are not
+  touched. The offline test names `drill_table_demographic` as the only table allowed to share a page
+  while showing a sensitive field, so any other such table fails. Matrix row B7 gives the workspace
+  evidence. If B7 shows narrowing, Q6 is broken and the question returns to the product owner.

@@ -36,6 +36,9 @@ FILTER_CONTRACT = [
 ]
 FILTERED_DIMENSIONS = {dimension for _, _, _, dimension in FILTER_CONTRACT}
 SENSITIVE_DIMENSIONS = {"gender", "socioeconomic_status", "first_nations", "home_language"}
+# Q21 -> Q22: the only table allowed to show a sensitive field beside other data widgets.
+# No ignore setting is available in the workspace; matrix row B7 checks it there.
+OBSERVED_SENSITIVE_TABLES = {"drill_table_demographic"}
 
 PAGE_ORDER = [
     "Overview", "Course Analysis", "Demographic Breakdown", "Gender Breakdown", "Student List",
@@ -268,8 +271,8 @@ class TestChartSelection:
         for page in _load()["pages"]:
             data = [w for w in _widgets(page) if _is_data_widget(w)]
             for widget in data:
-                if _widget_type(widget) == "table":
-                    continue  # tables: rule pending decision Q21 (code review CODE-01)
+                if widget["name"] in OBSERVED_SENSITIVE_TABLES:
+                    continue
                 if any(_uses_dimension(widget, d) for d in SENSITIVE_DIMENSIONS):
                     assert data == [widget], (
                         f"{widget['name']} selects on a sensitive field but shares "

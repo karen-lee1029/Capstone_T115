@@ -85,6 +85,12 @@ Drill-through rejected by the product owner.
 - **Suppression**: the docs describe a per-widget **Ignored filters** setting. A receiving widget can
   ignore chosen global filters, page filter widgets, or cross-filter visualisations on its page. It
   works per source widget, not per column. No dashboard-wide off switch is documented.
+- **Availability in the T115 workspace** (2026-10-04, Q21 / Q22): the option is **not offered**. The
+  product owner found no "Ignored filters" entry in the configuration panel of a probe chart. The
+  dashboard authoring assistant reported that its `setIgnoredFilters` operation is rejected by its
+  schema and that candidate keys are rejected or stripped. Writing candidate keys through the API
+  proves nothing: the server keeps any unknown key inside a widget `spec` and drops unknown keys at
+  widget and query level. The real JSON format is therefore unknown and is not guessed.
 - **Rendering limits**: tables render up to 100,000 rows before truncation; bar and other charts
   render up to 10,000 rows. For datasets over 100,000 rows the query runs on the backend
   ([Dashboard limits](https://docs.databricks.com/aws/en/dashboards/limits)). Whether truncation
@@ -93,6 +99,6 @@ Drill-through rejected by the product owner.
 Consequences: the Risk by **Gender** bar chart can narrow the other widgets on its page, so it sits
 alone (SDD-01, Q16). A table containing a Gender column **can also be a selection source**, so the
 Demographic Breakdown table can narrow the Age Band and Origin charts on its page (CODE-01; decision
-pending, `review-dispositions.md`). The Student List Student Details table is the only data widget on
+Q21 → Q22: observe first, matrix row B7). The Student List Student Details table is the only data widget on
 its page, so it has no peer to narrow. A broad selection (unfiltered, about 974,000 students) cannot
 be shown in full in one table (SDD-02, Q17).
