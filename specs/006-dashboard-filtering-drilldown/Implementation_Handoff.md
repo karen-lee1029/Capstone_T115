@@ -45,8 +45,8 @@ The agent created a scratch workspace dashboard, "US29 format probe" (`01f1bfdf6
 not published), through `databricks lakeview create` at the product owner's request. The server kept
 the global-filter page, the filter widget and query `orders`, and dropped an unknown control key
 (research R-3). For Q21 one further approved API update added candidate ignore keys to the probe,
-and the product owner changed one probe chart's type while looking for the option. The probe can be
-deleted when the product owner decides; it is not part of the deliverable.
+and the product owner changed one probe chart's type while looking for the option. **The product owner
+decided to keep the probe (2026-10-05).** It is not part of the deliverable and is not to be deleted.
 
 ## Verification (2026-10-04, from `student_attrition_risk_app/`, final Stage 5 run)
 
@@ -178,3 +178,22 @@ only the prediction source to change.
 **Pending (product owner)**: re-publish from this commit, then re-run A2 – A10, B2, B5 – B7, C3, C4
 and D1 – D3. Chart clicks that only highlight (B5, B6, the second half of B7) may persist, because Q25
 does not change how charts query. If they do, that comes back as a decision.
+
+## Round 3 results (product owner, published `34597ff`)
+
+Source: the product owner's "Notes on changes and recompleting failed tests for Feature.pdf".
+
+| Row | Result | Note |
+|---|---|---|
+| A2 (Course Level) | Pass | "All filters work properly". Double filtering shown (Course Level + Field of Education) |
+| A4, A5, A6, A8, A9, A10 | Pass | |
+| B1 / B2 | Fail | Clicking At Risk or Not At Risk on Risk by Course Level: Risk by Field of Education and the table error with "INVALID_PARAMETER_VALUE: Filter expression references multiple sources: student_attrition_risk_prediction, Student_Enrolment_Details". This happens on every page. B1 passed in round 2 at `a5245c1` |
+| B5 | Fail | The same error after an Age Band or Origin click |
+| B6 | Pass | Risk Score Range click narrows the counters, the chart and the table |
+| B7 | Fail (error, not narrowing) | A Gender cell click makes Risk by Age Band and Risk by Origin error. Nothing narrows by gender, but the charts stop rendering |
+| C3 | Pass | |
+| C4 | Not run as written | Searched an Undergraduate ID while filtered to HDR and got "no data". That is correct filtering, not the C4 case. The agent's instruction was ambiguous |
+| D1, D2 | Pass | D2 shows "No data" rather than 0, which the product owner accepts |
+| D3 | Not applicable | Every student has an enrolment record. Per the product owner, the missing-enrolment sentence is removed from the help panel (this commit) |
+
+The probe dashboard stays by the product owner's decision. Its deletion is no longer pending.

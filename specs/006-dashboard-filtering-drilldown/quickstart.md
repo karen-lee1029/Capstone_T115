@@ -81,7 +81,7 @@ If any widget in A1 – A10 does not narrow: stop, record widget/field/observati
 | D1 | Student List: Search Student = a student, then set a Course Level that excludes them | Student not shown; clearing Course Level shows them again |
 | D2 | Pick filters with no students | Counters 0, charts no data, tables empty, no error |
 | D3 | Missing enrolment: find a Student ID with no enrolment record (product owner's read-only query: prediction rows without a matching enrolment hash). With no filter set, search it on Student List; then set any enrolment filter | Shown with no filter; gone once an enrolment filter is set. If no such student exists, record "no case in data" and mark D3 not applicable |
-| D4 | Read the "How to filter and drill down" panel | Explains filters, clicking a bar, active filter bar, tables, missing-enrolment exclusion, the 100,000 boundary and the Gender Breakdown page |
+| D4 | Read the "How to filter and drill down" panel | Explains filters, clicking a bar, active filter bar, tables, the 100,000 boundary and the Gender Breakdown page |
 
 ## Completion report
 

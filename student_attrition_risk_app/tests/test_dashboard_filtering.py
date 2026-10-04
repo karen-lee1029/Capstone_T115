@@ -82,7 +82,7 @@ DRILL_DESCRIPTION = (
 )
 HOW_TO_FILTER_PHRASES = [
     "How to filter and drill down", "Filters", "every page", "click a bar", "active filter bar",
-    "Students in this view", "Student ID (de-identified)", "enrolment record", "100,000",
+    "Students in this view", "Student ID (de-identified)", "100,000",
     "Gender Breakdown",
 ]
 

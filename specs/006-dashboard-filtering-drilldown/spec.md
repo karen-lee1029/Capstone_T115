@@ -96,7 +96,9 @@ Answers given by the product owner in chat on 2026-10-04. Authoritative; not re-
 - **Q11** Where do US-29 tests go? → **One new test file.** (Repairs to the 24 failing tests are
   made where those tests live, per Q3.)
 - **Q12** Students without an enrolment record vanish under enrolment filters → **Accept and
-  explain it on the dashboard.**
+  explain it on the dashboard.** *Superseded (product owner, round 3 D3, 2026-10-05): every
+  student has an enrolment record (973,770 of 973,770), so the explanation is removed from the
+  panel.*
 - **Q13** How is filtering explained? → **A new "How to filter and drill down" panel on Overview.**
 - **Q14** Folder and branch → **`specs/006-dashboard-filtering-drilldown` on
   `agent/claude-coder-mutdg3d2`.**
@@ -237,8 +239,7 @@ required content.
 **Acceptance Scenarios**:
 
 1. **Given** Overview, **When** the advisor reads the panel, **Then** it explains the filters,
-   clicking a bar, the active filter bar, the students tables, and that students without an
-   enrolment record are excluded once an enrolment filter is set.
+   clicking a bar, the active filter bar and the students tables.
 
 ---
 
@@ -342,8 +343,8 @@ assert Feature-005's colours, order and descriptions, now on all seven current c
 
 - **FR-014**: Overview MUST include a text panel titled "How to filter and drill down" explaining
   the dashboard-wide filters, clicking a bar, the active filter bar, the "Students in this view"
-  tables, and the exclusion of students without an enrolment record under enrolment filters (Q12,
-  Q13).
+  tables (Q13; the missing-enrolment sentence was removed in round 3 because no such student
+  exists).
 - **FR-015**: The panel MUST use Feature-005's category names and "Student ID (de-identified)".
 
 #### Preservation
