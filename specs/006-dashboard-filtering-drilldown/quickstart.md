@@ -63,7 +63,7 @@ If any widget in A1 – A10 does not narrow: stop, record widget/field/observati
 | B4 | Gender Breakdown: click a bar of Risk by Gender, then visit every other page | **No other widget or table narrows** (negative evidence for Q6) |
 | B5 | Demographic Breakdown: click one Age Band bar, then one Origin bar | Other allowed charts and the table narrow; clearing restores |
 | B6 | Overview: click one Risk Score Range bar | Counters, Risk Level chart and the table narrow |
-| B7 | Demographic Breakdown: click a Gender cell (and a Gender column value) in the "Students in this view" table | **Risk by Age Band and Risk by Origin do not narrow** (negative evidence for Q6; no suppression setting is applied, per Q21 → Q22. If either chart narrows, stop and escalate). Then confirm Age Band and Origin bar clicks still narrow the table |
+| B7 | Demographic Breakdown: click a Gender cell (and a Gender column value) in the "Students in this view" table | **Risk by Age Band and Risk by Origin never narrow by gender**. A row click may narrow them to that one student (Q27) (negative evidence for Q6; no suppression setting is applied, per Q21 → Q22. If either chart narrows, stop and escalate). Then confirm Age Band and Origin bar clicks still narrow the table |
 
 ### C — Drill-down tables (US3; FR-010 – FR-013)
 

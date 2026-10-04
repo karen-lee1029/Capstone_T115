@@ -127,3 +127,10 @@ raised "Filter expression references multiple sources". Those charts mixed an en
 with the prediction-dataset Risk Level colour. **Q26 = a**: they and the two drill tables now take
 their enrolment fields from the joined prediction source. The Overview Risk Score Range click, which
 uses only prediction fields, already worked (B6).
+
+### Q27 (2026-10-05)
+
+In round 4, B7 showed that a table click selects the student's row, so the Age Band and Origin charts
+narrow to that one student. **Q27 = a**: accepted as a pass. Narrowing by one clicked student is not
+narrowing by gender, so Q6 holds. B7's expectation in the quickstart is reworded to match. SDD-01 and
+CODE-01 have their workspace evidence.

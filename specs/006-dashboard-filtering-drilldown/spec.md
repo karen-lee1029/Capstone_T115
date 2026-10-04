@@ -151,6 +151,9 @@ the product owner in chat on 2026-10-04.
   `enrol_gender` for display. Every selection then uses one dataset. Student Details on Student
   List is unchanged; it is the only data widget on its page. This is a C-5 exception for Karen's
   chart queries (TC-5).
+- **Q27** (round 4, B7) A click in the Demographic Breakdown table selects that student's row, so
+  Risk by Age Band and Risk by Origin narrow to that one student → **a) Accept as a pass**:
+  narrowing to one clicked student is not narrowing by gender, so Q6 holds.
 - **Q19** (R-3) How to obtain the global-filter and table-sort JSON formats when CLI logins had
   expired → **The product owner logs in; the agent reads workspace dashboards read-only.**
 
