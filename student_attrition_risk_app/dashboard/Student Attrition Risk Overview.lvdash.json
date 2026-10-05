@@ -990,26 +990,40 @@
         },
         {
           "widget": {
-            "name": "eaf7eaf4",
+            "name": "drill_table_course",
             "queries": [
               {
                 "name": "main_query",
                 "query": {
                   "fields": [
                     {
+                      "name": "student_attrition_risk_prediction__student_id",
+                      "expression": "`student_attrition_risk_prediction`.`student_id`"
+                    },
+                    {
+                      "name": "student_attrition_risk_prediction__risk_pct",
+                      "expression": "`student_attrition_risk_prediction`.`risk_pct`"
+                    },
+                    {
                       "name": "student_attrition_risk_prediction__risk_level",
                       "expression": "`student_attrition_risk_prediction`.`risk_level`"
                     },
                     {
-                      "name": "measure(student_attrition_risk_prediction__count)",
-                      "expression": "MEASURE(`student_attrition_risk_prediction`.`count`)"
+                      "name": "student_attrition_risk_prediction__enrol_course_level",
+                      "expression": "`student_attrition_risk_prediction`.`enrol_course_level`"
                     },
                     {
                       "name": "student_attrition_risk_prediction__enrol_age_band",
                       "expression": "`student_attrition_risk_prediction`.`enrol_age_band`"
                     }
                   ],
-                  "disaggregated": false
+                  "disaggregated": true,
+                  "orders": [
+                    {
+                      "direction": "DESC",
+                      "expression": "`student_attrition_risk_prediction`.`risk_pct`"
+                    }
+                  ]
                 }
               }
             ],
@@ -1018,22 +1032,22 @@
                 "showDescription": true,
                 "showTitle": true,
                 "title": {
-                  "value": "Risk by Age Band",
+                  "value": "Students in this view",
                   "fields": []
                 },
                 "description": {
-                  "value": "At Risk and Not At Risk student counts for each age band",
+                  "value": "Up to 100,000 students matching the current filters and chart selection, highest risk first. Narrow the view to see others, or find any student by ID on Student List",
                   "fields": []
                 }
               },
-              "version": 3,
-              "widgetType": "bar",
+              "version": 2,
+              "widgetType": "table",
               "encodings": {
-                "x": {
-                  "fieldName": "measure(student_attrition_risk_prediction__count)",
-                  "format": {
-                    "abbreviation": "compact",
-                    "type": "number-plain"
+                "columns": [
+                  {
+                    "fieldName": "student_attrition_risk_prediction__student_id",
+                    "useForSearch": true,
+                    "displayName": "Student ID (de-identified)"
                   },
                   "scale": {
                     "type": "quantitative"
@@ -1063,7 +1077,7 @@
                     ],
                     "type": "categorical"
                   }
-                }
+                ]
               },
               "data": {
                 "queryName": "main_query"
@@ -1072,9 +1086,35 @@
           },
           "position": {
             "x": 0,
-            "y": 2,
+            "y": 10,
             "width": 12,
-            "height": 8
+            "height": 10
+          }
+        }
+      ],
+      "pageType": "PAGE_TYPE_CANVAS",
+      "layoutVersion": "GRID_V1"
+    },
+    {
+      "name": "17988e2c",
+      "displayName": "Demographic Breakdown",
+      "layout": [
+        {
+          "widget": {
+            "name": "521bf497",
+            "multilineTextboxSpec": {
+              "lines": [
+                "# Demographic Breakdown\n",
+                "\n",
+                "Risk distribution by age band and origin"
+              ]
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 12,
+            "height": 2
           }
         },
         {
@@ -1284,19 +1324,11 @@
           },
           "position": {
             "x": 0,
-            "y": 18,
+            "y": 28,
             "width": 12,
             "height": 8
           }
-        }
-      ],
-      "pageType": "PAGE_TYPE_CANVAS",
-      "layoutVersion": "GRID_V1"
-    },
-    {
-      "name": "dbc66657",
-      "displayName": "Student List",
-      "layout": [
+        },
         {
           "widget": {
             "name": "ea4ce5ed",
@@ -1460,11 +1492,11 @@
                   "datasetName": "b798cf1c",
                   "fields": [
                     {
-                      "name": "risk_level",
-                      "expression": "`risk_level`"
+                      "name": "student_id",
+                      "expression": "`student_id`"
                     },
                     {
-                      "name": "risk_level_associativity",
+                      "name": "student_id_associativity",
                       "expression": "COUNT_IF(`associative_filter_predicate_group`)"
                     }
                   ],

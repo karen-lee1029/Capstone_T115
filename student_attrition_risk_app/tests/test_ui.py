@@ -1,9 +1,10 @@
 """UI interaction tests for the Streamlit Student Advisor Briefing interface.
 
 Every user-facing interactive element is exercised — the search text input,
-Retrieve button, Generate / Retrieve Saved / Regenerate briefing buttons,
-review checkbox, download button, and the Dashboard link — across happy
-paths and error states.  The real ``build_service`` is replaced by a
+Retrieve button, Generate / Regenerate briefing buttons, download button,
+and the Dashboard link — across happy paths and error states.  The Retrieve
+Saved button and the review checkbox were removed from the page in 385041c;
+a test asserts they are not rendered.  The real ``build_service`` is replaced by a
 ``FakeService`` backed by ``MockStudentRepository`` so no Databricks
 connection is required.
 
@@ -224,7 +225,7 @@ def test_at_risk_student_shows_profile_with_briefing_actions(app):
     assert _has_text(at, "78.5%")
     assert _has_text(at, "AI-Assisted Advisor Briefing")
     assert "Generate Advisor Briefing" in _button_labels(at)
-    assert "Retrieve Saved" in _button_labels(at)
+    assert "Retrieve Saved" not in _button_labels(at)
     assert "Regenerate" in _button_labels(at)
 
 
@@ -264,7 +265,7 @@ def test_low_risk_boundary_score_displays_below_threshold(app):
 # Generate Advisor Briefing
 # ---------------------------------------------------------------------------
 
-def test_generate_briefing_displays_text_metadata_checkbox_and_download(app):
+def test_generate_briefing_displays_text_metadata_and_download(app):
     at = app(FakeService(briefing=_briefing()))
     _load_student(at, HASH_AT_RISK)
     _click(at, "Generate Advisor Briefing")
@@ -274,11 +275,6 @@ def test_generate_briefing_displays_text_metadata_checkbox_and_download(app):
     assert _has_text(at, "Source:")
     assert _has_text(at, "Validation:")
     assert not _has_text(at, "Attempt:")
-    # Review checkbox
-    assert any(
-        cb.label == "I have reviewed this AI-generated briefing"
-        for cb in at.checkbox
-    )
     # Download button
     assert any(
         b.label == "Download Briefing" for b in at.download_button
@@ -308,31 +304,18 @@ def test_generate_briefing_generic_error_shows_error(app):
 
 
 # ---------------------------------------------------------------------------
-# Retrieve Saved
+# Retrieve Saved and review checkbox (removed from the page in 385041c)
 # ---------------------------------------------------------------------------
 
-def test_retrieve_saved_displays_stored_briefing(app):
-    stored = _briefing(source="stored")
-    at = app(FakeService(stored_briefing=stored))
+def test_retrieve_saved_and_review_checkbox_are_not_rendered(app):
+    at = app(FakeService(briefing=_briefing()))
     _load_student(at, HASH_AT_RISK)
-    _click(at, "Retrieve Saved")
-    assert _has_text(at, "The student is at risk.")
-    assert _has_text(at, "Stored")  # source shown in metadata
-
-
-def test_retrieve_saved_no_briefing_shows_info(app):
-    at = app(FakeService())  # stored_briefing defaults to None
-    _load_student(at, HASH_AT_RISK)
-    _click(at, "Retrieve Saved")
-    # Rendered as a page-owned notice, not st.info, so it follows the page palette.
-    assert _has_text(at, "No previously validated briefing is available")
-
-
-def test_retrieve_saved_error_shows_error(app):
-    at = app(FakeService(retrieve_error=RuntimeError("db down")))
-    _load_student(at, HASH_AT_RISK)
-    _click(at, "Retrieve Saved")
-    assert _has_text(at, "saved briefing is currently unavailable", attr="error")
+    _click(at, "Generate Advisor Briefing")
+    assert "Retrieve Saved" not in _button_labels(at)
+    assert not any(
+        cb.label == "I have reviewed this AI-generated briefing"
+        for cb in at.checkbox
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -359,25 +342,3 @@ def test_regenerate_generic_error_shows_error(app):
     _load_student(at, HASH_AT_RISK)
     _click(at, "Regenerate")
     assert _has_text(at, "briefing workflow is currently unavailable", attr="error")
-
-
-# ---------------------------------------------------------------------------
-# Review checkbox
-# ---------------------------------------------------------------------------
-
-def test_review_checkbox_can_be_toggled(app):
-    at = app(FakeService(briefing=_briefing()))
-    _load_student(at, HASH_AT_RISK)
-    _click(at, "Generate Advisor Briefing")
-    cb = [
-        c for c in at.checkbox
-        if c.label == "I have reviewed this AI-generated briefing"
-    ][0]
-    assert not cb.value
-    cb.set_value(True)
-    at.run()
-    cb = [
-        c for c in at.checkbox
-        if c.label == "I have reviewed this AI-generated briefing"
-    ][0]
-    assert cb.value
