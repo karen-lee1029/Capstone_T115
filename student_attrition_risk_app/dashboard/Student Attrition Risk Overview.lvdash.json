@@ -5,7 +5,7 @@
       "displayName": "student_attrition_risk_prediction",
       "config": {
         "version": "1.1",
-        "source": "workspace.student_aggregate.student_attrition_risk_prediction",
+        "source": "SELECT\n  p.*,\n  e.course_level AS enrol_course_level,\n  e.broad_primary_field_of_education AS enrol_field_of_education,\n  e.international_domestic_student AS enrol_origin,\n  e.age_band AS enrol_age_band,\n  e.commencing_continuing AS enrol_commencing_continuing,\n  e.student_gender AS enrol_gender\nFROM workspace.student_aggregate.student_attrition_risk_prediction p\nLEFT JOIN (\n  SELECT\n    t.student_deidentified_hash,\n    c.course_level,\n    c.broad_primary_field_of_education,\n    t.international_domestic_student,\n    t.age_band,\n    t.commencing_continuing,\n    t.student_gender\n  FROM (\n    SELECT\n      e.*,\n      ROW_NUMBER() OVER (PARTITION BY e.student_deidentified_hash ORDER BY e.census_date DESC, e.enrolment_year DESC) AS rn\n    FROM workspace.student_aggregate.rpt_student_management__fact__all_enrolment_eftsl__deidentified e\n  ) t\n  LEFT JOIN workspace.student_aggregate.dwh_curriculum__course c ON t.course_key_hash = c.course_key_hash\n  WHERE t.rn = 1\n) e ON p.student_deidentified_hash = e.student_deidentified_hash",
         "dimensions": [
           {
             "expr": "source.*"
@@ -599,7 +599,7 @@
           },
           "position": {
             "x": 0,
-            "y": 19,
+            "y": 34,
             "width": 12,
             "height": 1
           }
@@ -617,9 +617,111 @@
           },
           "position": {
             "x": 0,
-            "y": 18,
+            "y": 33,
             "width": 12,
             "height": 1
+          }
+        },
+        {
+          "widget": {
+            "name": "drill_table_overview",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "fields": [
+                    {
+                      "name": "student_attrition_risk_prediction__student_id",
+                      "expression": "`student_attrition_risk_prediction`.`student_id`"
+                    },
+                    {
+                      "name": "student_attrition_risk_prediction__risk_pct",
+                      "expression": "`student_attrition_risk_prediction`.`risk_pct`"
+                    },
+                    {
+                      "name": "student_attrition_risk_prediction__risk_level",
+                      "expression": "`student_attrition_risk_prediction`.`risk_level`"
+                    },
+                    {
+                      "name": "student_attrition_risk_prediction__risk_score_bucket",
+                      "expression": "`student_attrition_risk_prediction`.`risk_score_bucket`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showDescription": true,
+                "showTitle": true,
+                "title": {
+                  "value": "Students in this view",
+                  "fields": []
+                },
+                "description": {
+                  "value": "Up to 100,000 students matching the current filters and chart selection, highest risk first. Narrow the view to see others, or find any student by ID on Student List",
+                  "fields": []
+                }
+              },
+              "version": 2,
+              "widgetType": "table",
+              "encodings": {
+                "columns": [
+                  {
+                    "fieldName": "student_attrition_risk_prediction__student_id",
+                    "useForSearch": true,
+                    "displayName": "Student ID (de-identified)"
+                  },
+                  {
+                    "fieldName": "student_attrition_risk_prediction__risk_pct",
+                    "displayName": "Risk %"
+                  },
+                  {
+                    "fieldName": "student_attrition_risk_prediction__risk_level",
+                    "displayName": "Risk Level"
+                  },
+                  {
+                    "fieldName": "student_attrition_risk_prediction__risk_score_bucket",
+                    "displayName": "Risk Score Range"
+                  }
+                ]
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 23,
+            "width": 12,
+            "height": 10
+          }
+        },
+        {
+          "widget": {
+            "name": "ce3870dc",
+            "multilineTextboxSpec": {
+              "lines": [
+                "### How to filter and drill down\n",
+                "<p>&nbsp;</p>\n",
+                "\n",
+                "**Filters**: open the Global filters panel to narrow every page at once by risk level, course level, field of education, origin, age band or commencing/continuing. Selected values combine, and every counter, chart and table updates.\n",
+                "\n",
+                "**Student List**: the table in the Student List page can be independently narrowed down using the filters on that page. Note that global filters still affect the Student List page.\n",
+                "\n",
+                "**Focus a page**: click a bar to narrow the other charts and the table on the same page. Your selections show in the active filter bar along the top of the screen where you can remove them.\n",
+                "\n",
+                "**Students in this view**: each analysis page lists the matching students by Student ID (de-identified), highest risk first, up to 100,000 students. Narrow the view to see others, or find any student by ID on Student List."
+              ]
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 18,
+            "width": 12,
+            "height": 5
           }
         }
       ],
@@ -665,8 +767,8 @@
                       "expression": "MEASURE(`student_attrition_risk_prediction`.`count`)"
                     },
                     {
-                      "name": "Student_Enrolment_Details__course_level",
-                      "expression": "`Student_Enrolment_Details`.`course_level`"
+                      "name": "student_attrition_risk_prediction__enrol_course_level",
+                      "expression": "`student_attrition_risk_prediction`.`enrol_course_level`"
                     }
                   ],
                   "disaggregated": false
@@ -700,7 +802,7 @@
                   }
                 },
                 "y": {
-                  "fieldName": "Student_Enrolment_Details__course_level",
+                  "fieldName": "student_attrition_risk_prediction__enrol_course_level",
                   "scale": {
                     "type": "categorical",
                     "sort": {
@@ -733,7 +835,7 @@
           "position": {
             "x": 0,
             "y": 2,
-            "width": 6,
+            "width": 12,
             "height": 8
           }
         },
@@ -754,8 +856,8 @@
                       "expression": "MEASURE(`student_attrition_risk_prediction`.`count`)"
                     },
                     {
-                      "name": "Student_Enrolment_Details__broad_primary_field_of_education",
-                      "expression": "`Student_Enrolment_Details`.`broad_primary_field_of_education`"
+                      "name": "student_attrition_risk_prediction__enrol_field_of_education",
+                      "expression": "`student_attrition_risk_prediction`.`enrol_field_of_education`"
                     }
                   ],
                   "disaggregated": false
@@ -789,7 +891,7 @@
                   }
                 },
                 "y": {
-                  "fieldName": "Student_Enrolment_Details__broad_primary_field_of_education",
+                  "fieldName": "student_attrition_risk_prediction__enrol_field_of_education",
                   "scale": {
                     "type": "categorical",
                     "sort": {
@@ -820,9 +922,9 @@
             }
           },
           "position": {
-            "x": 6,
-            "y": 2,
-            "width": 6,
+            "x": 0,
+            "y": 10,
+            "width": 12,
             "height": 8
           }
         },
@@ -839,7 +941,7 @@
           },
           "position": {
             "x": 0,
-            "y": 10,
+            "y": 18,
             "width": 12,
             "height": 1
           }
@@ -855,7 +957,7 @@
           },
           "position": {
             "x": 0,
-            "y": 11,
+            "y": 19,
             "width": 12,
             "height": 1
           }
@@ -875,7 +977,7 @@
               "lines": [
                 "# Demographic Breakdown\n",
                 "\n",
-                "Risk distribution by age band, gender and origin"
+                "Risk distribution by age band, origin and gender"
               ]
             }
           },
@@ -903,8 +1005,8 @@
                       "expression": "MEASURE(`student_attrition_risk_prediction`.`count`)"
                     },
                     {
-                      "name": "Student_Enrolment_Details__age_band",
-                      "expression": "`Student_Enrolment_Details`.`age_band`"
+                      "name": "student_attrition_risk_prediction__enrol_age_band",
+                      "expression": "`student_attrition_risk_prediction`.`enrol_age_band`"
                     }
                   ],
                   "disaggregated": false
@@ -938,7 +1040,7 @@
                   }
                 },
                 "y": {
-                  "fieldName": "Student_Enrolment_Details__age_band",
+                  "fieldName": "student_attrition_risk_prediction__enrol_age_band",
                   "scale": {
                     "type": "categorical",
                     "sort": {
@@ -977,95 +1079,6 @@
         },
         {
           "widget": {
-            "name": "52cb0fd3",
-            "queries": [
-              {
-                "name": "main_query",
-                "query": {
-                  "fields": [
-                    {
-                      "name": "student_attrition_risk_prediction__risk_level",
-                      "expression": "`student_attrition_risk_prediction`.`risk_level`"
-                    },
-                    {
-                      "name": "measure(student_attrition_risk_prediction__count)",
-                      "expression": "MEASURE(`student_attrition_risk_prediction`.`count`)"
-                    },
-                    {
-                      "name": "Student_Enrolment_Details__gender",
-                      "expression": "`Student_Enrolment_Details`.`gender`"
-                    }
-                  ],
-                  "disaggregated": false
-                }
-              }
-            ],
-            "spec": {
-              "frame": {
-                "showDescription": true,
-                "showTitle": true,
-                "title": {
-                  "value": "Risk by Gender",
-                  "fields": []
-                },
-                "description": {
-                  "value": "At Risk and Not At Risk student counts for each gender",
-                  "fields": []
-                }
-              },
-              "version": 3,
-              "widgetType": "bar",
-              "encodings": {
-                "x": {
-                  "fieldName": "measure(student_attrition_risk_prediction__count)",
-                  "format": {
-                    "abbreviation": "compact",
-                    "type": "number-plain"
-                  },
-                  "scale": {
-                    "type": "quantitative"
-                  }
-                },
-                "y": {
-                  "fieldName": "Student_Enrolment_Details__gender",
-                  "scale": {
-                    "type": "categorical",
-                    "sort": {
-                      "by": "natural-order"
-                    }
-                  }
-                },
-                "color": {
-                  "fieldName": "student_attrition_risk_prediction__risk_level",
-                  "scale": {
-                    "mappings": [
-                      {
-                        "color": "#1565C0",
-                        "value": "At Risk"
-                      },
-                      {
-                        "color": "#42A5F5",
-                        "value": "Not At Risk"
-                      }
-                    ],
-                    "type": "categorical"
-                  }
-                }
-              },
-              "data": {
-                "queryName": "main_query"
-              }
-            }
-          },
-          "position": {
-            "x": 0,
-            "y": 10,
-            "width": 6,
-            "height": 8
-          }
-        },
-        {
-          "widget": {
             "name": "292bc630",
             "queries": [
               {
@@ -1081,8 +1094,8 @@
                       "expression": "MEASURE(`student_attrition_risk_prediction`.`count`)"
                     },
                     {
-                      "name": "Student_Enrolment_Details__international_domestic",
-                      "expression": "`Student_Enrolment_Details`.`international_domestic`"
+                      "name": "student_attrition_risk_prediction__enrol_origin",
+                      "expression": "`student_attrition_risk_prediction`.`enrol_origin`"
                     }
                   ],
                   "disaggregated": false
@@ -1116,7 +1129,7 @@
                   }
                 },
                 "y": {
-                  "fieldName": "Student_Enrolment_Details__international_domestic",
+                  "fieldName": "student_attrition_risk_prediction__enrol_origin",
                   "scale": {
                     "type": "categorical",
                     "sort": {
@@ -1147,9 +1160,9 @@
             }
           },
           "position": {
-            "x": 6,
+            "x": 0,
             "y": 10,
-            "width": 6,
+            "width": 12,
             "height": 8
           }
         },
@@ -1166,7 +1179,7 @@
           },
           "position": {
             "x": 0,
-            "y": 18,
+            "y": 26,
             "width": 12,
             "height": 1
           }
@@ -1182,9 +1195,98 @@
           },
           "position": {
             "x": 0,
-            "y": 19,
+            "y": 27,
             "width": 12,
             "height": 1
+          }
+        },
+        {
+          "widget": {
+            "name": "dfe9d497",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "fields": [
+                    {
+                      "name": "student_attrition_risk_prediction__risk_level",
+                      "expression": "`student_attrition_risk_prediction`.`risk_level`"
+                    },
+                    {
+                      "name": "measure(student_attrition_risk_prediction__count)",
+                      "expression": "MEASURE(`student_attrition_risk_prediction`.`count`)"
+                    },
+                    {
+                      "name": "student_attrition_risk_prediction__enrol_gender",
+                      "expression": "`student_attrition_risk_prediction`.`enrol_gender`"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showDescription": true,
+                "showTitle": true,
+                "title": {
+                  "value": "Risk by Gender",
+                  "fields": []
+                },
+                "description": {
+                  "value": "At Risk and Not At Risk student counts for each gender",
+                  "fields": []
+                }
+              },
+              "version": 3,
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "measure(student_attrition_risk_prediction__count)",
+                  "format": {
+                    "abbreviation": "compact",
+                    "type": "number-plain"
+                  },
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "y": {
+                  "fieldName": "student_attrition_risk_prediction__enrol_gender",
+                  "scale": {
+                    "type": "categorical",
+                    "sort": {
+                      "by": "natural-order"
+                    }
+                  }
+                },
+                "color": {
+                  "fieldName": "student_attrition_risk_prediction__risk_level",
+                  "scale": {
+                    "mappings": [
+                      {
+                        "color": "#1565C0",
+                        "value": "At Risk"
+                      },
+                      {
+                        "color": "#42A5F5",
+                        "value": "Not At Risk"
+                      }
+                    ],
+                    "type": "categorical"
+                  }
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 18,
+            "width": 12,
+            "height": 8
           }
         }
       ],
@@ -1202,7 +1304,7 @@
               "lines": [
                 "# Student List\n",
                 "\n",
-                "Use the filters below to search for specific students or narrow by risk level"
+                "Use the filters below to search for specific students"
               ]
             }
           },
@@ -1210,104 +1312,6 @@
             "x": 0,
             "y": 0,
             "width": 12,
-            "height": 2
-          }
-        },
-        {
-          "widget": {
-            "name": "c2d55445",
-            "queries": [
-              {
-                "name": "dashboards/01f1b232102f1045b5d3828ffc7abc0a/datasets/01f1bd8e2c1a1941a22a4184b00e29b3_student_id",
-                "query": {
-                  "datasetName": "b798cf1c",
-                  "fields": [
-                    {
-                      "name": "student_id",
-                      "expression": "`student_id`"
-                    },
-                    {
-                      "name": "student_id_associativity",
-                      "expression": "COUNT_IF(`associative_filter_predicate_group`)"
-                    }
-                  ],
-                  "disaggregated": false
-                }
-              }
-            ],
-            "spec": {
-              "version": 2,
-              "frame": {
-                "showTitle": true,
-                "title": {
-                  "value": "Search Student",
-                  "fields": []
-                }
-              },
-              "widgetType": "filter-single-select",
-              "encodings": {
-                "fields": [
-                  {
-                    "fieldName": "student_id",
-                    "queryName": "dashboards/01f1b232102f1045b5d3828ffc7abc0a/datasets/01f1bd8e2c1a1941a22a4184b00e29b3_student_id"
-                  }
-                ]
-              }
-            }
-          },
-          "position": {
-            "x": 0,
-            "y": 2,
-            "width": 6,
-            "height": 2
-          }
-        },
-        {
-          "widget": {
-            "name": "310fbbb0",
-            "queries": [
-              {
-                "name": "dashboards/01f1b232102f1045b5d3828ffc7abc0a/datasets/01f1bd8e2c1a1941a22a4184b00e29b3_risk_level",
-                "query": {
-                  "datasetName": "b798cf1c",
-                  "fields": [
-                    {
-                      "name": "risk_level",
-                      "expression": "`risk_level`"
-                    },
-                    {
-                      "name": "risk_level_associativity",
-                      "expression": "COUNT_IF(`associative_filter_predicate_group`)"
-                    }
-                  ],
-                  "disaggregated": false
-                }
-              }
-            ],
-            "spec": {
-              "version": 2,
-              "frame": {
-                "showTitle": true,
-                "title": {
-                  "value": "Filter by Risk Level",
-                  "fields": []
-                }
-              },
-              "widgetType": "filter-multi-select",
-              "encodings": {
-                "fields": [
-                  {
-                    "fieldName": "risk_level",
-                    "queryName": "dashboards/01f1b232102f1045b5d3828ffc7abc0a/datasets/01f1bd8e2c1a1941a22a4184b00e29b3_risk_level"
-                  }
-                ]
-              }
-            }
-          },
-          "position": {
-            "x": 6,
-            "y": 2,
-            "width": 6,
             "height": 2
           }
         },
@@ -1407,7 +1411,7 @@
           },
           "position": {
             "x": 0,
-            "y": 4,
+            "y": 6,
             "width": 12,
             "height": 16
           }
@@ -1425,7 +1429,7 @@
           },
           "position": {
             "x": 0,
-            "y": 20,
+            "y": 22,
             "width": 12,
             "height": 1
           }
@@ -1441,14 +1445,609 @@
           },
           "position": {
             "x": 0,
-            "y": 21,
+            "y": 23,
             "width": 12,
             "height": 1
+          }
+        },
+        {
+          "widget": {
+            "name": "risk-level",
+            "queries": [
+              {
+                "name": "dashboards/01f1bef1a3c31d9f90bb0843de2779d1/datasets/01f1c09e73b715a0b169273caf80ccc1_risk_level",
+                "query": {
+                  "datasetName": "b798cf1c",
+                  "fields": [
+                    {
+                      "name": "risk_level",
+                      "expression": "`risk_level`"
+                    },
+                    {
+                      "name": "risk_level_associativity",
+                      "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "frame": {
+                "showTitle": true,
+                "title": {
+                  "value": "Risk Level",
+                  "fields": []
+                }
+              },
+              "widgetType": "filter-single-select",
+              "encodings": {
+                "fields": [
+                  {
+                    "fieldName": "risk_level",
+                    "queryName": "dashboards/01f1bef1a3c31d9f90bb0843de2779d1/datasets/01f1c09e73b715a0b169273caf80ccc1_risk_level"
+                  }
+                ]
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 2,
+            "width": 4,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "92549d58",
+            "queries": [
+              {
+                "name": "dashboards/01f1bef1a3c31d9f90bb0843de2779d1/datasets/01f1c09e73b715ad89ed8c52d8b5a769_course_level",
+                "query": {
+                  "datasetName": "student_enrolment",
+                  "fields": [
+                    {
+                      "name": "course_level",
+                      "expression": "`course_level`"
+                    },
+                    {
+                      "name": "course_level_associativity",
+                      "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "frame": {
+                "showTitle": true,
+                "title": {
+                  "value": "Course Level",
+                  "fields": []
+                }
+              },
+              "widgetType": "filter-single-select",
+              "encodings": {
+                "fields": [
+                  {
+                    "fieldName": "course_level",
+                    "queryName": "dashboards/01f1bef1a3c31d9f90bb0843de2779d1/datasets/01f1c09e73b715ad89ed8c52d8b5a769_course_level"
+                  }
+                ]
+              }
+            }
+          },
+          "position": {
+            "x": 4,
+            "y": 2,
+            "width": 4,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "617d8a3f",
+            "queries": [
+              {
+                "name": "dashboards/01f1bef1a3c31d9f90bb0843de2779d1/datasets/01f1c09e73b715ad89ed8c52d8b5a769_broad_primary_field_of_education",
+                "query": {
+                  "datasetName": "student_enrolment",
+                  "fields": [
+                    {
+                      "name": "broad_primary_field_of_education",
+                      "expression": "`broad_primary_field_of_education`"
+                    },
+                    {
+                      "name": "broad_primary_field_of_education_associativity",
+                      "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "frame": {
+                "showTitle": true,
+                "title": {
+                  "value": "Field of Education",
+                  "fields": []
+                }
+              },
+              "widgetType": "filter-single-select",
+              "encodings": {
+                "fields": [
+                  {
+                    "fieldName": "broad_primary_field_of_education",
+                    "queryName": "dashboards/01f1bef1a3c31d9f90bb0843de2779d1/datasets/01f1c09e73b715ad89ed8c52d8b5a769_broad_primary_field_of_education"
+                  }
+                ]
+              }
+            }
+          },
+          "position": {
+            "x": 8,
+            "y": 2,
+            "width": 4,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "2a8f4b9b",
+            "queries": [
+              {
+                "name": "dashboards/01f1bef1a3c31d9f90bb0843de2779d1/datasets/01f1c09e73b715ad89ed8c52d8b5a769_international_domestic",
+                "query": {
+                  "datasetName": "student_enrolment",
+                  "fields": [
+                    {
+                      "name": "international_domestic",
+                      "expression": "`international_domestic`"
+                    },
+                    {
+                      "name": "international_domestic_associativity",
+                      "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "frame": {
+                "showTitle": true,
+                "title": {
+                  "value": "Origin",
+                  "fields": []
+                }
+              },
+              "widgetType": "filter-single-select",
+              "encodings": {
+                "fields": [
+                  {
+                    "fieldName": "international_domestic",
+                    "queryName": "dashboards/01f1bef1a3c31d9f90bb0843de2779d1/datasets/01f1c09e73b715ad89ed8c52d8b5a769_international_domestic"
+                  }
+                ]
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 4,
+            "width": 4,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "919e4658",
+            "queries": [
+              {
+                "name": "dashboards/01f1bef1a3c31d9f90bb0843de2779d1/datasets/01f1c09e73b715a0b169273caf80ccc1_enrol_age_band",
+                "query": {
+                  "datasetName": "b798cf1c",
+                  "fields": [
+                    {
+                      "name": "enrol_age_band",
+                      "expression": "`enrol_age_band`"
+                    },
+                    {
+                      "name": "enrol_age_band_associativity",
+                      "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "frame": {
+                "showTitle": true,
+                "title": {
+                  "value": "Age Band",
+                  "fields": []
+                }
+              },
+              "widgetType": "filter-single-select",
+              "encodings": {
+                "fields": [
+                  {
+                    "fieldName": "enrol_age_band",
+                    "queryName": "dashboards/01f1bef1a3c31d9f90bb0843de2779d1/datasets/01f1c09e73b715a0b169273caf80ccc1_enrol_age_band"
+                  }
+                ]
+              }
+            }
+          },
+          "position": {
+            "x": 4,
+            "y": 4,
+            "width": 4,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "58f8b1c9",
+            "queries": [
+              {
+                "name": "dashboards/01f1bef1a3c31d9f90bb0843de2779d1/datasets/01f1c09e73b715ad89ed8c52d8b5a769_commencing_continuing",
+                "query": {
+                  "datasetName": "student_enrolment",
+                  "fields": [
+                    {
+                      "name": "commencing_continuing",
+                      "expression": "`commencing_continuing`"
+                    },
+                    {
+                      "name": "commencing_continuing_associativity",
+                      "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "frame": {
+                "showTitle": true,
+                "title": {
+                  "value": "Commencing/Continuing",
+                  "fields": []
+                }
+              },
+              "widgetType": "filter-single-select",
+              "encodings": {
+                "fields": [
+                  {
+                    "fieldName": "commencing_continuing",
+                    "queryName": "dashboards/01f1bef1a3c31d9f90bb0843de2779d1/datasets/01f1c09e73b715ad89ed8c52d8b5a769_commencing_continuing"
+                  }
+                ]
+              }
+            }
+          },
+          "position": {
+            "x": 8,
+            "y": 4,
+            "width": 4,
+            "height": 2
           }
         }
       ],
       "pageType": "PAGE_TYPE_CANVAS",
       "layoutVersion": "GRID_V1"
+    },
+    {
+      "name": "global_filters",
+      "displayName": "Filters",
+      "layout": [
+        {
+          "widget": {
+            "name": "filter_risk_level",
+            "queries": [
+              {
+                "name": "filter_risk_level_b798cf1c",
+                "query": {
+                  "datasetName": "b798cf1c",
+                  "fields": [
+                    {
+                      "name": "risk_level",
+                      "expression": "`risk_level`"
+                    },
+                    {
+                      "name": "risk_level_associativity",
+                      "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "frame": {
+                "showTitle": true,
+                "title": {
+                  "value": "Filter by Risk Level",
+                  "fields": []
+                }
+              },
+              "widgetType": "filter-multi-select",
+              "encodings": {
+                "fields": [
+                  {
+                    "fieldName": "risk_level",
+                    "queryName": "filter_risk_level_b798cf1c"
+                  }
+                ]
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 12,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "filter_course_level",
+            "queries": [
+              {
+                "name": "filter_course_level_b798cf1c",
+                "query": {
+                  "datasetName": "b798cf1c",
+                  "fields": [
+                    {
+                      "name": "enrol_course_level",
+                      "expression": "`enrol_course_level`"
+                    },
+                    {
+                      "name": "enrol_course_level_associativity",
+                      "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "frame": {
+                "showTitle": true,
+                "title": {
+                  "value": "Filter by Course Level",
+                  "fields": []
+                }
+              },
+              "widgetType": "filter-multi-select",
+              "encodings": {
+                "fields": [
+                  {
+                    "fieldName": "enrol_course_level",
+                    "queryName": "filter_course_level_b798cf1c"
+                  }
+                ]
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 2,
+            "width": 12,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "filter_field_of_education",
+            "queries": [
+              {
+                "name": "filter_field_of_education_b798cf1c",
+                "query": {
+                  "datasetName": "b798cf1c",
+                  "fields": [
+                    {
+                      "name": "enrol_field_of_education",
+                      "expression": "`enrol_field_of_education`"
+                    },
+                    {
+                      "name": "enrol_field_of_education_associativity",
+                      "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "frame": {
+                "showTitle": true,
+                "title": {
+                  "value": "Filter by Field of Education",
+                  "fields": []
+                }
+              },
+              "widgetType": "filter-multi-select",
+              "encodings": {
+                "fields": [
+                  {
+                    "fieldName": "enrol_field_of_education",
+                    "queryName": "filter_field_of_education_b798cf1c"
+                  }
+                ]
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 4,
+            "width": 12,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "filter_origin",
+            "queries": [
+              {
+                "name": "filter_origin_b798cf1c",
+                "query": {
+                  "datasetName": "b798cf1c",
+                  "fields": [
+                    {
+                      "name": "enrol_origin",
+                      "expression": "`enrol_origin`"
+                    },
+                    {
+                      "name": "enrol_origin_associativity",
+                      "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "frame": {
+                "showTitle": true,
+                "title": {
+                  "value": "Filter by Origin",
+                  "fields": []
+                }
+              },
+              "widgetType": "filter-multi-select",
+              "encodings": {
+                "fields": [
+                  {
+                    "fieldName": "enrol_origin",
+                    "queryName": "filter_origin_b798cf1c"
+                  }
+                ]
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 6,
+            "width": 12,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "filter_age_band",
+            "queries": [
+              {
+                "name": "filter_age_band_b798cf1c",
+                "query": {
+                  "datasetName": "b798cf1c",
+                  "fields": [
+                    {
+                      "name": "enrol_age_band",
+                      "expression": "`enrol_age_band`"
+                    },
+                    {
+                      "name": "enrol_age_band_associativity",
+                      "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "frame": {
+                "showTitle": true,
+                "title": {
+                  "value": "Filter by Age Band",
+                  "fields": []
+                }
+              },
+              "widgetType": "filter-multi-select",
+              "encodings": {
+                "fields": [
+                  {
+                    "fieldName": "enrol_age_band",
+                    "queryName": "filter_age_band_b798cf1c"
+                  }
+                ]
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 8,
+            "width": 12,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "filter_commencing_continuing",
+            "queries": [
+              {
+                "name": "filter_commencing_continuing_b798cf1c",
+                "query": {
+                  "datasetName": "b798cf1c",
+                  "fields": [
+                    {
+                      "name": "enrol_commencing_continuing",
+                      "expression": "`enrol_commencing_continuing`"
+                    },
+                    {
+                      "name": "enrol_commencing_continuing_associativity",
+                      "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "frame": {
+                "showTitle": true,
+                "title": {
+                  "value": "Filter by Commencing/Continuing",
+                  "fields": []
+                }
+              },
+              "widgetType": "filter-multi-select",
+              "encodings": {
+                "fields": [
+                  {
+                    "fieldName": "enrol_commencing_continuing",
+                    "queryName": "filter_commencing_continuing_b798cf1c"
+                  }
+                ]
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 10,
+            "width": 12,
+            "height": 2
+          }
+        }
+      ],
+      "pageType": "PAGE_TYPE_GLOBAL_FILTERS"
     }
   ],
   "uiSettings": {
