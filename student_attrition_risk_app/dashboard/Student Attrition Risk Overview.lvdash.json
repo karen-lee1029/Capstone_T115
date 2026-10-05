@@ -381,7 +381,7 @@
               "lines": [
                 "# Overview\n",
                 "\n",
-                "Distribution of students across risk categories and score ranges"
+                "Distribution of students across risk categories and score ranges "
               ]
             },
             "specExtensions": {
@@ -739,7 +739,7 @@
               "lines": [
                 "# Course Analysis\n",
                 "\n",
-                "Risk distribution by course level and field of education"
+                "Risk distribution by course level and field of education "
               ]
             }
           },
@@ -977,7 +977,7 @@
               "lines": [
                 "# Demographic Breakdown\n",
                 "\n",
-                "Risk distribution by age band, origin and gender"
+                "Risk distribution by age band, origin and gender "
               ]
             }
           },
@@ -1304,7 +1304,7 @@
               "lines": [
                 "# Student List\n",
                 "\n",
-                "Use the filters below to search for specific students"
+                "Use the filters below to search for specific students "
               ]
             }
           },
@@ -2047,7 +2047,8 @@
           }
         }
       ],
-      "pageType": "PAGE_TYPE_GLOBAL_FILTERS"
+      "pageType": "PAGE_TYPE_GLOBAL_FILTERS",
+      "layoutVersion": "GRID_V1"
     }
   ],
   "uiSettings": {
