@@ -79,3 +79,14 @@ Status: **implemented** in the Feature-006 implementation commit on `agent/claud
 - **Revert**: in each chart, rename the fields back (`student_attrition_risk_prediction__enrol_<dim>`
   → `Student_Enrolment_Details__<dim>`, with the matching expressions), and drop `enrol_gender` from
   the prediction source. Chart clicks then error again on Free Edition.
+
+## TC-6 `tests/test_dashboard.py::EXPECTED_WIDGET_TITLES` "Search Student" entry (US-17)
+
+- **Original author / commit**: Karen (`0bff6531`, the expected widget titles).
+- **Change and reason**: the agreed US-27 dashboard update (`3fc0a9f`) replaced the Search Student
+  filter on Student List with six page-level filters, so `test_all_expected_widget_titles_present`
+  failed. The "Search Student" entry is removed; the new filters are checked by
+  `test_dashboard_filtering.py::test_student_list_page_filters`. The dashboard is unchanged.
+- **Commit**: the US-29 test update commit on `fix/us29-dashboard-tests-after-us27`.
+- **Revert**: add `"Search Student",` back after `"Filter by Risk Level",` in `EXPECTED_WIDGET_TITLES`
+  (only valid if the Search Student filter is restored to the dashboard).
