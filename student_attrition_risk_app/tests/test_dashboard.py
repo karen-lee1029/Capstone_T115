@@ -52,7 +52,6 @@ EXPECTED_WIDGET_TITLES = {
     "Risk by Gender",
     "Risk by Origin",
     "Filter by Risk Level",
-    "Search Student",
 }
 
 
@@ -389,7 +388,8 @@ RISK_COLOUR_MAPPINGS = [
     {"color": "#42A5F5", "value": "Not At Risk"},
 ]
 
-# Widget names follow the four-page layout introduced by US-27 (commit 946aab0).
+# Widget names follow the four-page layout introduced by US-27 (commit 946aab0). US-27 (commit
+# 3fc0a9f) moved Risk by Gender onto Demographic Breakdown as dfe9d497, unchanged apart from its name.
 CHART_DESCRIPTIONS = {
     "5e91fa54": (
         "Number of students in each risk category: At Risk (50% or higher) "
@@ -402,7 +402,7 @@ CHART_DESCRIPTIONS = {
     "028257ed": "At Risk and Not At Risk student counts for each course level",
     "90548010": "At Risk and Not At Risk student counts for each broad field of education",
     "eaf7eaf4": "At Risk and Not At Risk student counts for each age band",
-    "52cb0fd3": "At Risk and Not At Risk student counts for each gender",
+    "dfe9d497": "At Risk and Not At Risk student counts for each gender",
     "292bc630": (
         "At Risk and Not At Risk student counts for domestic and international students"
     ),
@@ -415,7 +415,7 @@ CHART_CATEGORICAL_AXIS = {
     "028257ed": "y",
     "90548010": "y",
     "eaf7eaf4": "y",
-    "52cb0fd3": "y",
+    "dfe9d497": "y",
     "292bc630": "y",
 }
 
@@ -472,8 +472,9 @@ class TestRepositoryDashboardDefinition:
 
     def test_student_id_is_labelled_de_identified(self):
         raw = REPO_DASHBOARD_PATH.read_text(encoding="utf-8")
-        # The dimension, the Student Details table and the three US-29 "Students in this view" tables.
-        assert raw.count('"displayName": "Student ID (de-identified)"') == 5
+        # The dimension, the Student Details table and the Overview "Students in this view" table
+        # (US-27, commit 3fc0a9f, kept only the Overview one of the three US-29 tables).
+        assert raw.count('"displayName": "Student ID (de-identified)"') == 3
         assert '"displayName": "Student ID"' not in raw
 
     def test_no_legacy_category_text(self):

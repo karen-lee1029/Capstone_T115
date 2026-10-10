@@ -49,7 +49,7 @@ SENSITIVE_DIMENSIONS = {
 # Q26: charts and tables whose enrolment fields now come from the joined prediction source, so a
 # chart click selects values from one dataset only. Compared with base after the field rename.
 REBOUND = {
-    "028257ed", "90548010", "eaf7eaf4", "292bc630", "52cb0fd3",
+    "028257ed", "90548010", "eaf7eaf4", "292bc630", "dfe9d497",
 }
 ENROLMENT_RENAME = {
     "course_level": "enrol_course_level",
@@ -58,15 +58,22 @@ ENROLMENT_RENAME = {
     "age_band": "enrol_age_band",
     "gender": "enrol_gender",
 }
-GENDER_COLUMN = "enrol_gender"  # displayed only (Gender Breakdown, Demographic table), never filtered
+GENDER_COLUMN = "enrol_gender"  # displayed only (Risk by Gender chart), never filtered
 EMPTY_SOURCE_DIMENSIONS = {"faculty", "study_mode"}  # NULL in every source row (Q24)
-# Q21 -> Q22: the only table allowed to show a sensitive field beside other data widgets.
-# No ignore setting is available in the workspace; matrix row B7 checks it there.
-OBSERVED_SENSITIVE_TABLES = {"drill_table_demographic"}
+# US-27 (commit 3fc0a9f) removed the Gender Breakdown page and moved Risk by Gender, unchanged apart
+# from its widget name, onto Demographic Breakdown.
+GENDER_CHART = "dfe9d497"
+STUDENT_DETAILS = "163516f4"  # Student List table; has shown Gender since before US-29
+US27_RENAMED = {"52cb0fd3": GENDER_CHART}
 
 PAGE_ORDER = [
-    "Overview", "Course Analysis", "Demographic Breakdown", "Gender Breakdown", "Student List",
-    "Filters",
+    "Overview", "Course Analysis", "Demographic Breakdown", "Student List", "Filters",
+]
+# US-27 replaced the Search Student filter with these page-level filters on Student List.
+US27_REMOVED = {"c2d55445"}
+STUDENT_LIST_FILTERS = [
+    "Risk Level", "Course Level", "Field of Education", "Origin", "Age Band",
+    "Commencing/Continuing",
 ]
 
 P = "student_attrition_risk_prediction__"
@@ -76,19 +83,11 @@ COMMON_COLUMNS = [
     (P + "risk_pct", "Risk %"),
     (P + "risk_level", "Risk Level"),
 ]
-# (page, widget name) -> columns in order -- contract C-2.
+# (page, widget name) -> columns in order -- contract C-2. US-27 (commit 3fc0a9f) kept only the
+# Overview table; the Course Analysis and Demographic Breakdown tables were removed.
 DRILL_TABLES = {
     ("Overview", "drill_table_overview"): COMMON_COLUMNS + [
         (P + "risk_score_bucket", "Risk Score Range"),
-    ],
-    ("Course Analysis", "drill_table_course"): COMMON_COLUMNS + [
-        (P + "enrol_course_level", "Course Level"),
-        (P + "enrol_field_of_education", "Field of Education"),
-    ],
-    ("Demographic Breakdown", "drill_table_demographic"): COMMON_COLUMNS + [
-        (P + "enrol_age_band", "Age Band"),
-        (P + "enrol_gender", "Gender"),
-        (P + "enrol_origin", "Origin"),
     ],
 }
 DRILL_TITLE = "Students in this view"
@@ -96,19 +95,21 @@ DRILL_DESCRIPTION = (
     "Up to 100,000 students matching the current filters and chart selection, highest risk "
     "first. Narrow the view to see others, or find any student by ID on Student List"
 )
+# US-27 replaced the how_to_filter panel with this Markdown panel.
+HOW_TO_FILTER = "ce3870dc"
 HOW_TO_FILTER_PHRASES = [
     "How to filter and drill down", "Filters", "every page", "click a bar", "active filter bar",
-    "Students in this view", "Student ID (de-identified)", "100,000",
-    "Gender Breakdown",
+    "Students in this view", "Student ID (de-identified)", "100,000", "Student List",
 ]
 
 # Base widgets that Feature-006 moves or edits (contract C-4); compared without their position.
 REPOSITIONED = {
-    "3158dd73", "98aa39b6", "100b44c5", "3edf02b6", "41477a60", "0d5ba328", "c2d55445",
-    "292bc630", "52cb0fd3",
+    "3158dd73", "98aa39b6", "100b44c5", "3edf02b6", "41477a60", "0d5ba328", "292bc630",
+    GENDER_CHART,
 }
-REMOVED = {"310fbbb0"}
-TEXT_EDITED = {"521bf497"}
+REMOVED = {"310fbbb0"} | US27_REMOVED
+# 2b28df60, 7e33b19c and ea4ce5ed: US-27 page subtitle wording.
+TEXT_EDITED = {"521bf497", "2b28df60", "7e33b19c", "ea4ce5ed"}
 
 
 def _load() -> dict:
@@ -267,12 +268,6 @@ def _run_prediction_source() -> dict[str, dict]:
     return {row[0]: dict(zip(columns, row[1:])) for row in rows}
 
 
-def _table_sort(widget: dict) -> list[tuple[str, str]]:
-    """(expression, direction) pairs of a table's default sort, from the query's ``orders`` (R-3)."""
-    orders = widget["queries"][0]["query"].get("orders", [])
-    return [(order["expression"], order["direction"]) for order in orders]
-
-
 # ---------------------------------------------------------------------------
 # US1 -- dashboard-wide filters (FR-001 - FR-007)
 # ---------------------------------------------------------------------------
@@ -387,14 +382,13 @@ class TestDashboardWideFilters:
                     hits = [d for d in FILTERED_DIMENSIONS if f"`{d}`" in expr]
                     assert not hits, f"{widget['name']} fixes {hits}"
 
-    def test_student_list_risk_filter_replaced(self):
+    def test_student_list_page_filters(self):
         dash = _load()
         names = {w["name"] for _, w in _all_widgets(dash)}
         assert not names & REMOVED
-        search = _widget(dash, "c2d55445")
-        assert _title(search) == "Search Student"
-        assert search in _widgets(_page(dash, "Student List"))
-        assert _position(dash, "c2d55445")["width"] == 12
+        filters = [w for w in _widgets(_page(dash, "Student List")) if _is_filter(w)]
+        assert [_title(w) for w in filters] == STUDENT_LIST_FILTERS
+        assert {_widget_type(w) for w in filters} == {"filter-single-select"}
 
     def test_filters_apply_immediately(self):
         assert _load()["uiSettings"]["applyModeEnabled"] is False
@@ -414,22 +408,17 @@ class TestChartSelection:
                     for query in widget["queries"]:
                         assert "datasetName" not in query["query"], widget["name"]
 
-    def test_sensitive_charts_are_isolated(self):
-        for page in _load()["pages"]:
-            data = [w for w in _widgets(page) if _is_data_widget(w)]
-            for widget in data:
-                if widget["name"] in OBSERVED_SENSITIVE_TABLES:
-                    continue
-                if any(_uses_dimension(widget, d) for d in SENSITIVE_DIMENSIONS):
-                    assert data == [widget], (
-                        f"{widget['name']} selects on a sensitive field but shares "
-                        f"{page['displayName']!r} with other data widgets"
-                    )
+    def test_only_gender_chart_uses_sensitive_fields(self):
+        sensitive = {
+            widget["name"] for _, widget in _all_widgets(_load())
+            if _is_data_widget(widget)
+            and any(_uses_dimension(widget, d) for d in SENSITIVE_DIMENSIONS)
+        }
+        assert sensitive == {GENDER_CHART, STUDENT_DETAILS}
 
-    def test_gender_chart_is_on_gender_breakdown(self):
-        page = _page(_load(), "Gender Breakdown")
-        assert page.get("pageType") == "PAGE_TYPE_CANVAS"
-        assert "52cb0fd3" in {w["name"] for w in _widgets(page)}
+    def test_gender_chart_is_on_demographic_breakdown(self):
+        page = _page(_load(), "Demographic Breakdown")
+        assert GENDER_CHART in {w["name"] for w in _widgets(page)}
 
 
 # ---------------------------------------------------------------------------
@@ -437,7 +426,7 @@ class TestChartSelection:
 # ---------------------------------------------------------------------------
 
 class TestDrillTables:
-    @pytest.mark.parametrize("page_name", ["Overview", "Course Analysis", "Demographic Breakdown"])
+    @pytest.mark.parametrize("page_name", ["Overview"])
     def test_each_analysis_page_has_one_drill_table(self, page_name):
         tables = [
             w for w in _widgets(_page(_load(), page_name))
@@ -461,13 +450,13 @@ class TestDrillTables:
         assert widget["queries"][0]["query"]["fields"] == expected_fields
 
     @pytest.mark.parametrize("key", sorted(DRILL_TABLES))
-    def test_drill_table_sorted_by_risk_desc_with_boundary_text(self, key):
+    def test_drill_table_unfiltered_with_boundary_text(self, key):
+        # US-27 (commit 3fc0a9f) dropped the table's default sort (highest risk first).
         widget = _widget(_load(), key[1])
         query = widget["queries"][0]["query"]
         assert query["disaggregated"] is True
         assert not query.get("filters")
         assert "limit" not in json.dumps(query).lower()
-        assert _table_sort(widget) == [("`student_attrition_risk_prediction`.`risk_pct`", "DESC")]
         frame = widget["spec"]["frame"]
         assert frame["showDescription"] is True
         assert frame["description"]["value"] == DRILL_DESCRIPTION
@@ -490,11 +479,11 @@ class TestDrillTables:
 class TestExplanationAndPreservation:
     def test_how_to_filter_panel_content(self):
         dash = _load()
-        widget = _widget(dash, "how_to_filter")
+        widget = _widget(dash, HOW_TO_FILTER)
         assert widget in _widgets(_page(dash, "Overview"))
         text = "".join(widget["multilineTextboxSpec"]["lines"])
         for phrase in HOW_TO_FILTER_PHRASES:
-            assert phrase.lower() in text.lower(), f"how_to_filter is missing {phrase!r}"
+            assert phrase.lower() in text.lower(), f"{HOW_TO_FILTER} is missing {phrase!r}"
 
     def test_preserved_parts_match_base(self):
         base, current = _load_base(), _load()
@@ -504,7 +493,7 @@ class TestExplanationAndPreservation:
         assert _without_prediction_source(current) == _without_prediction_source(base)
         current_widgets = {w["name"]: w for _, w in _all_widgets(current)}
         for _, widget in _all_widgets(base):
-            name = widget["name"]
+            name = US27_RENAMED.get(widget["name"], widget["name"])
             if name in REMOVED:
                 continue
             if name in TEXT_EDITED:
@@ -512,7 +501,7 @@ class TestExplanationAndPreservation:
                 continue
             if name in REBOUND:
                 # Q26 exception to C-5: identical to base apart from the enrolment field rebinding.
-                assert current_widgets[name] == _rebound(widget), name
+                assert current_widgets[name] == _rebound(widget) | {"name": name}, name
                 continue
             assert current_widgets[name] == widget, name
         for page in base["pages"]:
